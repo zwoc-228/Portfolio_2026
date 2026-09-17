@@ -3,9 +3,8 @@
 - Repository: https://github.com/zwoc-228/Portfolio_2026
 - Branch: `main` (deploy on push via `.github/workflows/deploy.yml`)
 - Live site: https://zwoc-228.github.io/Portfolio_2026/ (Vite `base: /Portfolio_2026/`)
-- Latest tested commit: `801e12f` (Actions green; live HTTP 200; live
-  screenshot inspected 2026-09-17 — AgX high-key, real shadows, AO depth,
-  printed research dossier, serif labels, zero console errors)
+- Latest tested commit: `e7315ab` (docs; code identical to `801e12f` —
+  Actions green; live HTTP 200; live screenshot inspected 2026-09-17)
 
 ## Architecture overview
 - React 18 + Vite 5 + Three.js + R3F v8 + Drei v9 + Zustand + React Router
