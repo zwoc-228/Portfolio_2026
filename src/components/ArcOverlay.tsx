@@ -98,12 +98,13 @@ export default function ArcOverlay() {
             style={{
               position: 'absolute',
               left: `${l.nx}%`,
-              top: `calc(${l.ny}% - 0.8vh)`,
+              top: `calc(${l.ny}% - 1.0vh)`,
               transform: 'translate(-50%, -50%)',
-              width: 'clamp(12px, 1.2vw, 20px)',
-              height: '1px',
-              background: '#9a9fa4',
-              opacity: 0.5,
+              width: 'clamp(16px, 1.5vw, 26px)',
+              height: '1.5px',
+              background: '#7a7f84',
+              opacity: 0.7,
+              borderRadius: '0.5px',
             }}
           />
 

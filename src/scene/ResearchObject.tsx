@@ -88,7 +88,7 @@ export default function ResearchObject() {
   return (
     <group
       ref={groupRef}
-      position={[1.6, 0, 0.5]}
+      position={[1.86, 0, 0.5]}
       rotation={[0, -0.12, 0]}
       scale={METERS_TO_SCENE}
       onPointerOver={(e) => {

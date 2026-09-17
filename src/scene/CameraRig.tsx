@@ -10,16 +10,16 @@ const mobileDefaultTarget = new THREE.Vector3(0, 0, 0)
 
 const categoryPositions: Record<string, { pos: THREE.Vector3; target: THREE.Vector3 }> = {
   writing: {
-    pos: new THREE.Vector3(-1.6, 2.8, 5.0),
-    target: new THREE.Vector3(-1.6, 0, 0.5),
+    pos: new THREE.Vector3(-1.57, 2.8, 5.0),
+    target: new THREE.Vector3(-1.57, 0, 0.5),
   },
   architecture: {
-    pos: new THREE.Vector3(0, 2.8, 5.0),
-    target: new THREE.Vector3(0, 0, 0.5),
+    pos: new THREE.Vector3(0.06, 2.8, 5.0),
+    target: new THREE.Vector3(0.06, 0, 0.5),
   },
   research: {
-    pos: new THREE.Vector3(1.6, 2.8, 5.0),
-    target: new THREE.Vector3(1.6, 0, 0.5),
+    pos: new THREE.Vector3(1.86, 2.8, 5.0),
+    target: new THREE.Vector3(1.86, 0, 0.5),
   },
 }
 

@@ -237,7 +237,7 @@ export default function ArchitectureObject() {
   return (
     <group
       ref={groupRef}
-      position={[0, 0, 0.3]}
+      position={[0.06, 0, 0.3]}
       scale={METERS_TO_SCENE}
       onPointerOver={(e) => {
         e.stopPropagation()

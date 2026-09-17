@@ -108,7 +108,7 @@ export default function WritingObject() {
   return (
     <group
       ref={groupRef}
-      position={[-1.6, 0, 0.5]}
+      position={[-1.57, 0, 0.5]}
       rotation={[0, 0.15, 0]}
       scale={METERS_TO_SCENE}
       onPointerOver={(e) => {
