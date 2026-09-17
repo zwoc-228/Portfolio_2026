@@ -8,12 +8,21 @@ WHAT="${1:-writing}"
 OUTDIR="${2:-$HERE/../../public/models}"
 
 pick_blender() {
+  # Canonical locator (no hardcoded machine paths here).
+  local locator="$HERE/../../scripts/find-blender.sh"
+  if [ -x "$locator" ]; then
+    local found
+    if found="$("$locator" 2>/dev/null)"; then
+      echo "$found"
+      return
+    fi
+  fi
   if [ -n "${BLENDER_BIN:-}" ] && [ -x "$BLENDER_BIN" ]; then echo "$BLENDER_BIN"; return; fi
   if [ -x "$HERE/../blender-bin/blender" ]; then echo "$HERE/../blender-bin/blender"; return; fi
   if [ -x "$HOME/.local/blender/Blender.app/Contents/MacOS/Blender" ]; then echo "$HOME/.local/blender/Blender.app/Contents/MacOS/Blender"; return; fi
   if [ -x "/Applications/Blender.app/Contents/MacOS/Blender" ]; then echo "/Applications/Blender.app/Contents/MacOS/Blender"; return; fi
   if command -v blender >/dev/null 2>&1; then echo "blender"; return; fi
-  echo "ERROR: no Blender found. Set BLENDER_BIN or see tools/blender/README.md" >&2
+  echo "ERROR: no Blender found. Set BLENDER_BIN or install Blender.app (see scripts/find-blender.sh)" >&2
   exit 1
 }
 

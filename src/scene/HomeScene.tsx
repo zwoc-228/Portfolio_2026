@@ -1,5 +1,6 @@
 import { Canvas } from '@react-three/fiber'
 import { ContactShadows, Environment } from '@react-three/drei'
+import * as THREE from 'three'
 import CameraRig from './CameraRig'
 import Lighting from './Lighting'
 import InfinitePlane from './InfinitePlane'
@@ -10,9 +11,9 @@ import WorldLabels from './WorldLabels'
 import { useEffect, Suspense } from 'react'
 import { useStore } from '../store'
 
-// Phase-1 quality gate: focus Writing + floor + lighting only.
-// Set to false to restore all three objects.
-const FOCUS_WRITING = true
+// Phase-1 quality gate: Writing passed (browser-verified material parity).
+// All three procedural GLB objects restored.
+const FOCUS_WRITING = false
 
 export default function HomeScene() {
   const setIsMobile = useStore((s) => s.setIsMobile)
@@ -32,10 +33,15 @@ export default function HomeScene() {
       }}
       gl={{
         antialias: true,
-        toneMapping: 3,
-        toneMappingExposure: 1.15,
+        toneMapping: THREE.ACESFilmicToneMapping,
+        toneMappingExposure: 1.0,
+        outputColorSpace: THREE.SRGBColorSpace,
       }}
-      dpr={[1, 2]}
+      dpr={[1, 1.5]}
+      onCreated={({ scene }) => {
+        // HDRI is reflections-only support: tame it so paper never blows out.
+        scene.environmentIntensity = 0.8
+      }}
       style={{
         position: 'absolute',
         top: 0,
@@ -45,7 +51,7 @@ export default function HomeScene() {
         zIndex: 0,
       }}
     >
-      <color attach="background" args={['#d0d5da']} />
+      <color attach="background" args={['#dde1e5']} />
 
       <CameraRig />
       <Lighting />

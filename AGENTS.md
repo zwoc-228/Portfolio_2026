@@ -1,5 +1,9 @@
 # Yuanlong Portfolio — Agent Instructions
 
+At the beginning of every session, read CURRENT_STATE.md before doing any work.
+
+Before ending a session, update CURRENT_STATE.md with completed work, unresolved problems, latest commit SHA, and next action.
+
 Before making any code changes, read:
 
 - LOCKED_RULES.md

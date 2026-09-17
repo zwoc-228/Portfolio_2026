@@ -9,9 +9,10 @@ export default function InfinitePlane() {
       >
         <planeGeometry args={[60, 60]} />
         <meshStandardMaterial
-          color="#cdd2d7"
-          metalness={0.78}
-          roughness={0.72}
+          color="#d5d6d4"
+          metalness={0.72}
+          roughness={0.8}
+          envMapIntensity={2.4}
         />
       </mesh>
     </group>

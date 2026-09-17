@@ -100,6 +100,42 @@ def track_to(obj, target):
     return con
 
 
+def apply_preview_engine(scene=None, samples=None):
+    """Fast iteration renderer: Eevee unless BL_PREVIEW_ENGINE=cycles.
+
+    Eevee ≈ correct fast visual reference for a WebGL target; Cycles is
+    reserved for one-off bakes (BL_PREVIEW_ENGINE=cycles). Resolution
+    percentage via BL_PREVIEW_PCT (default 50 while iterating).
+    """
+    import os as _os
+    scene = scene or bpy.context.scene
+    try:
+        pct = int(_os.environ.get("BL_PREVIEW_PCT", "50"))
+    except ValueError:
+        pct = 50
+    scene.render.resolution_percentage = max(25, min(100, pct))
+    engine = _os.environ.get("BL_PREVIEW_ENGINE", "eevee").lower()
+    if engine == "cycles":
+        scene.render.engine = "CYCLES"
+        scene.cycles.samples = samples or 64
+        scene.cycles.use_denoising = True
+        return "cycles"
+    scene.render.engine = "BLENDER_EEVEE_NEXT"
+    eevee = scene.eevee
+    eevee.taa_render_samples = samples or 32
+    for attr, val in (("use_bloom", False), ("use_gtao", False),
+                      ("use_ssr", False), ("use_ssr_refraction", False),
+                      ("use_volumetric_lights", False),
+                      ("use_soft_shadows", True),
+                      ("use_raytracing", False)):
+        if hasattr(eevee, attr):
+            try:
+                setattr(eevee, attr, val)
+            except (TypeError, AttributeError):
+                pass
+    return "eevee"
+
+
 def setup_studio(frame_target_loc=(0, 0, 0.03), cam_loc=(0.0, 3.4, 1.9),
                  floor_size=30.0, floor_mat=None, seed=SEED):
     """Minimal product-photography studio used for preview renders.
@@ -111,13 +147,16 @@ def setup_studio(frame_target_loc=(0, 0, 0.03), cam_loc=(0.0, 3.4, 1.9),
     """
     random.seed(seed)
     scene = bpy.context.scene
-    scene.render.engine = "CYCLES"
-    scene.cycles.samples = 64
-    scene.cycles.use_denoising = True
+    used = apply_preview_engine(scene)
+    print(f"PREVIEW ENGINE: {used}")
     scene.render.film_transparent = False
     scene.render.resolution_x = 1280
     scene.render.resolution_y = 720
-    scene.view_settings.view_transform = "Standard"
+    # Modern color management; geometry/materials untouched.
+    try:
+        scene.view_settings.view_transform = "AgX"
+    except TypeError:
+        scene.view_settings.view_transform = "Standard"
     scene.view_settings.look = "None"
     scene.view_settings.exposure = 0.0
 

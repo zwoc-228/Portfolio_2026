@@ -3,6 +3,7 @@ import HomeScene from './scene/HomeScene'
 import Navigation from './components/Navigation'
 import Footer from './components/Footer'
 import CategoryMenu from './components/CategoryMenu'
+import DebugPanel from './components/DebugPanel'
 import ProjectPage from './pages/ProjectPage'
 
 export default function App() {
@@ -24,6 +25,7 @@ export default function App() {
         <Navigation />
         <Footer />
         <CategoryMenu />
+        <DebugPanel />
       </div>
 
       {/* Project page overlay - z-index 30 */}

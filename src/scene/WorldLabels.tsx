@@ -15,6 +15,9 @@ function WorldLabel({ text, number, position, rotation, category }: LabelProps) 
   const selectedCategory = useStore((s) => s.selectedCategory)
   const hoveredObject = useStore((s) => s.hoveredObject)
   const [opacity, setOpacity] = useState(0.5)
+  // Local OFL serif (public/fonts) — matches DOM serif + reference,
+  // deterministic tracking, no runtime font CDN.
+  const font = `${import.meta.env.BASE_URL}fonts/eb-garamond-400-latin.ttf`
 
   useFrame((_, delta) => {
     const isReceded = selectedCategory && selectedCategory !== category
@@ -26,23 +29,23 @@ function WorldLabel({ text, number, position, rotation, category }: LabelProps) 
   return (
     <group position={position} rotation={rotation}>
       <Text
+        font={font}
         fontSize={0.12}
         color="#6a6a6a"
         anchorX="center"
         anchorY="middle"
         fillOpacity={opacity}
-        letterSpacing={0.08}
       >
         {text}
       </Text>
       <Text
+        font={font}
         fontSize={0.055}
         color="#a0a0a0"
         anchorX="center"
         anchorY="middle"
         position={[0, -0.09, 0]}
         fillOpacity={opacity * 0.55}
-        letterSpacing={0.1}
       >
         {number}
       </Text>

@@ -1,8 +1,9 @@
-import { useRef, useState, Suspense } from 'react'
+import { useRef, useState, Suspense, useMemo, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 import { useStore } from '../store'
+import { makeWritingMaterials } from './webMaterials'
 
 // Real-world meters (Blender) -> homepage scene units.
 export const METERS_TO_SCENE = 5.4
@@ -10,13 +11,64 @@ export const METERS_TO_SCENE = 5.4
 // Base-aware URL: dev serves at /, Pages serves at /Portfolio_2026/.
 const MODEL_URL = `${import.meta.env.BASE_URL}models/writing.glb`
 
-function WritingModel() {
+export interface MeshDebugRow {
+  mesh: string
+  material: string
+  color: string
+  roughness: number
+  metalness: number
+  map: string
+  normalMap: string
+}
+
+/** Written once during the collect pass; read by ?debug=materials. */
+export const writingDebug: { rows: MeshDebugRow[] } = { rows: [] }
+
+function WritingModel({ fadeMats }: { fadeMats: React.MutableRefObject<THREE.Material[]> }) {
   const { scene } = useGLTF(MODEL_URL)
+  const mats = useMemo(() => makeWritingMaterials(), [])
+
+  useEffect(() => {
+    const seen = new Set<THREE.Material>()
+    const rows: MeshDebugRow[] = []
+    scene.traverse((child) => {
+      if (!(child instanceof THREE.Mesh)) return
+      child.castShadow = true
+      child.receiveShadow = true
+      const n = child.name
+      let mat: THREE.Material = mats.paper
+      if (n.startsWith('BackCover') || n.startsWith('FrontCover')) mat = mats.cover
+      else if (n.startsWith('Spine')) mat = mats.spine
+      else if (n.startsWith('Ribbon')) mat = mats.ribbon
+      child.material = mat
+      if (!seen.has(mat)) {
+        seen.add(mat)
+        fadeMats.current.push(mat)
+      }
+      const std = mat as THREE.MeshStandardMaterial
+      rows.push({
+        mesh: n || '(unnamed)',
+        material: `${n.startsWith('BackCover') || n.startsWith('FrontCover') ? 'cover' : n.startsWith('Spine') ? 'spine' : n.startsWith('Ribbon') ? 'ribbon' : 'paper'}`,
+        color: `#${std.color.getHexString()}`,
+        roughness: std.roughness,
+        metalness: std.metalness,
+        map: std.map ? 'yes' : 'no',
+        normalMap: std.normalMap ? 'linen' : 'no',
+      })
+    })
+    writingDebug.rows = rows
+    return () => {
+      fadeMats.current = []
+      writingDebug.rows = []
+    }
+  }, [scene, mats, fadeMats])
+
   return <primitive object={scene} />
 }
 
 export default function WritingObject() {
   const groupRef = useRef<THREE.Group>(null)
+  const fadeMats = useRef<THREE.Material[]>([])
   const [hovered, setHovered] = useState(false)
   const selectedCategory = useStore((s) => s.selectedCategory)
   const setHoveredStore = useStore((s) => s.setHovered)
@@ -35,19 +87,13 @@ export default function WritingObject() {
     currentY.current += (targetY.current - currentY.current) * delta * 8
     groupRef.current.position.y = currentY.current
 
+    // Collected once — no scene-graph traversal per frame.
     const targetOpacity = isReceded ? 0.35 : 1
-    groupRef.current.traverse((child) => {
-      if (child instanceof THREE.Mesh && child.material) {
-        const materials = Array.isArray(child.material) ? child.material : [child.material]
-        materials.forEach((m) => {
-          const mat = m as THREE.MeshStandardMaterial
-          if (mat.opacity !== undefined) {
-            mat.opacity += (targetOpacity - mat.opacity) * delta * 4
-            mat.transparent = true
-          }
-        })
-      }
-    })
+    for (const m of fadeMats.current) {
+      const mat = m as THREE.MeshStandardMaterial
+      mat.opacity += (targetOpacity - mat.opacity) * delta * 4
+      mat.transparent = true
+    }
   })
 
   return (
@@ -73,7 +119,7 @@ export default function WritingObject() {
       }}
     >
       <Suspense fallback={null}>
-        <WritingModel />
+        <WritingModel fadeMats={fadeMats} />
       </Suspense>
     </group>
   )
