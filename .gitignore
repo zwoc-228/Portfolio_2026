@@ -2,3 +2,5 @@ node_modules/
 dist/
 .DS_Store
 *.log
+scripts/__shots/
+scripts/__shots-*/
