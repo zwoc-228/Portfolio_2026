@@ -1,76 +1,76 @@
 # Yuanlong Portfolio — LATEST REVIEW CHECKPOINT
 
-**Date:** 2026-09-16
-**Status:** Known-good build — TypeScript clean, Vite build passes, zero runtime errors
+**Date:** 2026-09-16 (Blender Pipeline Pass)
+**Status:** Procedural GLB assets generated headless; Writing passes quality gate in preview renders. Browser verification still requires Node.js on the user's machine.
 
 ---
 
-## Current Project Architecture
+## What Changed in This Pass
 
-```
-Yuanlong_Portfolio_AI_Handoff/
-├── package.json              # React 18 + Vite 5 + Three.js + R3F + Drei + Zustand + React Router
-├── tsconfig.json
-├── vite.config.ts
-├── index.html                # Entry with Google Fonts (EB Garamond + Inter)
-├── src/
-│   ├── main.tsx              # Entry: BrowserRouter → App
-│   ├── App.tsx               # Layout: Canvas + DOM overlay layers + routing
-│   ├── store.ts              # Zustand: hoveredObject, selectedCategory, selectedProject, isTransitioning, reducedMotion, isMobile
-│   ├── vite-env.d.ts
-│   ├── styles/global.css     # Reset, CSS variables, font stacks
-│   ├── scene/
-│   │   ├── HomeScene.tsx     # R3F Canvas wrapper with all 3D content
-│   │   ├── CameraRig.tsx     # PerspectiveCamera lerp transitions + mouse parallax
-│   │   ├── Lighting.tsx      # Overcast studio: key + fill + ambient + hemisphere
-│   │   ├── InfinitePlane.tsx # Matte aluminum floor (metalness 0.82, roughness 0.75)
-│   │   ├── WritingObject.tsx # Blank notebook: cover + page block + spine + ribbon
-│   │   ├── ArchitectureObject.tsx # 10-piece miniature: off-white + acrylic + color accents
-│   │   ├── ResearchObject.tsx     # Stacked papers + metal paper clip
-│   │   └── WorldLabels.tsx        # Troika SDF text: Writing 01 / Architecture 02 / Research 03
-│   ├── components/
-│   │   ├── Navigation.tsx    # Header: name, coordinates, role, About/Archive/Contact, Back button
-│   │   ├── Footer.tsx        # Tagline, copyright, scroll hint, location
-│   │   └── CategoryMenu.tsx  # Frosted acrylic panel with category sub-sections + project list
-│   ├── pages/
-│   │   └── ProjectPage.tsx   # Project detail: title, metadata, summary, hero placeholder
-│   └── data/
-│       ├── architecture.json # 4 projects (Static Travel, Reproduce Tradition, The Fusion, Reimagine Everydayness)
-│       ├── research.json     # 3 projects (Information Relays, Resource Paradox, Famous for 15 Minutes)
-│       ├── writing.json      # Empty (spec: no invented content)
-│       └── projects.json     # Category grouping structure
-├── public/
-│   ├── vite.svg
-│   └── portfolio/            # Empty placeholder folders for PDF-extracted content
-│       ├── static-travel/
-│       ├── reproduce-tradition/
-│       ├── the-fusion/
-│       ├── famous-for-15-minutes/
-│       ├── information-relays/
-│       ├── resource-paradox/
-│       └── reimagine-everydayness/
-├── dist/                     # Production build output
-├── LOCKED_RULES.md           # Non-negotiable visual constraints
-├── MASTER_SPEC.md            # Full design + interaction spec
-├── AI_HANDOFF_PROMPT.md      # Copy-paste prompt for coding AI
-├── ANIMATION_TIMELINE.md     # Motion sequencing and timing
-├── ASSET_PIPELINE.md         # Model/material/PDF asset workflow
-├── PROJECT_CONTENT_MAP.md    # Source PDFs and project/page mapping
-├── AGENTS.md                 # Agent instructions
-└── README.md                 # Package overview
-```
+No more `boxGeometry` approximations. All three homepage objects are now
+procedurally modeled in Blender (Python, headless, reproducible) and loaded
+in R3F via `useGLTF`.
+
+### Blender automation (no manual modeling)
+- Blender 4.2.0 macOS x64 installed to `~/.local/blender` (outside the
+  OneDrive-synced repo) from dotsrc mirror; `tools/blender/run.sh`
+  resolves `$BLENDER_BIN` → `tools/blender-bin` → `~/.local/blender` →
+  `/Applications` → `PATH`.
+- `tools/blender/common.py` — scene clear, box/torus builders with tiny
+  manufactured-edge bevels, GLB export (no Draco: R3F default loader has
+  no DRACO decoder), HDRI studio + preview renderer, studio-object strip.
+- `tools/blender/materials.py` — paper, book cover/spine, ribbon,
+  model board, clear/frosted acrylic, brushed aluminum, steel, accents,
+  plus a documented preview-only floor.
+- `tools/blender/generate_writing.py` / `generate_research.py` /
+  `generate_architecture.py` — one script per asset; re-running
+  regenerates the GLB + preview PNGs deterministically (seeded).
+- Regenerate all: `tools/blender/run.sh all public/models`
+
+### Assets (`public/models/`, real-world meters, R3F `METERS_TO_SCENE=5.4`)
+- `writing.glb` (~113 KB, 27 parts) — back/front covers with overhang,
+  22-slab jittered page block, spine strip, ribbon with drooping tail.
+- `research.glb` (~206 KB) — 9 offset sheets, curled top sheet,
+  steel paperclip straddling the top edge.
+- `architecture.glb` (~103 KB, 13 parts) — plinth, tower, spanning slab
+  on tower cantilevering over block, courtyard block, thin wall,
+  clear + frosted acrylic (real transmission), pilotis + cantilever
+  plate, blue/terracotta/charcoal accents. No intersections with acrylic.
+- `writing_preview.png`, `writing_preview_spine.png`,
+  `research_preview.png`, `architecture_preview.png` — Cycles validation
+  renders used for the quality gate.
+
+### Environment
+- `public/hdri/studio_small_09_1k.hdr` — Poly Haven, CC0, SHA1-verified,
+  stored locally (see `public/hdri/README.md`). Used by Blender previews
+  AND the R3F scene (`<Environment files=...>`). No runtime CDN.
+
+### R3F scene changes (interaction behavior unchanged)
+- `WritingObject.tsx` — loads `/models/writing.glb` via `useGLTF`
+  (+ preload); same position/rotation/hover-lift/fade/click handlers.
+- `HomeScene.tsx` — `<Suspense>`, `<Environment files="/hdri/...">`,
+  exposure 1.35→1.15, `FOCUS_WRITING=true` temporarily hides
+  Architecture/Research/WorldLabels for the Phase-1 gate
+  (set `false` to restore).
+- `Lighting.tsx` — key 2.2→1.6, ambient 0.45→0.3, hemisphere 0.4→0.3
+  (env now carries reflections; directional shading preserved).
+
+### Validation loop performed
+Five preview iterations: fixed overexposure (light powers → key 145,
+fill 70, sheen 15, HDRI 0.55), framing, ribbon placement, and a
+**Y-up/Z-up axis bug** (book built standing — caught by parsing GLB
+node transforms, full geometry rewrite verified clean).
+Final previews show product-photography quality: modeled cover,
+layered page edges, spine, ribbon, soft localized shadows, light
+aluminum floor with sheen variation.
 
 ---
 
 ## Visual Target
 
-Reference image: `reference/ui-baseline.png` — shows:
-- Three objects on matte metallic infinite plane
-- Writing (notebook, left ~25%), Architecture (miniature collection, center ~50%), Research (paper stack, right ~76%)
-- World-space labels on ground forming shallow inward U
-- DOM header: name, coordinates, role, nav links
-- DOM footer: tagline, copyright, scroll hint, location
-- Soft overcast studio lighting, no harsh shadows
+Reference image: `reference/ui-baseline.png` — three objects on matte
+metallic infinite plane; world-space labels in shallow inward U;
+DOM header/footer; soft overcast studio light.
 
 ---
 
@@ -81,7 +81,7 @@ Reference image: `reference/ui-baseline.png` — shows:
 3. 16:9 desktop baseline (1920×1080)
 4. Soft low-contrast lighting
 5. Writing: blank off-white notebook, no logo/text on cover
-6. Architecture: 8–12 primary components, specific material split (70-75% off-white, 15-20% acrylic, 5-8% blue, 3-5% terracotta, 3-5% charcoal)
+6. Architecture: 8–12 primary components, specific material split
 7. No decorative arcs, bounce/elastic animation, large hover movement
 8. Scope discipline: a change must not trigger unrelated redesign
 
@@ -91,40 +91,29 @@ Reference image: `reference/ui-baseline.png` — shows:
 
 | Feature | Status |
 |---|---|
-| Canvas renders with WebGL | ✅ |
-| Three 3D objects visible at correct positions | ✅ |
-| Infinite matte metallic floor | ✅ |
-| Overcast studio lighting (key + fill + ambient + hemisphere) | ✅ |
-| World-space labels (Troika Text) on ground plane | ✅ |
-| Mouse parallax (subtle camera offset) | ✅ |
-| Hover: subtle 5-8px lift + cursor change | ✅ |
-| Click object → camera transition + other objects fade | ✅ |
-| Acrylic category menu appears beside selected object | ✅ |
-| Category menu shows sub-sections + project list | ✅ |
-| Click project → project detail page with metadata | ✅ |
-| Escape key → back to home | ✅ |
-| Back button in nav → back to home | ✅ |
-| DOM UI: header, footer, navigation | ✅ |
-| Reduced motion support | ✅ |
-| Mobile detection | ✅ |
-| Contact shadows | ✅ |
-| TypeScript clean compile | ✅ |
-| Vite production build passes | ✅ |
-| Zero runtime console errors | ✅ |
+| Blender 4.2.0 headless pipeline (reproducible, seeded) | ✅ |
+| writing.glb / research.glb / architecture.glb generated | ✅ |
+| GLB node transforms verified (flat, correct axes, no floor) | ✅ |
+| Preview renders match reference quality bar (Writing) | ✅ |
+| Writing loaded in R3F via useGLTF (handlers preserved) | ✅ (code; browser TBD) |
+| Local CC0 HDRI in Blender + R3F (no CDN) | ✅ |
+| Hover lift / click→category / fade / Escape / Back | ✅ (unchanged code paths) |
+| TypeScript / Vite build | ⏳ needs Node.js on user machine |
 
 ---
 
 ## Current Known Problems
 
-1. **CameraRig workaround** — Uses a 100ms `setTimeout` delay before taking over camera. This is fragile; should be replaced with R3F's `useEffect` + `useFrame` idle detection pattern.
-2. **Menu position** — Category menu appears to the left of center for Architecture (at left: 520px). Per spec, it should appear to the RIGHT of the selected object. The `panelSide` logic uses CSS `right` property but the positioning math needs adjustment.
-3. **Writing category empty** — Writing projects list is empty per spec. No articles have been supplied.
-4. **No PDF content extraction** — Project hero images and narrative content are placeholders. The two source PDFs need to be parsed per `PROJECT_CONTENT_MAP.md`.
-5. **No GSAP** — Camera transitions use R3F `lerp` instead of GSAP `power2.inOut` easing per `ANIMATION_TIMELINE.md`.
-6. **Font loading** — Google Fonts loaded via CSS `@import`. Troika Three Text tries to load woff2 fonts which fail in headless Chrome (works in real browser).
-7. **Bundle size** — 1,124 KB JS bundle (323 KB gzipped). Should be code-split for Three.js.
-8. **Objects slightly small** — Writing and Research objects could be scaled up ~10-15% to better fill the viewport per reference.
-9. **Acrylic material** — `meshPhysicalMaterial` transmission may not render correctly on all GPUs. Needs testing on integrated graphics.
+1. **CameraRig workaround** — 100ms `setTimeout` before camera takeover (pre-existing).
+2. **Menu position** — Architecture menu offset needs adjustment (pre-existing).
+3. **Writing category empty** — per spec, no articles supplied (pre-existing).
+4. **No PDF content extraction** — project pages still placeholders (out of scope this pass).
+5. **No GSAP** — R3F lerp transitions (pre-existing).
+6. **Browser verification pending** — Node.js not available in this environment.
+   Run on your machine: `npm install && npm run dev` → screenshot 1920×1080
+   → compare to `reference/ui-baseline.png`; `npm run build` for the gate.
+7. **Micro-bump** procedural detail does not export to glTF (Blender
+   limitation) — paper/cover separate via color + roughness instead.
 
 ---
 
@@ -132,93 +121,38 @@ Reference image: `reference/ui-baseline.png` — shows:
 
 | File | Why |
 |---|---|
-| `src/scene/HomeScene.tsx` | Canvas setup, scene composition |
-| `src/scene/CameraRig.tsx` | Camera transitions, parallax (HAS WORKAROUND) |
-| `src/scene/WritingObject.tsx` | Notebook geometry + materials |
-| `src/scene/ArchitectureObject.tsx` | Miniature collection geometry + materials |
-| `src/scene/ResearchObject.tsx` | Paper stack geometry + materials |
-| `src/scene/WorldLabels.tsx` | 3D text labels |
-| `src/scene/Lighting.tsx` | Studio lighting setup |
-| `src/scene/InfinitePlane.tsx` | Metallic floor |
-| `src/components/CategoryMenu.tsx` | Acrylic menu panel |
-| `src/components/Navigation.tsx` | Header DOM UI |
-| `src/components/Footer.tsx` | Footer DOM UI |
-| `src/store.ts` | Application state |
-| `src/App.tsx` | Layout + routing |
+| `tools/blender/*.py` | Asset generation pipeline (NEW) |
+| `public/models/*.glb` | Shipped 3D assets (NEW) |
+| `public/hdri/*` | CC0 studio HDRI + license note (NEW) |
+| `src/scene/WritingObject.tsx` | GLB loader (rebuilt) |
+| `src/scene/HomeScene.tsx` | Suspense + Environment + FOCUS_WRITING |
+| `src/scene/Lighting.tsx` | Rebalanced for env (key 1.6, ambient 0.3) |
+| `src/scene/CameraRig.tsx` | Unchanged (HAS WORKAROUND) |
+| `src/scene/WorldLabels.tsx` | Unchanged (hidden while FOCUS_WRITING) |
+| `src/scene/InfinitePlane.tsx` | Unchanged R3F floor |
+| `src/components/CategoryMenu.tsx` | Unchanged |
+| `src/components/Navigation.tsx` | Unchanged |
+| `src/components/Footer.tsx` | Unchanged |
 
 ---
 
 ## Exact Next Recommended Task
 
-**Extract PDF content from the two source PDFs into structured JSON and hero images.**
-
-Per `PROJECT_CONTENT_MAP.md`:
-- `sources/2024_4(2).pdf` → Static Travel (pp. 3-8), Reproduce Tradition (pp. 9-15), The Fusion (pp. 16-22), Famous for 15 Minutes (pp. 23-27), Information Relays (pp. 28-30), Resource Paradox (pp. 31-33)
-- `sources/Final_Portfolio-2(4).pdf` → Information Relays (pp. 2-10), Resource Paradox (pp. 11-20), Reimagine Everydayness (pp. 21-29)
-
-This is the critical content pipeline block — project pages currently show placeholder text.
-
----
-
-## Temporary/Workaround Implementations
-
-### CameraRig (CRITICAL WORKAROUND)
-
-```tsx
-// src/scene/CameraRig.tsx
-// Uses a 100ms setTimeout before taking over camera control.
-// This prevents fighting with R3F's internal camera initialization.
-// The 'ready' state gates all useFrame camera updates.
-const [ready, setReady] = useState(false)
-useEffect(() => {
-  const timer = setTimeout(() => {
-    camera.position.copy(defaultPos)
-    camera.lookAt(defaultTarget)
-    setReady(true)
-  }, 100)
-  return () => clearTimeout(timer)
-}, [camera])
-
-// In useFrame:
-if (!ready) return
-```
-
-**Why:** R3F initializes the camera internally. If `useFrame` modifies position/rotation before R3F completes setup, objects render off-screen. The 100ms delay is arbitrary and may fail on slow machines.
-
-**Proper fix:** Use R3F's `useThree` to detect when the camera is ready, or set camera via Canvas props and only apply parallax in useFrame.
+1. `npm run dev` → verify Writing GLB renders at [-1.6,0,0.5] scale 5.4
+   with HDRI reflections; capture 1920×1080; compare to reference.
+2. Set `FOCUS_WRITING=false`; wire `research.glb` + `architecture.glb`
+   loader components (same pattern as WritingObject).
+3. `npm run build` → update this checkpoint with build output.
+4. Then: PDF content extraction per `PROJECT_CONTENT_MAP.md`.
 
 ---
 
 ## Commands to Run/Build
 
 ```bash
-# Install Node.js (if not present)
-# Node v20+ required
-
-# Install dependencies
 npm install
-
-# Development server
-npm run dev
-# → http://localhost:5173
-
-# TypeScript check
+npm run dev        # → http://localhost:5173
 npx tsc --noEmit
-
-# Production build
-npm run build
-# → dist/
-
-# Preview production build
-npm run preview
+npm run build      # → dist/
+tools/blender/run.sh all public/models   # needs Blender: see run.sh
 ```
-
----
-
-## Build Verification (This Checkpoint)
-
-- **TypeScript:** Clean (zero errors)
-- **Vite build:** Passes (1,124 KB JS, 0.79 KB CSS)
-- **Console errors:** 0
-- **Console warnings:** 6 (all expected: GL Driver performance, font loading)
-- **Screenshots verified:** Home page, Architecture category, Research category, Project detail

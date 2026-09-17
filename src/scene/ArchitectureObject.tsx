@@ -55,49 +55,80 @@ export default function ArchitectureObject() {
         if (!selectedCategory) setSelectedCategory('architecture')
       }}
     >
+      {/* Base platform — thin, wide */}
       <mesh position={[0, 0.01, 0]} castShadow receiveShadow>
-        <boxGeometry args={[1.8, 0.04, 1.4]} />
-        <meshStandardMaterial color="#e2e0dc" roughness={0.75} metalness={0.02} />
+        <boxGeometry args={[1.9, 0.025, 1.5]} />
+        <meshStandardMaterial color="#e4e2de" roughness={0.72} metalness={0.02} />
       </mesh>
-      <mesh position={[-0.35, 0.14, -0.15]} castShadow>
-        <boxGeometry args={[0.65, 0.2, 0.22]} />
-        <meshStandardMaterial color="#e7e7e3" roughness={0.78} />
+
+      {/* Tall tower — back left, narrow vertical */}
+      <mesh position={[-0.4, 0.28, -0.2]} castShadow>
+        <boxGeometry args={[0.22, 0.48, 0.2]} />
+        <meshStandardMaterial color="#e8e6e2" roughness={0.78} metalness={0} />
       </mesh>
-      <mesh position={[0.05, 0.22, 0.05]} castShadow>
-        <boxGeometry args={[0.28, 0.36, 0.28]} />
-        <meshStandardMaterial color="#e5e3df" roughness={0.78} />
+
+      {/* Long horizontal slab — spanning element */}
+      <mesh position={[0.1, 0.14, 0.05]} castShadow>
+        <boxGeometry args={[0.9, 0.03, 0.28]} />
+        <meshStandardMaterial color="#e5e3df" roughness={0.76} metalness={0} />
       </mesh>
-      <mesh position={[0.4, 0.12, 0.15]} castShadow>
-        <boxGeometry args={[0.3, 0.16, 0.25]} />
-        <meshStandardMaterial color="#eae8e4" roughness={0.78} />
+
+      {/* Medium block — center mass */}
+      <mesh position={[0.05, 0.2, 0.1]} castShadow>
+        <boxGeometry args={[0.3, 0.28, 0.26]} />
+        <meshStandardMaterial color="#eae8e4" roughness={0.78} metalness={0} />
       </mesh>
-      <mesh position={[-0.2, 0.1, -0.35]} castShadow>
-        <boxGeometry args={[0.25, 0.12, 0.2]} />
-        <meshStandardMaterial color="#e8e6e2" roughness={0.78} />
+
+      {/* Thin vertical wall — right accent */}
+      <mesh position={[0.45, 0.15, -0.1]} castShadow>
+        <boxGeometry args={[0.04, 0.24, 0.32]} />
+        <meshStandardMaterial color="#e2e0dc" roughness={0.75} metalness={0} />
       </mesh>
-      <mesh position={[0.05, 0.44, 0.05]} castShadow>
-        <boxGeometry args={[0.15, 0.08, 0.15]} />
-        <meshStandardMaterial color="#e0deda" roughness={0.78} />
+
+      {/* Clear acrylic volume — front left, transmissive */}
+      <mesh position={[-0.2, 0.12, 0.25]} castShadow>
+        <boxGeometry args={[0.24, 0.18, 0.2]} />
+        <meshPhysicalMaterial
+          color="#dce4e8"
+          roughness={0.08}
+          transmission={0.88}
+          thickness={0.6}
+          ior={1.49}
+          transparent
+          opacity={0.7}
+        />
       </mesh>
-      <mesh position={[-0.15, 0.13, 0.2]} castShadow>
-        <boxGeometry args={[0.22, 0.18, 0.18]} />
-        <meshPhysicalMaterial color="#d8e0e4" roughness={0.28} transmission={0.55} thickness={0.5} ior={1.47} transparent opacity={0.65} />
+
+      {/* Frosted acrylic — right side, partially transmissive */}
+      <mesh position={[0.3, 0.16, 0.18]} castShadow>
+        <boxGeometry args={[0.18, 0.24, 0.16]} />
+        <meshPhysicalMaterial
+          color="#e0e4e8"
+          roughness={0.25}
+          transmission={0.6}
+          thickness={0.5}
+          ior={1.47}
+          transparent
+          opacity={0.6}
+        />
       </mesh>
-      <mesh position={[0.25, 0.18, -0.2]} castShadow>
-        <boxGeometry args={[0.15, 0.28, 0.12]} />
-        <meshPhysicalMaterial color="#e0e4e8" roughness={0.1} transmission={0.85} thickness={0.5} ior={1.49} transparent opacity={0.55} />
+
+      {/* Muted blue accent — small piece */}
+      <mesh position={[-0.3, 0.08, 0.32]} castShadow>
+        <boxGeometry args={[0.16, 0.08, 0.14]} />
+        <meshStandardMaterial color="#9cb8c8" roughness={0.72} metalness={0} />
       </mesh>
-      <mesh position={[-0.3, 0.08, 0.3]} castShadow>
-        <boxGeometry args={[0.18, 0.1, 0.16]} />
-        <meshStandardMaterial color="#a8c0cc" roughness={0.72} />
+
+      {/* Terracotta accent — warm tone */}
+      <mesh position={[0.35, 0.07, -0.25]} castShadow>
+        <boxGeometry args={[0.12, 0.08, 0.1]} />
+        <meshStandardMaterial color="#c49080" roughness={0.68} metalness={0} />
       </mesh>
-      <mesh position={[0.35, 0.1, -0.1]} castShadow>
-        <boxGeometry args={[0.12, 0.12, 0.12]} />
-        <meshStandardMaterial color="#c49080" roughness={0.7} />
-      </mesh>
-      <mesh position={[0.15, 0.08, 0.3]} castShadow>
-        <boxGeometry args={[0.14, 0.08, 0.1]} />
-        <meshStandardMaterial color="#5a5c5e" roughness={0.65} metalness={0.1} />
+
+      {/* Charcoal accent — dark anchor */}
+      <mesh position={[0.15, 0.06, -0.3]} castShadow>
+        <boxGeometry args={[0.1, 0.06, 0.1]} />
+        <meshStandardMaterial color="#5a5c5e" roughness={0.62} metalness={0.08} />
       </mesh>
     </group>
   )

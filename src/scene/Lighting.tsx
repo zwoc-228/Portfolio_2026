@@ -3,9 +3,9 @@ export default function Lighting() {
     <>
       {/* Key light - large soft from upper-left */}
       <directionalLight
-        position={[-4, 6, 4]}
-        intensity={2.0}
-        color="#f5f2ee"
+        position={[-4, 7, 5]}
+        intensity={1.6}
+        color="#f8f6f2"
         castShadow
         shadow-mapSize-width={1024}
         shadow-mapSize-height={1024}
@@ -18,17 +18,17 @@ export default function Lighting() {
       />
       {/* Fill light - weak from right */}
       <directionalLight
-        position={[3, 4, 3]}
-        intensity={0.7}
-        color="#eef0f2"
+        position={[4, 4, 3]}
+        intensity={0.55}
+        color="#eef1f4"
       />
-      {/* Ambient base */}
-      <ambientLight intensity={0.6} color="#eaecf0" />
+      {/* Ambient base - reduced to preserve directional shading */}
+      <ambientLight intensity={0.3} color="#eef1f4" />
       {/* Hemisphere for sky/ground bounce */}
       <hemisphereLight
-        color="#eef0f2"
-        groundColor="#c0c4c8"
-        intensity={0.5}
+        color="#f0f2f5"
+        groundColor="#c8ccd0"
+        intensity={0.3}
       />
     </>
   )

@@ -1,5 +1,5 @@
 import { Canvas } from '@react-three/fiber'
-import { ContactShadows } from '@react-three/drei'
+import { ContactShadows, Environment } from '@react-three/drei'
 import CameraRig from './CameraRig'
 import Lighting from './Lighting'
 import InfinitePlane from './InfinitePlane'
@@ -7,12 +7,15 @@ import WritingObject from './WritingObject'
 import ArchitectureObject from './ArchitectureObject'
 import ResearchObject from './ResearchObject'
 import WorldLabels from './WorldLabels'
+import { useEffect, Suspense } from 'react'
 import { useStore } from '../store'
-import { useEffect } from 'react'
+
+// Phase-1 quality gate: focus Writing + floor + lighting only.
+// Set to false to restore all three objects.
+const FOCUS_WRITING = true
 
 export default function HomeScene() {
   const setIsMobile = useStore((s) => s.setIsMobile)
-
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
     window.addEventListener('resize', check)
@@ -30,7 +33,7 @@ export default function HomeScene() {
       gl={{
         antialias: true,
         toneMapping: 3,
-        toneMappingExposure: 1.25,
+        toneMappingExposure: 1.15,
       }}
       dpr={[1, 2]}
       style={{
@@ -42,24 +45,28 @@ export default function HomeScene() {
         zIndex: 0,
       }}
     >
-      <color attach="background" args={['#c5c9cc']} />
+      <color attach="background" args={['#d0d5da']} />
 
       <CameraRig />
       <Lighting />
+      {/* Local CC0 studio HDRI (public/hdri) — reflections only, no CDN. */}
+      <Environment files={`${import.meta.env.BASE_URL}hdri/studio_small_09_1k.hdr`} background={false} />
       <InfinitePlane />
 
-      <WritingObject />
-      <ArchitectureObject />
-      <ResearchObject />
-      <WorldLabels />
+      <Suspense fallback={null}>
+        <WritingObject />
+        {!FOCUS_WRITING && <ArchitectureObject />}
+        {!FOCUS_WRITING && <ResearchObject />}
+      </Suspense>
+      {!FOCUS_WRITING && <WorldLabels />}
 
       <ContactShadows
         position={[0, -0.499, 0]}
-        opacity={0.35}
-        scale={20}
-        blur={2.5}
-        far={4}
-        color="#8a9094"
+        opacity={0.28}
+        scale={24}
+        blur={3.0}
+        far={5}
+        color="#7a8088"
       />
     </Canvas>
   )

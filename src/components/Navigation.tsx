@@ -27,34 +27,34 @@ export default function Navigation() {
       pointerEvents: 'none',
     }}>
       <div style={{ pointerEvents: 'auto' }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
           <h1 style={{
             fontFamily: 'var(--font-serif)',
-            fontSize: '22px',
+            fontSize: '21px',
             fontWeight: 500,
-            letterSpacing: '0.02em',
-            color: '#2a2a2a',
+            letterSpacing: '0.01em',
+            color: '#2c2c2c',
             margin: 0,
           }}>
             Yuanlong Zhu
           </h1>
           <span style={{
             fontFamily: 'var(--font-sans)',
-            fontSize: '11px',
+            fontSize: '10.5px',
             fontWeight: 400,
-            color: '#888',
-            letterSpacing: '0.02em',
+            color: '#8a8a8a',
+            letterSpacing: '0.01em',
           }}>
             40.8075°N 73.9626°W
           </span>
         </div>
         <p style={{
           fontFamily: 'var(--font-sans)',
-          fontSize: '12px',
+          fontSize: '11.5px',
           fontWeight: 400,
           color: '#999',
-          marginTop: '4px',
-          letterSpacing: '0.03em',
+          marginTop: '3px',
+          letterSpacing: '0.04em',
         }}>
           Architect  |  Researcher  |  Writer
         </p>
@@ -63,7 +63,7 @@ export default function Navigation() {
       <nav style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '28px',
+        gap: '26px',
         pointerEvents: 'auto',
       }}>
         {selectedCategory && (
@@ -71,10 +71,10 @@ export default function Navigation() {
             onClick={handleBack}
             style={{
               fontFamily: 'var(--font-sans)',
-              fontSize: '13px',
+              fontSize: '12.5px',
               fontWeight: 400,
               color: '#666',
-              letterSpacing: '0.02em',
+              letterSpacing: '0.01em',
               cursor: 'pointer',
               background: 'none',
               border: 'none',
@@ -90,10 +90,10 @@ export default function Navigation() {
             href={`#${item.toLowerCase()}`}
             style={{
               fontFamily: 'var(--font-sans)',
-              fontSize: '13px',
+              fontSize: '12.5px',
               fontWeight: 400,
               color: '#555',
-              letterSpacing: '0.02em',
+              letterSpacing: '0.01em',
               textDecoration: 'none',
               padding: '4px 0',
             }}
@@ -103,10 +103,10 @@ export default function Navigation() {
         ))}
         <button
           style={{
-            width: '28px',
-            height: '28px',
+            width: '26px',
+            height: '26px',
             borderRadius: '50%',
-            border: '1.5px solid #888',
+            border: '1.5px solid #8a8a8a',
             background: 'transparent',
             cursor: 'pointer',
             display: 'flex',
@@ -114,8 +114,8 @@ export default function Navigation() {
             justifyContent: 'center',
           }}
         >
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-            <circle cx="5" cy="5" r="2" fill="#888" />
+          <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
+            <circle cx="5" cy="5" r="2" fill="#8a8a8a" />
           </svg>
         </button>
       </nav>

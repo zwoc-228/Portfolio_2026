@@ -10,15 +10,15 @@ const panelStyle: React.CSSProperties = {
   position: 'absolute',
   top: '50%',
   transform: 'translateY(-50%)',
-  width: '380px',
-  maxHeight: '520px',
-  borderRadius: '12px',
-  background: 'rgba(238, 240, 240, 0.62)',
-  backdropFilter: 'blur(18px) saturate(105%)',
-  WebkitBackdropFilter: 'blur(18px) saturate(105%)',
-  border: '1px solid rgba(255, 255, 255, 0.38)',
-  boxShadow: '0 18px 50px rgba(30, 40, 50, 0.07)',
-  padding: '32px',
+  width: '370px',
+  maxHeight: '510px',
+  borderRadius: '10px',
+  background: 'rgba(240, 243, 245, 0.68)',
+  backdropFilter: 'blur(20px) saturate(108%)',
+  WebkitBackdropFilter: 'blur(20px) saturate(108%)',
+  border: '1px solid rgba(255, 255, 255, 0.45)',
+  boxShadow: '0 16px 44px rgba(30, 40, 50, 0.06)',
+  padding: '30px',
   zIndex: 20,
   pointerEvents: 'auto',
   overflowY: 'auto',
@@ -108,21 +108,21 @@ export default function CategoryMenu() {
         }
       `}</style>
 
-      <div style={{ marginBottom: '24px' }}>
+      <div style={{ marginBottom: '22px' }}>
         <span style={{
           fontFamily: 'var(--font-sans)',
-          fontSize: '11px',
+          fontSize: '10.5px',
           color: '#999',
-          letterSpacing: '0.05em',
+          letterSpacing: '0.06em',
         }}>
           {getCategoryNumber(selectedCategory)}
         </span>
         <h2 style={{
           fontFamily: 'var(--font-serif)',
-          fontSize: '24px',
+          fontSize: '22px',
           fontWeight: 500,
-          color: '#2a2a2a',
-          marginTop: '4px',
+          color: '#2c2c2c',
+          marginTop: '3px',
         }}>
           {getCategoryTitle(selectedCategory)}
         </h2>
@@ -134,12 +134,12 @@ export default function CategoryMenu() {
           <div key={cat.slug} style={{ marginBottom: '16px' }}>
             <h3 style={{
               fontFamily: 'var(--font-sans)',
-              fontSize: '11px',
+              fontSize: '10.5px',
               fontWeight: 500,
               color: '#888',
               letterSpacing: '0.06em',
               textTransform: 'uppercase',
-              marginBottom: '8px',
+              marginBottom: '7px',
             }}>
               {cat.name}
             </h3>
@@ -183,8 +183,8 @@ export default function CategoryMenu() {
           >
             <div style={{
               fontFamily: 'var(--font-serif)',
-              fontSize: '15px',
-              color: '#2a2a2a',
+              fontSize: '14.5px',
+              color: '#2c2c2c',
               marginBottom: '2px',
             }}>
               {project.title}

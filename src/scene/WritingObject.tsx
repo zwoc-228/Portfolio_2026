@@ -1,7 +1,19 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, Suspense } from 'react'
 import { useFrame } from '@react-three/fiber'
+import { useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 import { useStore } from '../store'
+
+// Real-world meters (Blender) -> homepage scene units.
+export const METERS_TO_SCENE = 5.4
+
+// Base-aware URL: dev serves at /, Pages serves at /Portfolio_2026/.
+const MODEL_URL = `${import.meta.env.BASE_URL}models/writing.glb`
+
+function WritingModel() {
+  const { scene } = useGLTF(MODEL_URL)
+  return <primitive object={scene} />
+}
 
 export default function WritingObject() {
   const groupRef = useRef<THREE.Group>(null)
@@ -26,11 +38,14 @@ export default function WritingObject() {
     const targetOpacity = isReceded ? 0.35 : 1
     groupRef.current.traverse((child) => {
       if (child instanceof THREE.Mesh && child.material) {
-        const mat = child.material as THREE.MeshStandardMaterial
-        if (mat.opacity !== undefined) {
-          mat.opacity += (targetOpacity - mat.opacity) * delta * 4
-          mat.transparent = true
-        }
+        const materials = Array.isArray(child.material) ? child.material : [child.material]
+        materials.forEach((m) => {
+          const mat = m as THREE.MeshStandardMaterial
+          if (mat.opacity !== undefined) {
+            mat.opacity += (targetOpacity - mat.opacity) * delta * 4
+            mat.transparent = true
+          }
+        })
       }
     })
   })
@@ -38,8 +53,9 @@ export default function WritingObject() {
   return (
     <group
       ref={groupRef}
-      position={[-2.2, 0, 0.5]}
+      position={[-1.6, 0, 0.5]}
       rotation={[0, 0.15, 0]}
+      scale={METERS_TO_SCENE}
       onPointerOver={(e) => {
         e.stopPropagation()
         setHovered(true)
@@ -56,26 +72,11 @@ export default function WritingObject() {
         if (!selectedCategory) setSelectedCategory('writing')
       }}
     >
-      <mesh position={[0, 0.08, 0]} castShadow>
-        <boxGeometry args={[1.1, 0.06, 1.5]} />
-        <meshStandardMaterial color="#e8e4de" roughness={0.78} metalness={0} />
-      </mesh>
-      <mesh position={[0, 0.04, 0]} castShadow>
-        <boxGeometry args={[1.06, 0.06, 1.46]} />
-        <meshStandardMaterial color="#f5f3ef" roughness={0.9} metalness={0} />
-      </mesh>
-      <mesh position={[0, 0.01, 0]} castShadow>
-        <boxGeometry args={[1.1, 0.02, 1.5]} />
-        <meshStandardMaterial color="#e0dcd6" roughness={0.82} metalness={0} />
-      </mesh>
-      <mesh position={[-0.55, 0.05, 0]} castShadow>
-        <boxGeometry args={[0.02, 0.1, 1.5]} />
-        <meshStandardMaterial color="#d8d4ce" roughness={0.75} metalness={0.05} />
-      </mesh>
-      <mesh position={[0.2, 0.12, 0.75]} castShadow>
-        <boxGeometry args={[0.02, 0.005, 0.2]} />
-        <meshStandardMaterial color="#c0b8b0" roughness={0.6} metalness={0} />
-      </mesh>
+      <Suspense fallback={null}>
+        <WritingModel />
+      </Suspense>
     </group>
   )
 }
+
+useGLTF.preload(MODEL_URL)
