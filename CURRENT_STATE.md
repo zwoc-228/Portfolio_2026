@@ -61,45 +61,44 @@ Problem = shared generic material strategy + no reflection studio.
 - Fast previews: `scripts/render-model-previews.sh [asset]`
 - R3F scale: `METERS_TO_SCENE = 5.4`; no Draco (default loader lacks decoder).
 
-## Visual values (LOOKDEV pass, 2026-09-17 — NOT yet browser-verified)
-- ToneMapping AgX (A/B winner), exposure 0.9 (was 1.0; MASTER_SPEC 0.85–0.95),
-  sRGB, background #dfe2e5. ?tm=aces + ?envrot= hooks kept.
-- Direct: key dir 1.5 upper-left (shadows 1024 + normalBias 0.02), fill 0.18.
-  RectAreaLight REMOVED (did not show in reflections). No ambient/hemisphere.
-- Studio: declarative Lightformer env (frames=1, res 256, static ~free):
-  A large left softbox 3.2, B overhead 2.0, C narrow strip 4.0 (acrylic
-  edges), D rear kicker 1.2, E dark flag 0.35, base #3a3d40. scene.envInt 0.55.
-- Floor: MeshPhysicalMaterial #d3d6d8 metal 0.8 + DIRECTIONAL brushed
-  normal/roughness maps (own generator, repeat 18) + anisotropy 0.5,
-  envInt 1.2. No longer shares any texture with cloth/board.
+## Visual values (LOOKDEV pass 2, 2026-09-17 — awaiting visual review)
+- Grey-veil fail (user screenshot): dark-room studio base collapsed all IBL
+  energy + AgX crushed the backdrop. Fix = bright-room studio (base #c4c7ca,
+  left softbox 5.0, overhead 3.0, strip 5.0, kicker 1.5, flag 0.5, frontal
+  card 1.0), scene.environmentIntensity 0.75, scene.backgroundIntensity 1.35
+  (backdrop lift independent of exposure), bg #e3e6e9, floor envInt 1.6.
+  Exposure stays 0.9 (lighting fixed first, exposure last).
 - Families: cloth own fine normal amp 0.035 + sheen 0.3, paper NO normal
   r.85, board #E8E6E1 r.76 own normal 0.025, steel r.32 envInt 1.0.
 - Acrylic per-name: clear T0.92/r0.07, frosted T0.6/r0.32, blue rebuilt as
   muted physical T0.5, charcoal rebuilt as smoked T0.5, terracotta opaque r0.6.
 - ContactShadows 0.16/1.6/scale10/far3/frames=1 kept as supplement only.
-- Heavy work offloaded: `.github/workflows/assets.yml` (Blender headless →
-  GLB → gltf-transform meshopt → artifacts + Eevee previews in CI).
-  `LOOKDEV_AUDIT.md` is the per-file KEEP/REPLACE record.
+- PIPELINE DECISION 2026-09-17: full automation authorized. Canonical
+  `tools/blender/build_*.py` + `bake.py` + `export_gltf.py`; architecture
+  = import-and-fix (normals/bevel/UV/slots), never regen; smoked family
+  added; `assets.yml` = build + inspect + lookdev-safe optimize + screenshot
+  QA bundle (frames + crops + reference). No Blender MCP on the Mac.
+  No local Blender work — heavy jobs run in CI only.
 - NOTE: reference/final-home.png NOT in repo (only reference/ui-baseline.png);
-  composition locked to ui-baseline + MASTER_SPEC §2 until it lands.
-- Still true from prior pass: transparent flag ONLY while fading (was
+  QA bundles ui-baseline.png as reference until it lands.
+- Direct: key dir 1.5 upper-left (shadows 1024 + normalBias 0.02), fill 0.18.
+  RectAreaLight REMOVED (did not show in reflections). No ambient/hemisphere.
+  ?tm=aces + ?envrot= hooks kept. `LOOKDEV_AUDIT.md` = per-file record.
+- Still true from prior passes: transparent flag ONLY while fading (was
   blackening transmission); Research TopSheet real print (verbatim PDF text,
   V-flip corrected); baked AO 1024 → public/textures/*_ao.png @ ~0.5;
   labels local OFL EB Garamond, ref-driven; perf measured (?debug=materials)
   115 calls / 11.4k tris — trivially smooth on real GPUs.
-- Sandbox had NO node runtime, so `tsc`/`build` did NOT run locally.
-  Verification gate = push → Actions (`deploy.yml` runs tsc + build) and
-  the lookdev screenshot comparison in `assets.yml` artifacts.
-  Local commit `a8af4b3` (lookdev pass) created + pushed 2026-09-17 via
-  the `portfolio_2026_deploy` SSH key (`d904048..a8af4b3 main->main`).
-  CI (`deploy.yml`: tsc + build + Pages deploy) runs on push — check the
-  Actions tab; if tsc flags anything, fix before visual review.
+- Sandbox has NO node runtime, so `tsc`/`build` never run locally.
+  Gate = push → Actions (`deploy.yml`: tsc + build + Pages deploy;
+  `assets.yml`: Blender builds + inspect + QA bundle). Prior commits
+  `a8af4b3` + `b8eaf6b` pushed 2026-09-17 via `portfolio_2026_deploy` key.
 
 ## Next task
-Lookdev screenshot review (CI `assets.yml` lookdev-previews vs
-reference/ui-baseline.png at 1920×1080 + 6 crops; judge rendered pixels
-per LOOKDEV_AUDIT.md fail conditions). Then: PDF content extraction per
-PROJECT_CONTENT_MAP.md (project pages still placeholder).
+Your manual role: view the deployed homepage, judge pixels, give
+art-direction feedback. QA bundle (`homepage-qa` artifact: frames + crops
++ reference) appears under Actions → Heavy Assets after each push.
+Then: PDF content extraction per PROJECT_CONTENT_MAP.md.
 
 ## Commands
 - Build/typecheck: `npx tsc --noEmit && npm run build`

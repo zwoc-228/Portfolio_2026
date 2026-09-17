@@ -114,6 +114,20 @@ def frosted_acrylic():
     return mat
 
 
+def smoked_acrylic():
+    """Dense premium smoked acrylic: transparent, never opaque black
+    plastic. Web layer refines attenuation per asset."""
+    mat, bsdf = _principled("SmokedAcrylic")
+    _set(bsdf, "Base Color", _rgba("#4A5055"))
+    _set(bsdf, "Roughness", 0.18)
+    _set(bsdf, "Metallic", 0.0)
+    _set(bsdf, "IOR", 1.49)
+    _set(bsdf, "Transmission Weight", 0.55)
+    _set(bsdf, "Transmission", 0.55)
+    _set(bsdf, "Thickness", 0.05)
+    return mat
+
+
 def brushed_aluminum():
     mat, bsdf = _principled("BrushedAluminum")
     _set(bsdf, "Base Color", _rgba("#C9CED3"))

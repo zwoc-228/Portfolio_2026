@@ -1,4 +1,23 @@
-# Asset Pipeline
+# Asset Pipeline (CI-first — the local Mac is never the workstation)
+
+Canonical builders (run headless in `.github/workflows/assets.yml`):
+- `tools/blender/build_writing.py` / `build_research.py` — procedural
+  (controlled, simple geometry), deterministic seeds
+- `tools/blender/build_architecture.py` — IMPORTS the checked-in
+  `public/models/architecture.glb` and fixes (normals / micro-bevel /
+  UV validate / production material slots). Never a generative rebuild.
+- `tools/blender/materials.py` — independent material families
+  (book cloth, paper, model board, clear/frosted/smoked acrylic,
+  muted color accents, steel, brushed aluminium)
+- `tools/blender/bake.py` — crevice AO atlases (worker: `bake_ao.py`)
+- `tools/blender/export_gltf.py` — single shared GLB export settings
+- `tools/blender/generate_*.py` + `run.sh` — local/manual fallback only
+
+Optimize only after raw production assets visually pass
+(lookdev = dedup/prune; ship = +meshopt/webp). No Draco (no decoder
+in the default R3F loader). Screenshot QA bundles frames + crops +
+active reference (`reference/final-home.png`, fallback `ui-baseline.png`)
+as CI artifacts — judged on the user's real GPU, never SwiftShader.
 
 ## 1. Priority order for assets
 1. Existing user portfolio files

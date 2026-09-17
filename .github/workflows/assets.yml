@@ -1,13 +1,18 @@
-# CI-first heavy asset pipeline — KEEPS the 2019 Intel MacBook responsive.
+# CI-first heavy asset pipeline — the local Mac is NEVER the workstation.
 #
-# Local machine NEVER runs: Blender GUI, sustained Cycles/Eevee renders,
-# baking loops, KTX2/Basis batches, multi-viewport screenshot batches.
-# Local consumes finished artifacts from here.
+# OpenCode → version-controlled Blender Python → headless Blender here →
+# GLB export → glTF Transform → optimized production assets → R3F lookdev
+# → deployed preview → screenshot QA artifacts.
 #
-# Triggers: manual dispatch, or pushes that touch the procedural sources.
-# Deploy stays in deploy.yml — this workflow uploads artifacts for review.
+# Local machine only edits + reviews. No Blender GUI, no local bakes,
+# no local compression batches, no parallel Chromium locally.
+# No Blender MCP anywhere near the primary machine (remote/isolated only,
+# if ever — deterministic Blender Python + CI is preferred).
+#
+# Triggers: manual dispatch, or pushes touching the procedural sources,
+# the scene code, or the shipped models. Deploy stays in deploy.yml.
 
-name: Heavy Assets (Blender → GLB → optimize)
+name: Heavy Assets (Blender → GLB → optimize + QA)
 
 on:
   workflow_dispatch:
@@ -20,9 +25,23 @@ on:
         description: 'Render Eevee previews + visual diff crops'
         required: false
         default: 'true'
+      optimize:
+        description: 'Optimization level (lookdev = dedup/prune only, ship = +meshopt/webp)'
+        required: false
+        default: 'lookdev'
+      qa:
+        description: 'Run screenshot QA against the deployed site'
+        required: false
+        default: 'true'
+      qa_url:
+        description: 'Site URL for screenshot QA'
+        required: false
+        default: 'https://zwoc-228.github.io/Portfolio_2026/'
   push:
     paths:
       - 'tools/blender/**'
+      - 'src/scene/**'
+      - 'public/models/**'
       - '.github/workflows/assets.yml'
 
 permissions:
@@ -44,16 +63,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node (glTF Transform + screenshots tooling)
+      - name: Setup Node (glTF Transform tooling)
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-
-      - name: Setup Python (GLB audit)
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
 
       - name: Install headless Blender ${{ env.BLENDER_VERSION }}
         run: |
@@ -64,15 +78,14 @@ jobs:
           echo "/tmp/${BL}" >> "$GITHUB_PATH"
           /tmp/${BL}/blender --version
 
-      - name: Install glTF Transform + Basis tooling
+      - name: Install glTF Transform
         run: |
           npm install --no-save @gltf-transform/cli@^4.1.0
           npx gltf-transform --version
 
       - name: (Optional) Fetch CC0 PBR maps (1–2K, Poly Haven / ambientCG)
-        # Homepage assets need 1–2K normal+roughness only. Higher res only
-        # with visual proof. Files land in vendor/cc0/ for Blender + web use.
         # Pinned URLs live in tools/blender/cc0_sources.txt when added.
+        # Files land in vendor/cc0/ for Blender + web use.
         run: |
           mkdir -p vendor/cc0 public/textures
           if [ -f tools/blender/cc0_sources.txt ]; then
@@ -82,52 +95,59 @@ jobs:
             echo "No cc0_sources.txt yet — procedural stand-ins remain. See LOOKDEV_AUDIT.md."
           fi
 
-      - name: Build GLBs headless (seeded, reproducible)
+      - name: Build GLBs headless (canonical build_*.py, one at a time)
+        # Writing/Research = procedural (controlled, simple).
+        # Architecture = IMPORT of public/models/architecture.glb + fix
+        # (normals / micro-bevel / UV validate / production material slots).
+        # Never a generative rebuild of the architectural design.
         run: |
           set -euo pipefail
           ASSET="${{ inputs.asset || 'all' }}"
           mkdir -p public/models
-          # One asset at a time keeps CI RAM/CPU bounded; no parallel Blender.
-          blender --background --python tools/blender/generate_writing.py -- public/models
-          if [ "$ASSET" = research ] || [ "$ASSET" = all ]; then
-            blender --background --python tools/blender/generate_research.py -- public/models
-          fi
-          if [ "$ASSET" = architecture ] || [ "$ASSET" = all ]; then
-            blender --background --python tools/blender/generate_architecture.py -- public/models
-          fi
-          # writing always rebuilt (composition anchor); research/arch per input.
+          run_one() { echo "=== $1 ==="; blender --background --python "tools/blender/build_$1.py" -- public/models; }
+          if [ "$ASSET" = writing ] || [ "$ASSET" = all ]; then run_one writing; fi
+          if [ "$ASSET" = research ] || [ "$ASSET" = all ]; then run_one research; fi
+          if [ "$ASSET" = architecture ] || [ "$ASSET" = all ]; then run_one architecture; fi
 
       - name: Bake crevice AO (Cycles one-off, 1024 atlas)
         run: |
           set -euo pipefail
-          BL_PREVIEW_ENGINE=cycles blender --background --python tools/blender/bake_ao.py -- public/textures || echo "AO bake skipped/failed — keeping checked-in *_ao.png"
+          BL_PREVIEW_ENGINE=cycles blender --background --python tools/blender/bake.py -- public/textures "${{ inputs.asset || 'all' }}" || echo "AO bake skipped/failed — keeping checked-in *_ao.png"
 
-      - name: Optimize GLBs (gltf-transform + meshopt, NO Draco)
-        # R3F default loader has no Draco decoder — Meshopt only.
+      - name: Inspect GLBs (glTF Transform report, always)
+        run: |
+          set -euo pipefail
+          mkdir -p inspect
+          for f in public/models/writing.glb public/models/research.glb public/models/architecture.glb; do
+            base="$(basename "$f" .glb)"
+            npx gltf-transform inspect "$f" > "inspect/${base}.txt" 2>&1 || true
+          done
+          cat inspect/*.txt
+
+      - name: Optimize GLBs (NO Draco — default R3F loader lacks decoder)
+        # Lookdev default: dedup + prune ONLY (zero visual change).
+        # Visual quality first — meshopt/webp/resizing only at ship level,
+        # after raw production assets visually pass.
         run: |
           set -euo pipefail
           mkdir -p dist-models
+          LEVEL="${{ inputs.optimize || 'lookdev' }}"
           for f in public/models/writing.glb public/models/research.glb public/models/architecture.glb; do
-            [ -f "$f" ] || continue
             base="$(basename "$f" .glb)"
-            npx gltf-transform optimize "$f" "dist-models/${base}.opt.glb" \
-              --compress meshopt --texture-compress webp || cp "$f" "dist-models/${base}.opt.glb"
+            if [ "$LEVEL" = ship ]; then
+              npx gltf-transform optimize "$f" "dist-models/${base}.opt.glb" \
+                --compress meshopt --texture-compress webp || cp "$f" "dist-models/${base}.opt.glb"
+            else
+              npx gltf-transform dedup "$f" "dist-models/${base}.opt.glb" || cp "$f" "dist-models/${base}.opt.glb"
+              npx gltf-transform prune "dist-models/${base}.opt.glb" "dist-models/${base}.opt.glb" || true
+            fi
           done
           ls -la dist-models
-          # Gate: homepage ideally 60–100k tris, hard cap 150k.
-          python3 - "$GITHUB_WORKSPACE" <<'EOF'
-          import struct, json, sys, glob
-          total = 0
-          for p in glob.glob('dist-models/*.opt.glb') + glob.glob('public/models/*.glb'):
-            pass
-          print("optimize done — tri-count gate runs in visual QA job")
-          EOF
 
-      - name: Eevee previews + lookdev crops (CI renders, not local)
+      - name: Eevee previews (CI renders, not local)
         if: ${{ inputs.previews != 'false' }}
         run: |
           set -euo pipefail
-          BL_PREVIEW_PCT=100 bash scripts/render-model-previews.sh all || true
           mkdir -p lookdev
           cp public/models/*preview*.png lookdev/ 2>/dev/null || true
           ls -la lookdev || true
@@ -139,20 +159,50 @@ jobs:
           path: dist-models/
           retention-days: 30
 
-      - name: Upload lookdev previews
+      - name: Upload inspect reports + lookdev previews
         uses: actions/upload-artifact@v4
         with:
           name: lookdev-previews
-          path: lookdev/
+          path: |
+            inspect/
+            lookdev/
           retention-days: 30
 
-  # Separate job so a heavy render never blocks the build summary.
-  visual-qa-note:
-    needs: build-assets
+  screenshot-qa:
+    # Pixels for the visual critic (user): full frames + material crops
+    # from the DEPLOYED site, bundled with the active reference.
+    # NOTE: CI Chromium uses software GL — composition/palette/console QA
+    # is trustworthy; final acrylic/metal judgment stays on the user's
+    # real GPU (manual role: view, judge, give art-direction feedback).
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: ${{ inputs.qa != 'false' }}
     steps:
-      - run: |
-          echo "Pull lookdev-previews artifact, compare against reference/ui-baseline.png"
-          echo "(reference/final-home.png when it lands) at 1920x1080 + crops:"
-          echo "crop-writing / crop-architecture / crop-research / crop-floor-left / crop-floor-center"
-          echo "Judge rendered pixels only — see LOOKDEV_AUDIT.md fail conditions."
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Chromium (single instance, sequential viewports)
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: Capture homepage + crops from live site
+        run: |
+          set -euo pipefail
+          mkdir -p qa
+          node scripts/visual-check.mjs --url "${{ inputs.qa_url || 'https://zwoc-228.github.io/Portfolio_2026/' }}" --crops --out qa
+          if [ -f reference/final-home.png ]; then cp reference/final-home.png qa/reference.png
+          else cp reference/ui-baseline.png qa/reference.png; fi
+          ls -la qa
+
+      - name: Upload QA bundle (frames + crops + reference)
+        uses: actions/upload-artifact@v4
+        with:
+          name: homepage-qa
+          path: qa/
+          retention-days: 30

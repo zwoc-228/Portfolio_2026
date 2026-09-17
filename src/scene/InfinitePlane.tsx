@@ -30,7 +30,7 @@ export default function InfinitePlane() {
       roughnessMap: rough,
       normalMap: normal,
       normalScale: new THREE.Vector2(0.04, 0.04),
-      envMapIntensity: 1.2,
+      envMapIntensity: 1.6,
     })
     // Subtle directional response where the renderer supports it (r155+).
     try {
