@@ -73,12 +73,17 @@ Problem = shared generic material strategy + no reflection studio.
 - Acrylic per-name: clear T0.92/r0.07, frosted T0.6/r0.32, blue rebuilt as
   muted physical T0.5, charcoal rebuilt as smoked T0.5, terracotta opaque r0.6.
 - ContactShadows 0.16/1.6/scale10/far3/frames=1 kept as supplement only.
-- PIPELINE DECISION 2026-09-17: full automation authorized. Canonical
-  `tools/blender/build_*.py` + `bake.py` + `export_gltf.py`; architecture
-  = import-and-fix (normals/bevel/UV/slots), never regen; smoked family
-  added; `assets.yml` = build + inspect + lookdev-safe optimize + screenshot
-  QA bundle (frames + crops + reference). No Blender MCP on the Mac.
-  No local Blender work — heavy jobs run in CI only.
+- Heavy Assets FAIL 2026-09-17 (run 35260994956): Blender aborted at first
+  invocation, exit 134, missing libEGL.so.1. Fix (`8779939`): apt runtime
+  (libegl1/libgl1/mesa-dri/X11 set) + LIBGL_ALWAYS_SOFTWARE=1 + ldd
+  fail-fast check. Rerun 35261497666: build-assets SUCCESS, screenshot-qa
+  SUCCESS, run conclusion success. Artifacts present (names/sizes only —
+  downloads need auth): homepage-glb-optimized 65KB, lookdev-previews 945KB
+  (inspect reports + Eevee previews), homepage-qa 2.3MB (frames + crops +
+  ui-baseline reference).
+- NOT claimed: final-reference matching (reference/final-home.png still
+  missing — QA bundles ui-baseline.png) and production PBR completion
+  (tools/blender/cc0_sources.txt still absent — procedural stand-ins).
 - NOTE: reference/final-home.png NOT in repo (only reference/ui-baseline.png);
   QA bundles ui-baseline.png as reference until it lands.
 - Direct: key dir 1.5 upper-left (shadows 1024 + normalBias 0.02), fill 0.18.
