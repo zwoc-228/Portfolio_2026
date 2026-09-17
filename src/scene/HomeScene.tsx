@@ -1,8 +1,8 @@
 import { Canvas } from '@react-three/fiber'
-import { ContactShadows, Environment } from '@react-three/drei'
+import { ContactShadows } from '@react-three/drei'
 import * as THREE from 'three'
 import CameraRig from './CameraRig'
-import Lighting from './Lighting'
+import Lighting, { StudioEnvironment } from './Lighting'
 import InfinitePlane from './InfinitePlane'
 import WritingObject from './WritingObject'
 import ArchitectureObject from './ArchitectureObject'
@@ -49,13 +49,13 @@ export default function HomeScene() {
       gl={{
         antialias: true,
         toneMapping: resolveToneMapping(),
-        toneMappingExposure: 1.0,
+        toneMappingExposure: 0.9,
         outputColorSpace: THREE.SRGBColorSpace,
       }}
       dpr={[1, 1.5]}
       onCreated={({ scene }) => {
-        // HDRI is reflections-only support: tame it so paper never blows out.
-        scene.environmentIntensity = 0.8
+        // Studio env is reflections support: tame it so paper never blows out.
+        scene.environmentIntensity = 0.55
         // ?envrot=<radians> rotates the studio for A/B tests (default 0).
         // Puts a bright softbox behind camera-facing normals (acrylic faces).
         if (typeof window !== 'undefined') {
@@ -73,13 +73,16 @@ export default function HomeScene() {
         zIndex: 0,
       }}
     >
-      <color attach="background" args={['#dde1e5']} />
+      <color attach="background" args={['#dfe2e5']} />
 
       <CameraRig />
       <PerfProbe />
       <Lighting />
-      {/* Local CC0 studio HDRI (public/hdri) — reflections only, no CDN. */}
-      <Environment files={`${import.meta.env.BASE_URL}hdri/studio_small_09_1k.hdr`} background={false} />
+      {/* Reflection-controlled studio (Lightformer cards, frames=1 static).
+          Local CC0 HDRI public/hdri/studio_small_09_1k.hdr remains the
+          Blender-preview / CI-bake source — web runtime uses the designed
+          studio so acrylic/metal reflect intentional shapes, not a photo. */}
+      <StudioEnvironment />
       <InfinitePlane />
 
       <Suspense fallback={null}>

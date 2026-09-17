@@ -18,8 +18,11 @@
 - `src/store.ts`: hoveredObject, selectedCategory, selectedProject, flags
 
 ## Current phase
-PHASE WEB-RENDERING-FIX (browser parity for Writing materials).
-Geometry accepted. Problem = flat/washed-out shading in browser.
+PHASE HOMEPAGE-LOOKDEV (still-frame quality gate). Interaction frozen.
+Geometry accepted (GLB JSON audit 2026-09-17: writing 27 nodes/4 mats,
+architecture 13 nodes/6 mats + transmission extensions, research 13
+nodes/2 mats — bevels authored, no studio helpers shipped).
+Problem = shared generic material strategy + no reflection studio.
 
 ## What is working
 - Headless Blender pipeline (`tools/blender/*.py`, seeded, reproducible)
@@ -58,33 +61,43 @@ Geometry accepted. Problem = flat/washed-out shading in browser.
 - Fast previews: `scripts/render-model-previews.sh [asset]`
 - R3F scale: `METERS_TO_SCENE = 5.4`; no Draco (default loader lacks decoder).
 
-## Visual values (REFINEMENT pass, browser-verified 2026-09-17)
-- ToneMapping AgX (A/B winner), exposure 1.0, sRGB. ?tm=aces regression kept.
-- Key 1.6 upper-left (shadows 1024 + normalBias 0.02), fill 0.2,
-  RectAreaLight softbox 7x5 @ 2.5 upper-right (sheen/edge/acrylic shaping).
-  No ambient/hemisphere. HDRI env-only @ 0.8. ?envrot=<rad> test hook.
-- Floor #cfd2d4 metal 0.84 rough 0.48 envInt 2.6 + cm-scale micro-normal.
-  ContactShadows 0.16/1.6/scale10/far3/frames=1 + REAL dir shadows
-  (<Canvas shadows> was missing — the actual blob/shadow fix).
-- Cover physical #e0dcd3 r.68 sheen 0.28 + stochastic micro 0.06;
-  paper #f0ebe2 r.78 NO normal; spine #d9d3c6; ribbon #b3aa9c.
-- Arch solids → board #E7E5DE r.58 + micro 0.04; bevels baked 0.4–1.2mm.
-  Clear T0.92/r0.08/ior1.49/t0.015/atten; frosted T0.65/r0.28.
-  transparent flag ONLY while fading (was blackening transmission).
-- Research: warm paper + AO; TopSheet real print (verbatim PDF text,
-  canvas texture, V-flip corrected); steel clip metal 1.0 r 0.3.
-- Baked AO 1024 (Blender Cycles one-off): writing/research/architecture
-  atlas via lightmap_pack → public/textures/*_ao.png, aoMapIntensity ~0.5.
-- Labels: local OFL EB Garamond TTF; ref-driven (no useFrame setState);
-  camera parallax absolute (no +=) + epsilon snap; mobile check on mount.
-- Perf measured (?debug=materials): 115 calls, 11.4k tris, 72 geo,
-  16 tex, 26 prog — trivially smooth on real GPUs (SwiftShader fps ~1
-  is a software-renderer artifact, not a scene problem).
+## Visual values (LOOKDEV pass, 2026-09-17 — NOT yet browser-verified)
+- ToneMapping AgX (A/B winner), exposure 0.9 (was 1.0; MASTER_SPEC 0.85–0.95),
+  sRGB, background #dfe2e5. ?tm=aces + ?envrot= hooks kept.
+- Direct: key dir 1.5 upper-left (shadows 1024 + normalBias 0.02), fill 0.18.
+  RectAreaLight REMOVED (did not show in reflections). No ambient/hemisphere.
+- Studio: declarative Lightformer env (frames=1, res 256, static ~free):
+  A large left softbox 3.2, B overhead 2.0, C narrow strip 4.0 (acrylic
+  edges), D rear kicker 1.2, E dark flag 0.35, base #3a3d40. scene.envInt 0.55.
+- Floor: MeshPhysicalMaterial #d3d6d8 metal 0.8 + DIRECTIONAL brushed
+  normal/roughness maps (own generator, repeat 18) + anisotropy 0.5,
+  envInt 1.2. No longer shares any texture with cloth/board.
+- Families: cloth own fine normal amp 0.035 + sheen 0.3, paper NO normal
+  r.85, board #E8E6E1 r.76 own normal 0.025, steel r.32 envInt 1.0.
+- Acrylic per-name: clear T0.92/r0.07, frosted T0.6/r0.32, blue rebuilt as
+  muted physical T0.5, charcoal rebuilt as smoked T0.5, terracotta opaque r0.6.
+- ContactShadows 0.16/1.6/scale10/far3/frames=1 kept as supplement only.
+- Heavy work offloaded: `.github/workflows/assets.yml` (Blender headless →
+  GLB → gltf-transform meshopt → artifacts + Eevee previews in CI).
+  `LOOKDEV_AUDIT.md` is the per-file KEEP/REPLACE record.
+- NOTE: reference/final-home.png NOT in repo (only reference/ui-baseline.png);
+  composition locked to ui-baseline + MASTER_SPEC §2 until it lands.
+- Still true from prior pass: transparent flag ONLY while fading (was
+  blackening transmission); Research TopSheet real print (verbatim PDF text,
+  V-flip corrected); baked AO 1024 → public/textures/*_ao.png @ ~0.5;
+  labels local OFL EB Garamond, ref-driven; perf measured (?debug=materials)
+  115 calls / 11.4k tris — trivially smooth on real GPUs.
+- Sandbox had NO node runtime, so `tsc`/`build` did NOT run locally.
+  Verification gate = push → Actions (`deploy.yml` runs tsc + build) and
+  the lookdev screenshot comparison in `assets.yml` artifacts.
+  Local commit `0d865f5` (lookdev pass) created 2026-09-17; push from a
+  terminal with the GitHub SSH key (`git push origin main`).
 
 ## Next task
-PDF content extraction per PROJECT_CONTENT_MAP.md (project pages still
-placeholder). Optional follow-ups: ribbon close-up check, frosted-acrylic
-read on real GPU, code-split the 1.1 MB bundle.
+Lookdev screenshot review (CI `assets.yml` lookdev-previews vs
+reference/ui-baseline.png at 1920×1080 + 6 crops; judge rendered pixels
+per LOOKDEV_AUDIT.md fail conditions). Then: PDF content extraction per
+PROJECT_CONTENT_MAP.md (project pages still placeholder).
 
 ## Commands
 - Build/typecheck: `npx tsc --noEmit && npm run build`

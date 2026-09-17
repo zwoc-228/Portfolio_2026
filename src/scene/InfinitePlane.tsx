@@ -1,36 +1,56 @@
 import { useMemo } from 'react'
 import * as THREE from 'three'
-import { getMicroNormal } from './webMaterials'
+import { getBrushedNormal, getBrushedRoughness } from './webMaterials'
 
+/**
+ * Infinite display surface — satin / brushed aluminium.
+ * Directional grain (own brushed maps, never the shared micro noise),
+ * broad soft studio reflection, subtle anisotropy. Matte, never chrome.
+ */
 export default function InfinitePlane() {
-  // Extremely weak brushed micro-normal: 60-unit plane repeats the 256px
-  // map 60x so features land at ~cm scale. No visible tiling at distance.
-  const brushed = useMemo(() => {
-    const tex = getMicroNormal().clone()
-    tex.wrapS = THREE.RepeatWrapping
-    tex.wrapT = THREE.RepeatWrapping
-    tex.repeat.set(60, 60)
-    tex.needsUpdate = true
-    return tex
+  const material = useMemo(() => {
+    const normal = getBrushedNormal().clone()
+    normal.wrapS = THREE.RepeatWrapping
+    normal.wrapT = THREE.RepeatWrapping
+    // Large tiles → streaks read at desk scale, no visible tiling.
+    normal.repeat.set(18, 18)
+    normal.needsUpdate = true
+
+    const rough = getBrushedRoughness().clone()
+    rough.wrapS = THREE.RepeatWrapping
+    rough.wrapT = THREE.RepeatWrapping
+    rough.repeat.set(18, 18)
+    rough.needsUpdate = true
+
+    const mat = new THREE.MeshPhysicalMaterial({
+      color: '#d3d6d8',
+      metalness: 0.8,
+      // Absolute roughness lives in the map (~0.55–0.68).
+      roughness: 1.0,
+      roughnessMap: rough,
+      normalMap: normal,
+      normalScale: new THREE.Vector2(0.04, 0.04),
+      envMapIntensity: 1.2,
+    })
+    // Subtle directional response where the renderer supports it (r155+).
+    try {
+      mat.anisotropy = 0.5
+      mat.anisotropyRotation = 0
+    } catch {
+      /* older pipeline — maps + studio still carry the read */
+    }
+    return mat
   }, [])
 
   return (
     <group>
-      {/* Main floor - matte brushed aluminum */}
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
         position={[0, -0.5, 0]}
+        material={material}
         receiveShadow
       >
         <planeGeometry args={[60, 60]} />
-        <meshStandardMaterial
-          color="#cfd2d4"
-          metalness={0.84}
-          roughness={0.48}
-          envMapIntensity={2.6}
-          normalMap={brushed}
-          normalScale={new THREE.Vector2(0.03, 0.03)}
-        />
       </mesh>
     </group>
   )

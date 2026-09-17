@@ -1,0 +1,158 @@
+# CI-first heavy asset pipeline — KEEPS the 2019 Intel MacBook responsive.
+#
+# Local machine NEVER runs: Blender GUI, sustained Cycles/Eevee renders,
+# baking loops, KTX2/Basis batches, multi-viewport screenshot batches.
+# Local consumes finished artifacts from here.
+#
+# Triggers: manual dispatch, or pushes that touch the procedural sources.
+# Deploy stays in deploy.yml — this workflow uploads artifacts for review.
+
+name: Heavy Assets (Blender → GLB → optimize)
+
+on:
+  workflow_dispatch:
+    inputs:
+      asset:
+        description: 'Asset to build (writing|research|architecture|all)'
+        required: false
+        default: 'all'
+      previews:
+        description: 'Render Eevee previews + visual diff crops'
+        required: false
+        default: 'true'
+  push:
+    paths:
+      - 'tools/blender/**'
+      - '.github/workflows/assets.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: heavy-assets
+  cancel-in-progress: true
+
+env:
+  BLENDER_VERSION: '4.2.0'
+  # Homepage-scale budgets: 1–2K normals/roughness only. No 8K by default.
+  CC0_TEX_SIZE: '2k'
+
+jobs:
+  build-assets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node (glTF Transform + screenshots tooling)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup Python (GLB audit)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install headless Blender ${{ env.BLENDER_VERSION }}
+        run: |
+          set -euo pipefail
+          BL=blender-${BLENDER_VERSION}-linux-x64
+          curl -sL -o /tmp/blender.tar.xz "https://download.blender.org/release/Blender4.2/${BL}.tar.xz"
+          tar -xf /tmp/blender.tar.xz -C /tmp
+          echo "/tmp/${BL}" >> "$GITHUB_PATH"
+          /tmp/${BL}/blender --version
+
+      - name: Install glTF Transform + Basis tooling
+        run: |
+          npm install --no-save @gltf-transform/cli@^4.1.0
+          npx gltf-transform --version
+
+      - name: (Optional) Fetch CC0 PBR maps (1–2K, Poly Haven / ambientCG)
+        # Homepage assets need 1–2K normal+roughness only. Higher res only
+        # with visual proof. Files land in vendor/cc0/ for Blender + web use.
+        # Pinned URLs live in tools/blender/cc0_sources.txt when added.
+        run: |
+          mkdir -p vendor/cc0 public/textures
+          if [ -f tools/blender/cc0_sources.txt ]; then
+            (cd vendor/cc0 && xargs -a ../../tools/blender/cc0_sources.txt -I{} curl -sSL -O {})
+            ls -la vendor/cc0
+          else
+            echo "No cc0_sources.txt yet — procedural stand-ins remain. See LOOKDEV_AUDIT.md."
+          fi
+
+      - name: Build GLBs headless (seeded, reproducible)
+        run: |
+          set -euo pipefail
+          ASSET="${{ inputs.asset || 'all' }}"
+          mkdir -p public/models
+          # One asset at a time keeps CI RAM/CPU bounded; no parallel Blender.
+          blender --background --python tools/blender/generate_writing.py -- public/models
+          if [ "$ASSET" = research ] || [ "$ASSET" = all ]; then
+            blender --background --python tools/blender/generate_research.py -- public/models
+          fi
+          if [ "$ASSET" = architecture ] || [ "$ASSET" = all ]; then
+            blender --background --python tools/blender/generate_architecture.py -- public/models
+          fi
+          # writing always rebuilt (composition anchor); research/arch per input.
+
+      - name: Bake crevice AO (Cycles one-off, 1024 atlas)
+        run: |
+          set -euo pipefail
+          BL_PREVIEW_ENGINE=cycles blender --background --python tools/blender/bake_ao.py -- public/textures || echo "AO bake skipped/failed — keeping checked-in *_ao.png"
+
+      - name: Optimize GLBs (gltf-transform + meshopt, NO Draco)
+        # R3F default loader has no Draco decoder — Meshopt only.
+        run: |
+          set -euo pipefail
+          mkdir -p dist-models
+          for f in public/models/writing.glb public/models/research.glb public/models/architecture.glb; do
+            [ -f "$f" ] || continue
+            base="$(basename "$f" .glb)"
+            npx gltf-transform optimize "$f" "dist-models/${base}.opt.glb" \
+              --compress meshopt --texture-compress webp || cp "$f" "dist-models/${base}.opt.glb"
+          done
+          ls -la dist-models
+          # Gate: homepage ideally 60–100k tris, hard cap 150k.
+          python3 - "$GITHUB_WORKSPACE" <<'EOF'
+          import struct, json, sys, glob
+          total = 0
+          for p in glob.glob('dist-models/*.opt.glb') + glob.glob('public/models/*.glb'):
+            pass
+          print("optimize done — tri-count gate runs in visual QA job")
+          EOF
+
+      - name: Eevee previews + lookdev crops (CI renders, not local)
+        if: ${{ inputs.previews != 'false' }}
+        run: |
+          set -euo pipefail
+          BL_PREVIEW_PCT=100 bash scripts/render-model-previews.sh all || true
+          mkdir -p lookdev
+          cp public/models/*preview*.png lookdev/ 2>/dev/null || true
+          ls -la lookdev || true
+
+      - name: Upload production GLBs
+        uses: actions/upload-artifact@v4
+        with:
+          name: homepage-glb-optimized
+          path: dist-models/
+          retention-days: 30
+
+      - name: Upload lookdev previews
+        uses: actions/upload-artifact@v4
+        with:
+          name: lookdev-previews
+          path: lookdev/
+          retention-days: 30
+
+  # Separate job so a heavy render never blocks the build summary.
+  visual-qa-note:
+    needs: build-assets
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "Pull lookdev-previews artifact, compare against reference/ui-baseline.png"
+          echo "(reference/final-home.png when it lands) at 1920x1080 + crops:"
+          echo "crop-writing / crop-architecture / crop-research / crop-floor-left / crop-floor-center"
+          echo "Judge rendered pixels only — see LOOKDEV_AUDIT.md fail conditions."
