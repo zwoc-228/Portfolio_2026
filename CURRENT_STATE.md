@@ -3,8 +3,8 @@
 - Repository: https://github.com/zwoc-228/Portfolio_2026
 - Branch: `main` (deploy on push via `.github/workflows/deploy.yml`)
 - Live site: https://zwoc-228.github.io/Portfolio_2026/ (Vite `base: /Portfolio_2026/`)
-- Latest tested commit: `e7315ab` (docs; code identical to `801e12f` —
-  Actions green; live HTTP 200; live screenshot inspected 2026-09-17)
+- Latest commit: `e5c7461` (regen GLBs) — `f5c200e` (overlay rebuild) — `c4de87e` (reset arc + layout)
+- Actions: deploy.yml green after each push; assets.yml green (run 35261497666)
 
 ## Architecture overview
 - React 18 + Vite 5 + Three.js + R3F v8 + Drei v9 + Zustand + React Router
@@ -18,11 +18,30 @@
 - `src/store.ts`: hoveredObject, selectedCategory, selectedProject, flags
 
 ## Current phase
-PHASE HOMEPAGE-LOOKDEV (still-frame quality gate). Interaction frozen.
-Geometry accepted (GLB JSON audit 2026-09-17: writing 27 nodes/4 mats,
-architecture 13 nodes/6 mats + transmission extensions, research 13
-nodes/2 mats — bevels authored, no studio helpers shipped).
-Problem = shared generic material strategy + no reflection studio.
+REFERENCE-LOCKED RECONSTRUCTION (2026-09-17). User declared a strict
+5-phase plan: (1) home-layout.json ✅, (2) editorial overlay ✅,
+(3) 3D objects conform to master ✅, (4) camera/projection match —
+NEEDS VERIFICATION, (5) lighting/materials — PENDING.
+
+Phase 1: `reference/home-layout.json` — measured object bboxes, smile
+arc cubic, label/number anchors, DOM row positions.
+
+Phase 2: `src/components/ArcOverlay.tsx` — SVG smile arc + DOM labels
+(Writing/Architecture/Research) + tick marks + numbers (01/02/03).
+Reads from home-layout.json. Mounted in App.tsx DOM overlay (z-index 1).
+
+Phase 3: GLBs regenerated from updated Blender scripts (`e5c7461`):
+writing.glb 113KB (27 parts, thick covers 0.004m, ribbon exits -Y),
+architecture.glb 136KB (14 meshes, denser cluster), research.glb 205KB
+(9 sheets + curled top + paperclip, increased jitter).
+
+Phase 4: Camera at (0, 3.2, 6.5) fov=31, objects at x=-1.6/0/1.6.
+Projected cx ≈ 0.24/0.50/0.76 vs targets 0.235/0.51/0.815. Close
+but research ~5.5% off. NEEDS LIVE VERIFICATION — user must check
+the deployed site and report whether objects align with the overlay.
+
+Phase5: Lighting/materials (brushed floor, luminous left glow, soft
+shadows, material separation) — DO NOT START until Phase 4 confirmed.
 
 ## What is working
 - Headless Blender pipeline (`tools/blender/*.py`, seeded, reproducible)
@@ -100,10 +119,15 @@ Problem = shared generic material strategy + no reflection studio.
   `a8af4b3` + `b8eaf6b` pushed 2026-09-17 via `portfolio_2026_deploy` key.
 
 ## Next task
-Your manual role: view the deployed homepage, judge pixels, give
-art-direction feedback. QA bundle (`homepage-qa` artifact: frames + crops
-+ reference) appears under Actions → Heavy Assets after each push.
-Then: PDF content extraction per PROJECT_CONTENT_MAP.md.
+URGENT: User must check the live site (https://zwoc-228.github.io/Portfolio_2026/)
+and compare to reference/ui-baseline.png. Report:
+1. Do the3D objects (Writing/Architecture/Research) align with the
+   editorial overlay labels? Or are they offset?
+2. Is the arc visible and correctly shaped (shallow smile)?
+3. Are the tick marks and numbers visible?
+
+Based on feedback, adjust camera position/fov or object x-positions
+to match the target bboxes exactly. Then proceed to Phase 5 (lighting).
 
 ## Commands
 - Build/typecheck: `npx tsc --noEmit && npm run build`
