@@ -38,12 +38,13 @@ def build():
 
     B = common.new_box  # (name, dims=(x,y,h), loc, mat, bevel_width, ...)
 
-    # 1 base plinth (compact: reference cluster is tight)
-    B("Base", (0.17, 0.15, 0.006), (0, 0, 0.003), m_board, BEV)
+    # 1 base plinth (reference plinth spans ~0.234 viewport widths —
+    # needs a full 0.20m footprint at homepage distance)
+    B("Base", (0.22, 0.16, 0.006), (0, 0, 0.003), m_board, BEV)
     z0 = 0.006
 
-    # 2 tower, center-back
-    B("Tower", (0.042, 0.040, 0.100), (-0.01, 0.030, z0 + 0.050),
+    # 2 tower, center-back (reference tower top reaches y0=0.30)
+    B("Tower", (0.042, 0.040, 0.110), (-0.01, 0.030, z0 + 0.055),
       m_board, BEV)
     # 3 spanning slab: tower → terracotta, modest, just above mid height
     B("SpanSlab", (0.110, 0.045, 0.007), (0.020, 0.010, z0 + 0.060),

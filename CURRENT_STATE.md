@@ -35,13 +35,22 @@ writing.glb 113KB (27 parts, thick covers 0.004m, ribbon exits -Y),
 architecture.glb 136KB (14 meshes, denser cluster), research.glb 205KB
 (9 sheets + curled top + paperclip, increased jitter).
 
-Phase 4: Camera at (0, 3.2, 6.5) fov=31, objects at x=-1.6/0/1.6.
-Projected cx ≈ 0.24/0.50/0.76 vs targets 0.235/0.51/0.815. Close
-but research ~5.5% off. NEEDS LIVE VERIFICATION — user must check
-the deployed site and report whether objects align with the overlay.
+Phase 4: SOLVED 2026-09-18 (all 12 screen edges ≤0.6% vs master law).
+Root causes found: (1) lookdev master mirrored WRONG transforms/camera
+(pos/yaw/lens all drifted — previews validated a different composition);
+(2) axis-mapping sign error in master docstring (Blender -Y = R3F +Z near);
+(3) paperclip built on near edge, reference has it FAR — flipped to +Y;
+(4) ribbon pointed at camera, reference lies screen-left — re-routed -X;
+(5) whole trio ~25% too small on screen — per-object k 1.15/1.235/1.30;
+(6) plinth 0.17→0.22m, tower 0.100→0.110m, ribbon lengthened to reach x0.
+Canonical R3F: writing (-1.593,0,-0.098) yaw+0.18 k1.15 /
+arch (0.06,0,0.135) k1.235 / research (2.138,0,-0.237) yaw-0.185 k1.30.
+Camera untouched (0,3.2,6.5) fov31. Proof: lookdev/final-sbs.png +
+FRAME report in commit. research cx law corrected 0.815→0.806.
 
 Phase5: Lighting/materials (brushed floor, luminous left glow, soft
-shadows, material separation) — DO NOT START until Phase 4 confirmed.
+shadows, material separation) — DO NOT START until user confirms the
+composition screenshot AND explicitly lifts the Phase-5 hold.
 
 ## What is working
 - Headless Blender pipeline (`tools/blender/*.py`, seeded, reproducible)

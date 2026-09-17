@@ -66,9 +66,9 @@ def build():
     z += 0.0016
 
     # Paperclip: torus default lies in XY (flat on the stack) — correct as-is.
-    # Straddles the top edge (-Y): outer arm rides on the top sheet,
-    # inner arm tucks under it, bridge links them across the edge.
-    cx, cy = 0.055, -D / 2 + 0.0085
+    # Straddles the FAR top edge (+Y: maps to R3F -Z, away from camera —
+    # matches ui-baseline.png where the clip sits at the top/far edge).
+    cx, cy = 0.055, D / 2 - 0.0085
     common.new_torus("ClipOuter", 0.011, 0.0011, (cx, cy, z + 0.0012),
                      (0, 0, 0.0), m_steel)
     common.new_torus("ClipInner", 0.0068, 0.0009, (cx, cy, z - 0.0018),

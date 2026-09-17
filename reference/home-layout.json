@@ -3,21 +3,21 @@
     "reference": "reference/ui-baseline.png",
     "reference_size": [1672, 941],
     "units": "fractions of viewport (x: 0 left → 1 right, y: 0 top → 1 bottom, Y DOWN)",
-    "method": "grid-read ±0.01 cross-checked with automated luminance/gradient profiles; arc branches from background-subtracted residual medians, center from label straddle",
-    "note": "Object x-bounds: auto profiles include glow/shadow, grid edges used. Y-bounds: grid (auto rows saturate on bright floor)."
+    "method": "tight boxes: run-length filtered luminance profiles (writing T=222 verified by overlay, arch T=188, research T=195) + 2x/3x zoom crop reads; research cx corrected 0.815 -> 0.806",
+    "note": "Object boxes are GEOMETRIC edges (ribbon tip included in writing x0; shadows excluded — they are dark). R3F contact base must project to bottom; tops are geometry tops."
   },
   "objects": {
     "writing": {
-      "x0": 0.09, "y0": 0.37, "x1": 0.38, "y1": 0.60,
-      "cx": 0.235, "cy": 0.485, "w": 0.29, "h": 0.23, "bottom": 0.60
+      "x0": 0.075, "y0": 0.355, "x1": 0.378, "y1": 0.60,
+      "cx": 0.227, "cy": 0.478, "w": 0.303, "h": 0.245, "bottom": 0.60
     },
     "architecture": {
-      "x0": 0.40, "y0": 0.30, "x1": 0.62, "y1": 0.58,
-      "cx": 0.51, "cy": 0.44, "w": 0.22, "h": 0.28, "bottom": 0.58
+      "x0": 0.393, "y0": 0.30, "x1": 0.627, "y1": 0.58,
+      "cx": 0.51, "cy": 0.44, "w": 0.234, "h": 0.28, "bottom": 0.58
     },
     "research": {
-      "x0": 0.70, "y0": 0.36, "x1": 0.93, "y1": 0.62,
-      "cx": 0.815, "cy": 0.49, "w": 0.23, "h": 0.26, "bottom": 0.62
+      "x0": 0.683, "y0": 0.358, "x1": 0.928, "y1": 0.618,
+      "cx": 0.806, "cy": 0.488, "w": 0.245, "h": 0.26, "bottom": 0.618
     }
   },
   "arc": {
