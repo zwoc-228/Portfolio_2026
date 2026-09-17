@@ -35,13 +35,13 @@ def build():
 
     z = 0.0
     for i in range(9):
-        jx = random.uniform(-0.0022, 0.0022)
-        jy = random.uniform(-0.0022, 0.0022)
+        jx = random.uniform(-0.0033, 0.0033)
+        jy = random.uniform(-0.0033, 0.0033)
         w = W - i * 0.0006
         obj = common.new_box(f"Sheet{i:02d}", (w, D - i * 0.0006, SHEET_T),
                              (jx, jy, z + SHEET_T / 2),
                              m_paper, bevel_width=0.00015, bevel_segments=1)
-        obj.rotation_euler = (0, 0, random.uniform(-0.012, 0.012))
+        obj.rotation_euler = (0, 0, random.uniform(-0.018, 0.018))
         z += SHEET_T + 0.00012
 
     # Top sheet: subdivided plane (already XY, facing +Z) with slight

@@ -26,7 +26,7 @@ import materials
 SEED = 7
 W, D = 0.210, 0.260          # footprint X/Y (m)
 PAGE_W, PAGE_D = 0.204, 0.254
-COVER_T = 0.0028
+COVER_T = 0.0040             # premium hard cover with real thickness
 SLABS = 22
 SLAB_T = 0.0011
 
@@ -43,7 +43,7 @@ def build():
     z = 0.0
     # Back cover (bottom)
     common.new_box("BackCover", (W, D, COVER_T), (0, 0, z + COVER_T / 2),
-                   m_cover, bevel_width=0.0006)
+                   m_cover, bevel_width=0.0008)
     z += COVER_T
 
     # Page block: 22 jittered slabs, shifted +X so spine side stays flush
@@ -58,7 +58,7 @@ def build():
 
     # Front cover (top)
     common.new_box("FrontCover", (W, D, COVER_T), (0, 0, z + COVER_T / 2),
-                   m_cover, bevel_width=0.0006)
+                   m_cover, bevel_width=0.0008)
     z += COVER_T
 
     # Spine strip wrapping bound (-X) edge, full depth

@@ -48,25 +48,34 @@ def build():
     # 3 spanning slab: tower → terracotta, modest, just above mid height
     B("SpanSlab", (0.110, 0.045, 0.007), (0.020, 0.010, z0 + 0.060),
       m_board, bevel_width=0.0006)
-    # 4 low center block
+    # 4 low center block + thin cap slab (thickness hierarchy)
     B("CourtBlock", (0.030, 0.028, 0.030), (0.010, -0.010, z0 + 0.015),
       m_board, BEV)
+    B("SlabThin", (0.050, 0.030, 0.003), (0.010, -0.010, z0 + 0.0315),
+      m_board, bevel_width=0.0004)
+    # 4b vertical fin, back-left (slim vertical accent)
+    B("FinWall", (0.004, 0.050, 0.055), (-0.075, 0.045, z0 + 0.0275),
+      m_board, bevel_width=0.0004)
+    # 4c small solid cube, front-center (density between transparents)
+    B("BlockSmall", (0.018, 0.018, 0.018), (0.030, -0.045, z0 + 0.009),
+      m_board, bevel_width=0.0004)
     # 5 thin wall, right edge
     B("ThinWall", (0.006, 0.060, 0.045), (0.072, -0.010, z0 + 0.0225),
       m_board, bevel_width=0.0005)
-    # 6 clear acrylic, front-center-left (clear of solids)
-    B("AcrylicClear", (0.034, 0.030, 0.022), (-0.015, -0.038, z0 + 0.011),
+    # 6 clear acrylic, front-center (screen-overlaps CourtBlock behind it,
+    # 3D separation kept) — layered transparent read without intersection
+    B("AcrylicClear", (0.034, 0.030, 0.022), (-0.005, -0.042, z0 + 0.011),
       m_clear, bevel_width=0.0012)
     # 7a frosted lower + 7b frosted upper, stacked left (layer lines read)
     B("AcrylicFrosted", (0.036, 0.034, 0.050), (-0.058, -0.005, z0 + 0.025),
       m_frost, bevel_width=0.0012)
     B("AcrylicFrostedTall", (0.034, 0.032, 0.035), (-0.048, 0.022, z0 + 0.0675),
       m_frost, bevel_width=0.0012)
-    # 8 cantilever plate on 2 pilotis, back-right
-    B("PilotisA", (0.008, 0.008, 0.038), (0.030, 0.052, z0 + 0.019),
-      m_board, bevel_width=0.0004)
-    B("PilotisB", (0.008, 0.008, 0.038), (0.068, 0.052, z0 + 0.019),
-      m_board, bevel_width=0.0004)
+    # 8 cantilever plate on 2 slim pilotis, back-right
+    B("PilotisA", (0.006, 0.006, 0.038), (0.030, 0.052, z0 + 0.019),
+      m_board, bevel_width=0.0003)
+    B("PilotisB", (0.006, 0.006, 0.038), (0.068, 0.052, z0 + 0.019),
+      m_board, bevel_width=0.0003)
     B("Cantilever", (0.060, 0.035, 0.005), (0.052, 0.052, z0 + 0.041),
       m_board, bevel_width=0.0005)
     # 9-11 restrained accents: blue front-left, terracotta mid-right,

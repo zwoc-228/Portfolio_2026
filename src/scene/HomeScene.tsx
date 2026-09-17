@@ -7,7 +7,6 @@ import InfinitePlane from './InfinitePlane'
 import WritingObject from './WritingObject'
 import ArchitectureObject from './ArchitectureObject'
 import ResearchObject from './ResearchObject'
-import WorldLabels from './WorldLabels'
 import PerfProbe from './PerfProbe'
 import { useEffect, Suspense } from 'react'
 import { useStore } from '../store'
@@ -95,7 +94,9 @@ export default function HomeScene() {
         {!FOCUS_WRITING && <ArchitectureObject />}
         {!FOCUS_WRITING && <ResearchObject />}
       </Suspense>
-      {!FOCUS_WRITING && <WorldLabels />}
+      {/* Labels + guide arc are screen-space DOM now (ArcOverlay):
+          pixel-precise, no perspective guesswork. WorldLabels kept
+          on disk but unmounted. */}
 
       <ContactShadows
         position={[0, -0.499, 0]}

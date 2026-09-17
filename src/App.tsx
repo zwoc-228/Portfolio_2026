@@ -4,6 +4,7 @@ import Navigation from './components/Navigation'
 import Footer from './components/Footer'
 import CategoryMenu from './components/CategoryMenu'
 import DebugPanel from './components/DebugPanel'
+import ArcOverlay from './components/ArcOverlay'
 import ProjectPage from './pages/ProjectPage'
 
 export default function App() {
@@ -22,6 +23,7 @@ export default function App() {
         zIndex: 10,
         pointerEvents: 'none',
       }}>
+        <ArcOverlay />
         <Navigation />
         <Footer />
         <CategoryMenu />

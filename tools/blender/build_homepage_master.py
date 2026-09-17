@@ -78,7 +78,7 @@ def main():
     before = set(bpy.context.scene.objects)
     generate_research.build()
     research = _take_new(before)
-    _place(research, (1.25 / S, 0.5 / S, 0), 0.10)
+    _place(research, (1.25 / S, 0.5 / S, 0), 0.03)
 
     print(f"MASTER assembly: arch={len(arch)} writing={len(writing)} "
           f"research={len(research)}")
@@ -106,8 +106,8 @@ def main():
         bpy.data.objects.remove(studio_floor, do_unlink=True)
 
     sc = bpy.context.scene
-    sc.render.resolution_x = 960
-    sc.render.resolution_y = 540
+    sc.render.resolution_x = 1280
+    sc.render.resolution_y = 720
     sc.render.resolution_percentage = 100
     print(f"MASTER lens={cam.data.lens} sensor_fit={cam.data.sensor_fit} "
           f"sensor_width={cam.data.sensor_width}")
