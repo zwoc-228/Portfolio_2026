@@ -71,6 +71,16 @@ const viewports = [
   { name: 'macbook-1440', width: 1440, height: 900 },
 ]
 
+// Extra query string for A/B runs, e.g. --query "?tm=agx".
+const extraQuery = opt('--query', '')
+// Close crops for material inspection (1920-space regions, desktop only).
+const wantCrops = args.includes('--crops')
+const CROPS = [
+  { name: 'writing', x: 240, y: 470, width: 460, height: 270 },
+  { name: 'architecture', x: 670, y: 390, width: 560, height: 310 },
+  { name: 'research', x: 1200, y: 490, width: 440, height: 250 },
+]
+
 const browser = await chromium.launch()
 let failures = 0
 try {
@@ -86,7 +96,8 @@ try {
     page.on('response', (r) => {
       if (r.status() >= 400) problems.push(`HTTP ${r.status()}: ${r.url().slice(0, 120)}`)
     })
-    const url = `${base}?t=${Date.now()}`
+    const stamp = `${extraQuery}${extraQuery.includes('?') ? '&' : '?'}t=${Date.now()}`
+    const url = `${base}${stamp}`
     // domcontentloaded + fixed settle: networkidle never fires while
     // Troika streams its runtime font; WebGL needs seconds to compile.
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 })
@@ -101,6 +112,13 @@ try {
     const shot = path.join(outDir, `${vp.name}.png`)
     await page.screenshot({ path: shot, timeout: 120000 })
     console.log(`SHOT ${vp.name} -> ${shot}`)
+    if (wantCrops && vp.width === 1920) {
+      for (const c of CROPS) {
+        const cp = path.join(outDir, `crop-${c.name}.png`)
+        await page.screenshot({ path: cp, clip: c, timeout: 120000 })
+        console.log(`CROP ${c.name} -> ${cp}`)
+      }
+    }
     if (problems.length) {
       failures += problems.length
       console.log(`PROBLEMS ${vp.name}:`)

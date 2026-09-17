@@ -92,7 +92,7 @@ export default function WritingObject() {
     for (const m of fadeMats.current) {
       const mat = m as THREE.MeshStandardMaterial
       mat.opacity += (targetOpacity - mat.opacity) * delta * 4
-      mat.transparent = true
+      mat.transparent = mat.opacity < 0.999
     }
   })
 

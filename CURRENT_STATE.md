@@ -61,19 +61,32 @@ Geometry accepted. Problem = flat/washed-out shading in browser.
 - Fast previews: `scripts/render-model-previews.sh [asset]`
 - R3F scale: `METERS_TO_SCENE = 5.4`; no Draco (default loader lacks decoder).
 
-## Visual values (FINAL, browser-verified 2026-09-17)
-- ToneMapping: THREE.ACESFilmicToneMapping explicit, exposure 1.0, sRGB out
+## Visual values (FINAL refinement pass, browser-verified 2026-09-17)
+- ToneMapping: AgX wins A/B (cleaner rolloff, less haze); exposure 1.0,
+  sRGB out. ?tm=aces kept for regression.
 - Key directional 0.9 (upper-left, shadows 1024 + normalBias 0.02),
-  fill 0.2 right; ambient/hemisphere REMOVED; HDRI env-only @ 0.8
-- Floor: #d5d6d4, metal 0.72, rough 0.8, envMapIntensity 2.4
-- Sky/background: #dde1e5 (frame is ~100% floor; horizon above frame)
-- Cover #e3ded4 r.8 / paper #f2eee5 r.9 / spine #d9d3c6 r.72 /
-  ribbon #b3aa9c r.55; deterministic 256px linen DataTexture normal
-  (cover 0.12, paper 0.05, spine 0.1)
-- World labels: local OFL EB Garamond TTF (public/fonts), serif, subtle
-- DPR [1, 1.5]; GLB meshes cast+receive; fade mats collected once
-  (no per-frame traversal); ?debug=materials overlay (dev only)
-- writing.glb 112900 B / research.glb 205796 B / architecture.glb 103072 B
+  fill 0.2 right; NO ambient/hemisphere; HDRI env-only @ 0.8.
+  ?envrot=<rad> rotates studio for tests (default 0; ±1.5 tested,
+  default kept).
+- Floor: #cfd2d4, metal 0.82, rough 0.62, envMapIntensity 2.0.
+  ContactShadows: opacity 0.16, blur 1.6, scale 10, far 3 (blob gone).
+- Cover MeshPhysical #e0dcd3 r.8 + sheen 0.2/0.8/warm + stochastic
+  micro-normal 0.06 (sine linen REMOVED — it banded).
+- Paper #f0ebe2 r.92, NO normal map (geometry + micro-shadow carry it).
+- Spine #d9d3c6 r.72 + sheen 0.15; ribbon #b3aa9c r.55.
+- Arch solids → model-board #E7E5DE r.7 + micro 0.04 (near-white heuristic,
+  accents untouched); micro-bevels baked in Blender (0.4–1.2mm).
+- Clear acrylic: T 0.92, r 0.08, ior 1.49, thickness 0.015,
+  atten #f2f6f6/1.5m, envInt 1.6 — true transmission, transparent flag
+  ONLY while fading (transparent+transmission rendered near-black).
+- Frosted: T 0.65, r 0.28, ior 1.47, thickness 0.02.
+- Research paper = writing paper family; steel clip metal 1.0 r 0.3 env 1.2.
+- Labels: local OFL EB Garamond TTF (woff2 needs wasm decoder that fails
+  headless); serif, subtle.
+- DPR [1, 1.5]; fade mats collected once; ?debug=materials overlay.
+- Screenshots render under SwiftShader: real-GPU highlights will read
+  richer (esp. transmission). Local builds go to outside-OneDrive temp dir
+  (OneDrive renames dist/assets on rewrite); CI unaffected.
 
 ## Next task
 PDF content extraction per PROJECT_CONTENT_MAP.md (project pages still

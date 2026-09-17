@@ -1,26 +1,39 @@
-import { useRef, useState, Suspense, useEffect } from 'react'
+import { useRef, useState, Suspense, useEffect, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 import { useStore } from '../store'
 import { METERS_TO_SCENE } from './WritingObject'
 
+import { makeResearchPaperMaterial, makeSteelMaterial } from './webMaterials'
+
 // Base-aware URL: dev serves at /, Pages serves at /Portfolio_2026/.
 const MODEL_URL = `${import.meta.env.BASE_URL}models/research.glb`
 
 function ResearchModel({ fadeMats }: { fadeMats: React.MutableRefObject<THREE.Material[]> }) {
   const { scene } = useGLTF(MODEL_URL)
+  const paper = useMemo(() => makeResearchPaperMaterial(), [])
+  const steel = useMemo(() => makeSteelMaterial(), [])
 
   useEffect(() => {
-    // GLB materials (paper, steel clip) authored in Blender; keep them.
-    // Only set shadow flags and collect fade targets once.
+    // Collect-once: shadow flags; sheets share the warm paper family
+    // (no visible texture — geometry + micro-shadows carry it);
+    // metal parts share restrained steel. Printed diagrams (if any)
+    // keep their maps: only untitled/untextured mats are replaced.
     const seen = new Set<THREE.Material>()
     scene.traverse((child) => {
       if (!(child instanceof THREE.Mesh)) return
       child.castShadow = true
       child.receiveShadow = true
       const materials = Array.isArray(child.material) ? child.material : [child.material]
-      materials.forEach((m) => {
+      const next = materials.map((m) => {
+        const std = m as THREE.MeshStandardMaterial
+        if (std.metalness !== undefined && std.metalness > 0.5) return steel
+        if (std.map) return m // keep printed content untouched
+        return paper
+      })
+      child.material = Array.isArray(child.material) ? next : next[0]
+      next.forEach((m) => {
         if (!seen.has(m)) {
           seen.add(m)
           fadeMats.current.push(m)
@@ -30,7 +43,7 @@ function ResearchModel({ fadeMats }: { fadeMats: React.MutableRefObject<THREE.Ma
     return () => {
       fadeMats.current = []
     }
-  }, [scene, fadeMats])
+  }, [scene, fadeMats, paper, steel])
 
   return <primitive object={scene} />
 }
@@ -60,7 +73,7 @@ export default function ResearchObject() {
     for (const m of fadeMats.current) {
       const mat = m as THREE.MeshStandardMaterial
       mat.opacity += (targetOpacity - mat.opacity) * delta * 4
-      mat.transparent = true
+      mat.transparent = mat.opacity < 0.999
     }
   })
 

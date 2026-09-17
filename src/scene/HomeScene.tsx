@@ -15,6 +15,18 @@ import { useStore } from '../store'
 // All three procedural GLB objects restored.
 const FOCUS_WRITING = false
 
+// A/B gate 2026-09-17: AgX wins (cleaner highlight rolloff, better
+// separation, less haze than ACES). ?tm=aces kept for regression.
+function resolveToneMapping() {
+  if (typeof window !== 'undefined') {
+    const tm = new URLSearchParams(window.location.search).get('tm')
+    if (tm === 'aces') {
+      return THREE.ACESFilmicToneMapping
+    }
+  }
+  return THREE.AgXToneMapping
+}
+
 export default function HomeScene() {
   const setIsMobile = useStore((s) => s.setIsMobile)
   useEffect(() => {
@@ -33,7 +45,7 @@ export default function HomeScene() {
       }}
       gl={{
         antialias: true,
-        toneMapping: THREE.ACESFilmicToneMapping,
+        toneMapping: resolveToneMapping(),
         toneMappingExposure: 1.0,
         outputColorSpace: THREE.SRGBColorSpace,
       }}
@@ -41,6 +53,13 @@ export default function HomeScene() {
       onCreated={({ scene }) => {
         // HDRI is reflections-only support: tame it so paper never blows out.
         scene.environmentIntensity = 0.8
+        // ?envrot=<radians> rotates the studio for A/B tests (default 0).
+        // Puts a bright softbox behind camera-facing normals (acrylic faces).
+        if (typeof window !== 'undefined') {
+          const raw = new URLSearchParams(window.location.search).get('envrot')
+          const rot = raw !== null && isFinite(parseFloat(raw)) ? parseFloat(raw) : 0
+          scene.environmentRotation.y = rot
+        }
       }}
       style={{
         position: 'absolute',
@@ -68,10 +87,10 @@ export default function HomeScene() {
 
       <ContactShadows
         position={[0, -0.499, 0]}
-        opacity={0.28}
-        scale={24}
-        blur={3.0}
-        far={5}
+        opacity={0.16}
+        scale={10}
+        blur={1.6}
+        far={3}
         color="#7a8088"
       />
     </Canvas>
