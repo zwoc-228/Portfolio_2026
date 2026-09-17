@@ -1,13 +1,15 @@
 /**
- * Screen-space guide system, measured from reference/home-layout.json.
+ * Screen-space editorial overlay, measured from reference/ui-baseline.png.
  *
- * The reference arc is a shallow SMILE: ends high, center low
- * (centerLowY > sideY, Y grows downward). Built directly in screen
- * space — never inferred from 3D world positions.
+ * Components (all in viewport-fraction coordinates, Y DOWN):
+ *  1. Guide arc — shallow SMILE bezier, thin stroke, fades at both ends
+ *  2. Labels — italic serif ("Writing" / "Architecture" / "Research")
+ *  3. Ticks — short horizontal line above each number
+ *  4. Numbers — "01" / "02" / "03"
  *
- * Curve lives in SVG (fades at both ends, like the reference);
- * labels/numbers are DOM divs at % anchors (no aspect distortion).
- * pointer-events: none — purely editorial overlay above the canvas.
+ * Everything lives in this single component so the arc + labels + ticks
+ * form one coherent editorial system.  pointer-events: none — purely
+ * decorative overlay above the R3F canvas.
  */
 import layoutData from '../../reference/home-layout.json'
 
@@ -45,6 +47,7 @@ export default function ArcOverlay() {
         overflow: 'hidden',
       }}
     >
+      {/* ── Guide arc ─────────────────────────────────────────── */}
       <svg
         viewBox="0 0 100 100"
         preserveAspectRatio="none"
@@ -52,23 +55,26 @@ export default function ArcOverlay() {
       >
         <defs>
           <linearGradient id="arcFade" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#8a8f94" stopOpacity="0" />
-            <stop offset="12%" stopColor="#8a8f94" stopOpacity="0.45" />
-            <stop offset="50%" stopColor="#8a8f94" stopOpacity="0.5" />
-            <stop offset="88%" stopColor="#8a8f94" stopOpacity="0.45" />
-            <stop offset="100%" stopColor="#8a8f94" stopOpacity="0" />
+            <stop offset="0%"   stopColor="#9a9fa4" stopOpacity="0" />
+            <stop offset="10%"  stopColor="#9a9fa4" stopOpacity="0.35" />
+            <stop offset="50%"  stopColor="#9a9fa4" stopOpacity="0.45" />
+            <stop offset="90%"  stopColor="#9a9fa4" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="#9a9fa4" stopOpacity="0" />
           </linearGradient>
         </defs>
         <path
           d={ARC_PATH}
           fill="none"
           stroke="url(#arcFade)"
-          strokeWidth={1}
+          strokeWidth={0.7}
           vectorEffect="non-scaling-stroke"
         />
       </svg>
+
+      {/* ── Labels + ticks + numbers ──────────────────────────── */}
       {LABELS.map((l) => (
         <div key={l.key}>
+          {/* Label text */}
           <div
             style={{
               position: 'absolute',
@@ -77,36 +83,42 @@ export default function ArcOverlay() {
               transform: `translate(-50%, -50%) rotate(${l.rot}deg)`,
               fontFamily: 'Georgia, "Times New Roman", serif',
               fontStyle: 'italic',
-              fontSize: '2.5vh',
-              color: '#4d4d4d',
-              opacity: 0.8,
+              fontSize: 'clamp(14px, 1.8vw, 22px)',
+              color: '#4a4a4a',
+              opacity: 0.85,
               whiteSpace: 'nowrap',
+              letterSpacing: '0.02em',
             }}
           >
             {l.text}
           </div>
+
+          {/* Tick mark (short horizontal line above number) */}
+          <div
+            style={{
+              position: 'absolute',
+              left: `${l.nx}%`,
+              top: `calc(${l.ny}% - 0.8vh)`,
+              transform: 'translate(-50%, -50%)',
+              width: 'clamp(12px, 1.2vw, 20px)',
+              height: '1px',
+              background: '#9a9fa4',
+              opacity: 0.5,
+            }}
+          />
+
+          {/* Number */}
           <div
             style={{
               position: 'absolute',
               left: `${l.nx}%`,
               top: `${l.ny}%`,
               transform: 'translate(-50%, -50%)',
-              width: '2.2%',
-              height: '1px',
-              background: '#8a8f94',
-              opacity: 0.5,
-            }}
-          />
-          <div
-            style={{
-              position: 'absolute',
-              left: `${l.nx}%`,
-              top: `calc(${l.ny}% + 1.6vh)`,
-              transform: 'translate(-50%, -50%)',
               fontFamily: 'Georgia, "Times New Roman", serif',
-              fontSize: '1.4vh',
-              color: '#8a8f94',
-              opacity: 0.85,
+              fontSize: 'clamp(10px, 1.1vw, 14px)',
+              color: '#9a9fa4',
+              opacity: 0.8,
+              letterSpacing: '0.06em',
             }}
           >
             {l.number}
