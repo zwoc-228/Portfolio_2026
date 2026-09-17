@@ -55,7 +55,7 @@ export default function HomeScene() {
       onCreated={({ scene }) => {
         // Studio env is reflections support: strong enough to model the
         // whites, tame enough that paper never blows out.
-        scene.environmentIntensity = 0.75
+        scene.environmentIntensity = 0.95
         // Backdrop lift is INDEPENDENT of lighting: AgX crushes light-grey
         // backgrounds to murk, so the canvas backdrop gets its own gain
         // instead of raising exposure (which would blow paper out).
@@ -99,7 +99,7 @@ export default function HomeScene() {
           on disk but unmounted. */}
 
       <ContactShadows
-        position={[0, -0.499, 0]}
+        position={[0, 0.001, 0]}
         opacity={0.16}
         scale={10}
         blur={1.6}

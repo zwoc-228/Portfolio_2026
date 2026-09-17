@@ -149,7 +149,7 @@ export function getBrushedNormal(): THREE.DataTexture {
 
 let brushedRough: THREE.DataTexture | null = null
 /**
- * Floor roughness variation: absolute values ~0.55–0.68 (Uint 140–173).
+ * Floor roughness variation: absolute values ~0.38–0.54 (Uint 98–138).
  * Material.roughness stays 1.0 so the map IS the roughness.
  * Same directional stretch as the normal map.
  */
@@ -166,7 +166,7 @@ export function getBrushedRoughness(): THREE.DataTexture {
       const n =
         sampleLattice(g1, 6, size, x, sy) * 0.65 +
         sampleLattice(g2, 36, size, x, sy) * 0.35
-      const v = Math.max(0, Math.min(255, Math.round(156 + n * 17)))
+      const v = Math.max(0, Math.min(255, Math.round(118 + n * 20)))
       const i = (y * size + x) * 4
       data[i] = v
       data[i + 1] = v
@@ -203,20 +203,20 @@ export interface WritingMats {
 /** Family A + B: Writing notebook (assign per-mesh). */
 export function makeWritingMaterials(): WritingMats {
   const cover = new THREE.MeshPhysicalMaterial({
-    color: '#e1ddd2',
-    roughness: 0.72,
+    color: '#dbd5c7',
+    roughness: 0.7,
     metalness: 0,
     normalMap: getClothNormal(),
     // Disappears at homepage distance; lives in highlight breakup only.
     normalScale: new THREE.Vector2(0.035, 0.035),
-    sheen: 0.3,
-    sheenRoughness: 0.85,
+    sheen: 0.4,
+    sheenRoughness: 0.55,
     sheenColor: new THREE.Color('#f5f1e8'),
   })
   // Family B paper: NO normal map — identity from edges/layering/shadow.
   const paper = new THREE.MeshStandardMaterial({
-    color: '#f1ece3',
-    roughness: 0.85,
+    color: '#f5f1e8',
+    roughness: 0.9,
     metalness: 0,
   })
   const spine = new THREE.MeshPhysicalMaterial({
@@ -244,8 +244,8 @@ export function makeWritingMaterials(): WritingMats {
  */
 export function makeModelBoardMaterial(): THREE.MeshStandardMaterial {
   return new THREE.MeshStandardMaterial({
-    color: '#E8E6E1',
-    roughness: 0.76,
+    color: '#E9E7E2',
+    roughness: 0.78,
     metalness: 0,
     normalMap: getBoardNormal(),
     normalScale: new THREE.Vector2(0.025, 0.025),
@@ -255,8 +255,8 @@ export function makeModelBoardMaterial(): THREE.MeshStandardMaterial {
 /** Family B: warm paper shared by Writing + Research (no visible texture). */
 export function makeResearchPaperMaterial(): THREE.MeshStandardMaterial {
   return new THREE.MeshStandardMaterial({
-    color: '#f1ece3',
-    roughness: 0.85,
+    color: '#f5f1e8',
+    roughness: 0.9,
     metalness: 0,
   })
 }

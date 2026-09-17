@@ -23,14 +23,14 @@ export default function InfinitePlane() {
     rough.needsUpdate = true
 
     const mat = new THREE.MeshPhysicalMaterial({
-      color: '#d3d6d8',
-      metalness: 0.8,
-      // Absolute roughness lives in the map (~0.55–0.68).
+      color: '#d8dbde',
+      metalness: 0.85,
+      // Absolute roughness lives in the map (~0.38–0.54, satin).
       roughness: 1.0,
       roughnessMap: rough,
       normalMap: normal,
       normalScale: new THREE.Vector2(0.04, 0.04),
-      envMapIntensity: 1.6,
+      envMapIntensity: 1.9,
     })
     // Subtle directional response where the renderer supports it (r155+).
     try {
@@ -46,7 +46,7 @@ export default function InfinitePlane() {
     <group>
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, -0.5, 0]}
+        position={[0, 0, 0]}
         material={material}
         receiveShadow
       >

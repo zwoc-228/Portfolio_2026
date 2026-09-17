@@ -46,20 +46,23 @@ def _micro_bump(mat, bsdf, scale, strength):
 
 def paper():
     mat, bsdf = _principled("Paper")
-    _set(bsdf, "Base Color", _rgba("#F4F1EA"))
-    _set(bsdf, "Roughness", 0.93)
+    _set(bsdf, "Base Color", _rgba("#F5F1E8"))
+    _set(bsdf, "Roughness", 0.90)
     _set(bsdf, "Metallic", 0.0)
-    _set(bsdf, "Specular IOR Level", 0.35)
+    _set(bsdf, "Specular IOR Level", 0.4)
     _micro_bump(mat, bsdf, scale=900.0, strength=0.015)
     return mat
 
 
 def book_cover():
     mat, bsdf = _principled("BookCover")
-    _set(bsdf, "Base Color", _rgba("#E6E1D6"))
-    _set(bsdf, "Roughness", 0.78)
+    _set(bsdf, "Base Color", _rgba("#DBD5C7"))
+    _set(bsdf, "Roughness", 0.70)
     _set(bsdf, "Metallic", 0.0)
-    _set(bsdf, "Specular IOR Level", 0.4)
+    _set(bsdf, "Specular IOR Level", 0.45)
+    # Cloth grazing sheen (guarded: no-op where sockets absent).
+    _set(bsdf, "Sheen Weight", 0.4)
+    _set(bsdf, "Sheen Roughness", 0.55)
     _micro_bump(mat, bsdf, scale=320.0, strength=0.02)
     return mat
 
@@ -83,9 +86,10 @@ def ribbon():
 
 def model_board():
     mat, bsdf = _principled("ModelBoard")
-    _set(bsdf, "Base Color", _rgba("#E8E6E1"))
-    _set(bsdf, "Roughness", 0.8)
+    _set(bsdf, "Base Color", _rgba("#E9E7E2"))
+    _set(bsdf, "Roughness", 0.78)
     _set(bsdf, "Metallic", 0.0)
+    _set(bsdf, "Specular IOR Level", 0.4)
     _micro_bump(mat, bsdf, scale=500.0, strength=0.015)
     return mat
 
@@ -129,10 +133,15 @@ def smoked_acrylic():
 
 
 def brushed_aluminum():
+    """Lookdev floor: light satin aluminium (never chrome, never grey paint).
+
+    Reads via a large soft specular — needs the high-key area rig
+    (master), not exposure. Roughness ~0.38 keeps the left softbox as a
+    broad band instead of washing it out."""
     mat, bsdf = _principled("BrushedAluminum")
-    _set(bsdf, "Base Color", _rgba("#C9CED3"))
+    _set(bsdf, "Base Color", _rgba("#D6DBE0"))
     _set(bsdf, "Metallic", 1.0)
-    _set(bsdf, "Roughness", 0.42)
+    _set(bsdf, "Roughness", 0.32)
     nodes = mat.node_tree.nodes
     links = mat.node_tree.links
     # Fine directional brushing: stretched noise -> bump + slight roughness var.
@@ -143,7 +152,7 @@ def brushed_aluminum():
     mapping.inputs["Scale"].default_value = (1.0, 60.0, 1.0)
     links.new(mapping.outputs["Vector"], tex.inputs["Vector"])
     bump = nodes.new("ShaderNodeBump")
-    bump.inputs["Strength"].default_value = 0.03
+    bump.inputs["Strength"].default_value = 0.02
     bump.inputs["Distance"].default_value = 0.0002
     links.new(tex.outputs["Fac"], bump.inputs["Height"])
     links.new(bump.outputs["Normal"], bsdf.inputs["Normal"])

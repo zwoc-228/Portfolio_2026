@@ -109,10 +109,24 @@ def main():
         bpy.context.scene.eevee.taa_render_samples = 16
     except (AttributeError, TypeError):
         pass
+    # Eevee Next refracts transmissive acrylic ONLY with raytracing on
+    # (else transmission renders as flat diffuse). Tiny scene — affordable.
+    try:
+        bpy.context.scene.eevee.use_raytracing = True
+    except (AttributeError, TypeError):
+        pass
     # setup_studio adds its own preview floor — remove, keep MasterFloor.
     studio_floor = bpy.data.objects.get("StudioFloor")
     if studio_floor is not None:
         bpy.data.objects.remove(studio_floor, do_unlink=True)
+    # ...and its small 3-point rig — replaced by the high-key product rig
+    # below (large soft sources = soft grounding shadows + the broad
+    # left-floor softbox reflection the reference is built on).
+    for lamp_name in ("KeySoft", "FillRight", "TopSheen"):
+        lamp = bpy.data.objects.get(lamp_name)
+        if lamp is not None:
+            bpy.data.objects.remove(lamp, do_unlink=True)
+    _highkey_rig()
 
     sc = bpy.context.scene
     sc.render.resolution_x = 1672
@@ -126,6 +140,50 @@ def main():
     common.render_preview(path)
     print(f"MASTER preview: {path} in {time.time() - T0:.0f}s")
     return path
+
+
+def _highkey_rig():
+    """Product-photography area rig (Blender meters, Z-up).
+
+    A. tall left softbox → broad bright floor-left reflection + key.
+    B. overhead/front softbox → book/paper/board modelling.
+    C. narrow right-back strip → acrylic edge highlights.
+    D. low rear kicker → transparent/white separation.
+    Large sizes = soft, directional, grounded shadows (Eevee area shadows).
+    """
+    target = bpy.data.objects.get("FrameTarget")
+
+    def area(name, loc, power, size, color, size_y=None):
+        bpy.ops.object.light_add(type="AREA", location=loc)
+        lamp = bpy.context.active_object
+        lamp.name = name
+        lamp.data.energy = power
+        if size_y is None:
+            lamp.data.shape = "SQUARE"
+            lamp.data.size = size
+        else:
+            lamp.data.shape = "RECTANGLE"
+            lamp.data.size = size
+            lamp.data.size_y = size_y
+        lamp.data.color = color
+        if target is not None:
+            common.track_to(lamp, target)
+        return lamp
+
+    area("KeyLeft", (-1.9, 0.2, 1.2), 300.0, 1.6, (1.0, 0.96, 0.90),
+         size_y=4.5)
+    area("TopFront", (0.3, 0.9, 2.8), 70.0, 4.0, (1.0, 1.0, 1.0))
+    area("StripRight", (2.0, 0.7, 1.1), 170.0, 0.35, (1.0, 1.0, 1.0),
+         size_y=2.6)
+    area("KickerBack", (1.6, -1.4, 0.7), 30.0, 1.4, (0.90, 0.93, 1.0))
+    # Master-only: dim the HDRI ambient so the area rig (and its soft
+    # shadows) dominates instead of washing flat. Per-asset previews
+    # keep the shared 0.55 default.
+    wm = bpy.context.scene.world
+    if wm is not None and wm.use_nodes:
+        for n in wm.node_tree.nodes:
+            if n.type == "BACKGROUND":
+                n.inputs["Strength"].default_value = 0.35
 
 
 def report_framing(cam, groups):

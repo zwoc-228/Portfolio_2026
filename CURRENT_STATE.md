@@ -48,9 +48,17 @@ arch (0.06,0,0.135) k1.235 / research (2.138,0,-0.237) yaw-0.185 k1.30.
 Camera untouched (0,3.2,6.5) fov31. Proof: lookdev/final-sbs.png +
 FRAME report in commit. research cx law corrected 0.815→0.806.
 
-Phase5: Lighting/materials (brushed floor, luminous left glow, soft
-shadows, material separation) — DO NOT START until user confirms the
-composition screenshot AND explicitly lifts the Phase-5 hold.
+Phase5: FIRST PASS pushed (floor+studio+shadows+whites+acrylic-read).
+Blender lookdev: 5-area high-key rig (KeyLeft tall softbox, TopFront,
+StripRight, KickerBack; world 0.35), floor satin #D6DBE0 r0.32,
+raytracing ON (Eevee Next needs it for transmission), whites separated
+(cover #DBD5C7+sheen / board #E9E7E2 / paper #F5F1E8). Proof:
+lookdev/material-sbs.png + crop-{floor,writing,architecture,research}.png.
+Web port: floor y -0.5→0 (objects floated 0.5 above floor — grounding
+bug), ContactShadows →0.001, floor rough map →0.38-0.54/metal 0.85/
+envInt 1.9, envIntensity 0.75→0.95, matching white values.
+KNOWN STILL-FAILING: frosted/smoked acrylic read flat in Eevee;
+floor softbox band + grain not yet distinct; needs live verdict.
 
 ## What is working
 - Headless Blender pipeline (`tools/blender/*.py`, seeded, reproducible)
