@@ -9,7 +9,7 @@ Layout mirrors the R3F homepage EXACTLY (meters = scene units / 5.4):
   R3F (x, y, z) Y-up  →  Blender (x/5.4, -z/5.4, y/5.4); yaw about Z keeps
   the SAME sign as R3F yaw about Y. Camera R3F (0, 3.2, 6.5) fov31 →
   Blender (0, -1.2037, 0.5926), lens 36.5mm. Canonical (solved
-  2026-09-18, all screen edges ≤1% vs home-layout.json):
+  2026-09-17, all screen edges ≤1% vs home-layout.json):
   writing (-1.593, 0, -0.098) yaw +0.18 k1.15
   arch (0.06, 0, 0.135) k1.235 / research (2.138, 0, -0.237) yaw -0.185 k1.30
   ANY drift here invalidates the preview as web truth.

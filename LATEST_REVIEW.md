@@ -1,5 +1,16 @@
 # Yuanlong Portfolio — LATEST REVIEW CHECKPOINT
 
+**Refresh:** 2026-09-17 — Phase 4 composition SOLVED (all 12 screen edges
+≤0.6% vs `reference/home-layout.json`; proof: `lookdev/final-sbs.png`).
+Phase 5 first pass pushed (high-key area rig, satin floor, grounding
+shadows, white separation; proof: `lookdev/material-sbs.png` + crops).
+This zip bundles the current sources, GLBs, reference, and proof renders.
+Commit: `ae821b7` (see `git log`). Live: zwoc-228.github.io/Portfolio_2026/
+
+**Prior checkpoint (2026-09-16) below — historical.**
+
+---
+
 **Date:** 2026-09-16 (Blender Pipeline Pass)
 **Status:** Procedural GLB assets generated headless; Writing passes quality gate in preview renders. Browser verification still requires Node.js on the user's machine.
 

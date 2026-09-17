@@ -35,7 +35,7 @@ writing.glb 113KB (27 parts, thick covers 0.004m, ribbon exits -Y),
 architecture.glb 136KB (14 meshes, denser cluster), research.glb 205KB
 (9 sheets + curled top + paperclip, increased jitter).
 
-Phase 4: SOLVED 2026-09-18 (all 12 screen edges ≤0.6% vs master law).
+Phase 4: SOLVED 2026-09-17 (all 12 screen edges ≤0.6% vs master law).
 Root causes found: (1) lookdev master mirrored WRONG transforms/camera
 (pos/yaw/lens all drifted — previews validated a different composition);
 (2) axis-mapping sign error in master docstring (Blender -Y = R3F +Z near);
