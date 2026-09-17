@@ -1,13 +1,14 @@
-"""Generate public/models/architecture.glb — study-model collection (AFTER writing gate).
+"""Generate public/models/architecture.glb — study-model collection.
 
 BLENDER Z-UP: footprint in X/Y, heights in +Z.
 R3F applies the same SCALE=5.4 as writing.
 
-Composition (13 meshes, each with an architectural role):
-  base plinth / tower / spanning slab / courtyard block / thin wall /
-  clear acrylic bar / frosted acrylic block / cantilever plate + 2 pilotis /
-  blue + terracotta + charcoal accents. No random cubes; acrylic volumes
-  are kept clear of solid intersections.
+Composition (14 meshes, re-authored 2026-09-17 from ui-baseline.png):
+compact plinth cluster — tower center-back, stacked frosted volumes
+left, clear + muted-blue front-left, spanning slab tower→terracotta,
+terracotta mid-right, smoked-charcoal front-right, thin wall right,
+cantilever on 2 pilotis back-right. Real 2-4mm separations; acrylic
+volumes never intersect solids.
 
 Headless:
     blender --background --python tools/blender/generate_architecture.py -- public/models
@@ -37,41 +38,44 @@ def build():
 
     B = common.new_box  # (name, dims=(x,y,h), loc, mat, bevel_width, ...)
 
-    # 1 base plinth
-    B("Base", (0.34, 0.27, 0.006), (0, 0, 0.003), m_board, BEV)
+    # 1 base plinth (compact: reference cluster is tight)
+    B("Base", (0.17, 0.15, 0.006), (0, 0, 0.003), m_board, BEV)
     z0 = 0.006
 
-    # 2 tower, back-left
-    B("Tower", (0.045, 0.042, 0.115), (-0.085, -0.055, z0 + 0.0575),
+    # 2 tower, center-back
+    B("Tower", (0.042, 0.040, 0.100), (-0.01, 0.030, z0 + 0.050),
       m_board, BEV)
-    # 3 spanning slab: rests on tower, cantilevers over the block
-    B("SpanSlab", (0.20, 0.06, 0.008), (0.0, -0.02, z0 + 0.1195),
+    # 3 spanning slab: tower → terracotta, modest, just above mid height
+    B("SpanSlab", (0.110, 0.045, 0.007), (0.020, 0.010, z0 + 0.060),
       m_board, bevel_width=0.0006)
-    # 4 courtyard block, center
-    B("CourtBlock", (0.07, 0.062, 0.052), (0.03, 0.01, z0 + 0.026),
+    # 4 low center block
+    B("CourtBlock", (0.030, 0.028, 0.030), (0.010, -0.010, z0 + 0.015),
       m_board, BEV)
-    # 5 thin wall, right
-    B("ThinWall", (0.008, 0.078, 0.058), (0.115, -0.03, z0 + 0.029),
+    # 5 thin wall, right edge
+    B("ThinWall", (0.006, 0.060, 0.045), (0.072, -0.010, z0 + 0.0225),
       m_board, bevel_width=0.0005)
-    # 6 clear acrylic bar, front-left (clear of solids)
-    B("AcrylicClear", (0.055, 0.045, 0.04), (-0.075, 0.075, z0 + 0.02),
+    # 6 clear acrylic, front-center-left (clear of solids)
+    B("AcrylicClear", (0.034, 0.030, 0.022), (-0.015, -0.038, z0 + 0.011),
       m_clear, bevel_width=0.0012)
-    # 7 frosted acrylic block, front-right
-    B("AcrylicFrosted", (0.042, 0.036, 0.056), (0.075, 0.07, z0 + 0.028),
+    # 7a frosted lower + 7b frosted upper, stacked left (layer lines read)
+    B("AcrylicFrosted", (0.036, 0.034, 0.050), (-0.058, -0.005, z0 + 0.025),
+      m_frost, bevel_width=0.0012)
+    B("AcrylicFrostedTall", (0.034, 0.032, 0.035), (-0.048, 0.022, z0 + 0.0675),
       m_frost, bevel_width=0.0012)
     # 8 cantilever plate on 2 pilotis, back-right
-    B("PilotisA", (0.01, 0.01, 0.045), (0.055, -0.085, z0 + 0.0225),
+    B("PilotisA", (0.008, 0.008, 0.038), (0.030, 0.052, z0 + 0.019),
       m_board, bevel_width=0.0004)
-    B("PilotisB", (0.01, 0.01, 0.045), (0.135, -0.085, z0 + 0.0225),
+    B("PilotisB", (0.008, 0.008, 0.038), (0.068, 0.052, z0 + 0.019),
       m_board, bevel_width=0.0004)
-    B("Cantilever", (0.13, 0.06, 0.005), (0.095, -0.085, z0 + 0.048),
+    B("Cantilever", (0.060, 0.035, 0.005), (0.052, 0.052, z0 + 0.041),
       m_board, bevel_width=0.0005)
-    # 9-11 restrained accents
-    B("AccentBlue", (0.036, 0.03, 0.018), (-0.02, 0.085, z0 + 0.009),
+    # 9-11 restrained accents: blue front-left, terracotta mid-right,
+    # smoked charcoal front-right (dark translucent in reference)
+    B("AccentBlue", (0.034, 0.030, 0.028), (-0.060, -0.048, z0 + 0.014),
       m_blue, bevel_width=0.0005)
-    B("AccentTerracotta", (0.028, 0.024, 0.016), (0.145, 0.05, z0 + 0.008),
+    B("AccentTerracotta", (0.030, 0.028, 0.035), (0.055, 0.005, z0 + 0.0175),
       m_terra, bevel_width=0.0005)
-    B("AccentCharcoal", (0.024, 0.024, 0.014), (-0.115, -0.005, z0 + 0.007),
+    B("AccentCharcoal", (0.030, 0.028, 0.032), (0.058, -0.048, z0 + 0.016),
       m_char, bevel_width=0.0005)
 
 

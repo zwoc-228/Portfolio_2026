@@ -66,13 +66,15 @@ def build():
                    (-W / 2 + 0.004, 0, (z + 0.001) / 2),
                    m_spine, bevel_width=0.0008)
 
-    # Bookmark ribbon: bound near spine, tail out the tail edge (+Y),
-    # outer end drooping toward the floor.
-    common.new_box("RibbonInner", (0.012, 0.09, 0.0007),
-                   (-0.06, 0.085, COVER_T + 0.0004), m_ribbon)
-    tip = common.new_box("RibbonTip", (0.012, 0.035, 0.0007),
-                         (-0.06, 0.140, COVER_T + 0.0004), m_ribbon)
-    tip.rotation_euler = (-0.06, 0, 0)
+    # Bookmark ribbon: bound segment sandwiched mid page-block near the
+    # spine, tail emerging past the CAMERA-facing edge (-Y: maps to R3F +Z)
+    # to lie on the table. (+Y maps to R3F -Z, away — ribbon was invisible.)
+    page_top = z  # z == top of page block here
+    common.new_box("RibbonInner", (0.012, 0.10, 0.0006),
+                   (-0.06, -0.075, page_top - 0.004), m_ribbon)
+    tip = common.new_box("RibbonTip", (0.012, 0.05, 0.0006),
+                         (-0.06, -0.148, 0.0016), m_ribbon)
+    tip.rotation_euler = (-0.05, 0, 0)
 
     return z  # total height
 
