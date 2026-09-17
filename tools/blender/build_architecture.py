@@ -1,17 +1,19 @@
-"""Canonical CI pipeline for the architecture maquette: IMPORT, don't regen.
+"""Canonical CI pipeline for the architecture maquette.
 
-The checked-in public/models/architecture.glb IS the source geometry
-(design intent lives there — no generative rebuild). This script:
+Single source of truth: tools/blender/generate_architecture.py
+(deterministic, version-controlled re-author from ui-baseline.png).
+This module builds procedurally, then applies the production fix pass:
 
-  import GLB → apply transforms → recalc normals → angle-limited
-  micro-bevel where needed → UV validation → production material-slot
-  assignment (independent families, never one shared noise system)
-  → preview → GLB export.
+  normals → angle-limited micro-bevel → UV validation →
+  production material slots → preview → GLB export.
+
+Legacy import path (existing GLB as source) remains via explicit path
+arg for one-off comparisons — NOT the ship path.
 
 Headless (CI):
-    blender --background --python tools/blender/build_architecture.py -- public/models [source.glb]
+    blender --background --python tools/blender/build_architecture.py -- public/models [import-source.glb]
 
-`build()` (import-only, no export) is also the bake.py entry point.
+`build()` (no export) is also the bake.py entry point.
 """
 import math
 import os
@@ -24,10 +26,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__))))
 import common
 import materials
 import export_gltf
-
-HERE = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_SOURCE = os.path.join(HERE, "..", "..", "public", "models",
-                              "architecture.glb")
+import generate_architecture
 
 # Physically plausible manufactured-edge radius for maquette parts.
 BEVEL_WIDTH = 0.0004
@@ -61,21 +60,45 @@ def _activate(o):
 
 
 def load_source(path=None):
-    """Import the source GLB and bring every mesh to production hygiene."""
+    """Procedural build + production hygiene (ship path).
+
+    Pass an explicit GLB path for the legacy import comparison path.
+    Returns the mesh list (placed at origin — positioning is the
+    lookdev-master / web-layout concern, not the asset's).
+    """
+    if path:
+        return _import_source(path)
     common.clear_scene()
-    src = os.path.abspath(path or DEFAULT_SOURCE)
+    generate_architecture.build()
+    meshes = [o for o in bpy.context.scene.objects if o.type == "MESH"]
+    print(f"ARCH PROCEDURAL: {len(meshes)} meshes")
+    _fix(meshes)
+    return meshes
+
+
+def _import_source(path):
+    """Legacy path: import an existing GLB and hygienize it."""
+    common.clear_scene()
+    src = os.path.abspath(path)
     print(f"ARCH SOURCE: {src} ({os.path.getsize(src)} bytes)")
     bpy.ops.import_scene.gltf(filepath=src)
-
     meshes = [o for o in bpy.context.scene.objects if o.type == "MESH"]
     print(f"ARCH IMPORT: {len(meshes)} meshes")
-
     for o in meshes:
         _activate(o)
-        # 1. Bake transforms into the mesh (scene units are meters).
+        # Bake transforms into the mesh (scene units are meters).
         bpy.ops.object.transform_apply(location=True, rotation=True,
                                        scale=True)
-        # 2. Clean, outward-consistent normals.
+        o.select_set(False)
+    _fix(meshes)
+    return meshes
+
+
+def _fix(meshes):
+    """Shared production hygiene: normals, micro-bevel, UVs, slots."""
+    for o in meshes:
+        _activate(o)
+        # 1. Clean, outward-consistent normals.
         bpy.ops.object.mode_set(mode="EDIT")
         bpy.ops.mesh.select_all(action="SELECT")
         bpy.ops.mesh.normals_make_consistent(inside=False)
