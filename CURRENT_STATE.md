@@ -90,8 +90,10 @@ Problem = shared generic material strategy + no reflection studio.
 - Sandbox had NO node runtime, so `tsc`/`build` did NOT run locally.
   Verification gate = push → Actions (`deploy.yml` runs tsc + build) and
   the lookdev screenshot comparison in `assets.yml` artifacts.
-  Local commit `0d865f5` (lookdev pass) created 2026-09-17; push from a
-  terminal with the GitHub SSH key (`git push origin main`).
+  Local commit `a8af4b3` (lookdev pass) created + pushed 2026-09-17 via
+  the `portfolio_2026_deploy` SSH key (`d904048..a8af4b3 main->main`).
+  CI (`deploy.yml`: tsc + build + Pages deploy) runs on push — check the
+  Actions tab; if tsc flags anything, fix before visual review.
 
 ## Next task
 Lookdev screenshot review (CI `assets.yml` lookdev-previews vs
