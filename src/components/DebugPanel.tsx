@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { writingDebug } from '../scene/WritingObject'
+import { perfInfo } from '../scene/PerfProbe'
 
 /** Dev-only overlay. Enable with ?debug=materials. Hidden in production by default. */
 export default function DebugPanel() {
@@ -51,6 +52,9 @@ export default function DebugPanel() {
     }}>
       <div style={{ color: '#fff', marginBottom: '6px' }}>
         ?debug=materials — fps:{fps} dpr:{window.devicePixelRatio} vw:{window.innerWidth}x{window.innerHeight}
+      </div>
+      <div style={{ color: '#9fd49f', marginBottom: '6px' }}>
+        calls:{perfInfo.calls} tris:{perfInfo.triangles} geo:{perfInfo.geometries} tex:{perfInfo.textures} prog:{perfInfo.programs}
       </div>
       <table style={{ borderCollapse: 'collapse', width: '100%' }}>
         <thead>

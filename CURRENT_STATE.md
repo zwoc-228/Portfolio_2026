@@ -61,32 +61,28 @@ Geometry accepted. Problem = flat/washed-out shading in browser.
 - Fast previews: `scripts/render-model-previews.sh [asset]`
 - R3F scale: `METERS_TO_SCENE = 5.4`; no Draco (default loader lacks decoder).
 
-## Visual values (FINAL refinement pass, browser-verified 2026-09-17)
-- ToneMapping: AgX wins A/B (cleaner rolloff, less haze); exposure 1.0,
-  sRGB out. ?tm=aces kept for regression.
-- Key directional 0.9 (upper-left, shadows 1024 + normalBias 0.02),
-  fill 0.2 right; NO ambient/hemisphere; HDRI env-only @ 0.8.
-  ?envrot=<rad> rotates studio for tests (default 0; ±1.5 tested,
-  default kept).
-- Floor: #cfd2d4, metal 0.82, rough 0.62, envMapIntensity 2.0.
-  ContactShadows: opacity 0.16, blur 1.6, scale 10, far 3 (blob gone).
-- Cover MeshPhysical #e0dcd3 r.8 + sheen 0.2/0.8/warm + stochastic
-  micro-normal 0.06 (sine linen REMOVED — it banded).
-- Paper #f0ebe2 r.92, NO normal map (geometry + micro-shadow carry it).
-- Spine #d9d3c6 r.72 + sheen 0.15; ribbon #b3aa9c r.55.
-- Arch solids → model-board #E7E5DE r.7 + micro 0.04 (near-white heuristic,
-  accents untouched); micro-bevels baked in Blender (0.4–1.2mm).
-- Clear acrylic: T 0.92, r 0.08, ior 1.49, thickness 0.015,
-  atten #f2f6f6/1.5m, envInt 1.6 — true transmission, transparent flag
-  ONLY while fading (transparent+transmission rendered near-black).
-- Frosted: T 0.65, r 0.28, ior 1.47, thickness 0.02.
-- Research paper = writing paper family; steel clip metal 1.0 r 0.3 env 1.2.
-- Labels: local OFL EB Garamond TTF (woff2 needs wasm decoder that fails
-  headless); serif, subtle.
-- DPR [1, 1.5]; fade mats collected once; ?debug=materials overlay.
-- Screenshots render under SwiftShader: real-GPU highlights will read
-  richer (esp. transmission). Local builds go to outside-OneDrive temp dir
-  (OneDrive renames dist/assets on rewrite); CI unaffected.
+## Visual values (REFINEMENT pass, browser-verified 2026-09-17)
+- ToneMapping AgX (A/B winner), exposure 1.0, sRGB. ?tm=aces regression kept.
+- Key 1.6 upper-left (shadows 1024 + normalBias 0.02), fill 0.2,
+  RectAreaLight softbox 7x5 @ 2.5 upper-right (sheen/edge/acrylic shaping).
+  No ambient/hemisphere. HDRI env-only @ 0.8. ?envrot=<rad> test hook.
+- Floor #cfd2d4 metal 0.84 rough 0.48 envInt 2.6 + cm-scale micro-normal.
+  ContactShadows 0.16/1.6/scale10/far3/frames=1 + REAL dir shadows
+  (<Canvas shadows> was missing — the actual blob/shadow fix).
+- Cover physical #e0dcd3 r.68 sheen 0.28 + stochastic micro 0.06;
+  paper #f0ebe2 r.78 NO normal; spine #d9d3c6; ribbon #b3aa9c.
+- Arch solids → board #E7E5DE r.58 + micro 0.04; bevels baked 0.4–1.2mm.
+  Clear T0.92/r0.08/ior1.49/t0.015/atten; frosted T0.65/r0.28.
+  transparent flag ONLY while fading (was blackening transmission).
+- Research: warm paper + AO; TopSheet real print (verbatim PDF text,
+  canvas texture, V-flip corrected); steel clip metal 1.0 r 0.3.
+- Baked AO 1024 (Blender Cycles one-off): writing/research/architecture
+  atlas via lightmap_pack → public/textures/*_ao.png, aoMapIntensity ~0.5.
+- Labels: local OFL EB Garamond TTF; ref-driven (no useFrame setState);
+  camera parallax absolute (no +=) + epsilon snap; mobile check on mount.
+- Perf measured (?debug=materials): 115 calls, 11.4k tris, 72 geo,
+  16 tex, 26 prog — trivially smooth on real GPUs (SwiftShader fps ~1
+  is a software-renderer artifact, not a scene problem).
 
 ## Next task
 PDF content extraction per PROJECT_CONTENT_MAP.md (project pages still

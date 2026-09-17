@@ -1,6 +1,6 @@
 import { Text } from '@react-three/drei'
 import { useStore } from '../store'
-import { useState } from 'react'
+import { useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 
 interface LabelProps {
@@ -14,7 +14,11 @@ interface LabelProps {
 function WorldLabel({ text, number, position, rotation, category }: LabelProps) {
   const selectedCategory = useStore((s) => s.selectedCategory)
   const hoveredObject = useStore((s) => s.hoveredObject)
-  const [opacity, setOpacity] = useState(0.5)
+  // No React state in the frame loop: opacity lives in a ref and is
+  // written straight to the Troika material (fillOpacity is animatable).
+  const opacity = useRef(0.5)
+  const textRef = useRef<any>(null)
+  const numRef = useRef<any>(null)
   // Local OFL serif (public/fonts) — matches DOM serif + reference,
   // deterministic tracking, no runtime font CDN.
   const font = `${import.meta.env.BASE_URL}fonts/eb-garamond-400-latin.ttf`
@@ -23,29 +27,33 @@ function WorldLabel({ text, number, position, rotation, category }: LabelProps) 
     const isReceded = selectedCategory && selectedCategory !== category
     const isHovered = hoveredObject === category && !selectedCategory
     const target = isReceded ? 0.1 : isHovered ? 0.85 : 0.5
-    setOpacity((prev) => prev + (target - prev) * delta * 4)
+    opacity.current += (target - opacity.current) * delta * 4
+    if (textRef.current) textRef.current.fillOpacity = opacity.current
+    if (numRef.current) numRef.current.fillOpacity = opacity.current * 0.55
   })
 
   return (
     <group position={position} rotation={rotation}>
       <Text
+        ref={textRef}
         font={font}
         fontSize={0.12}
         color="#6a6a6a"
         anchorX="center"
         anchorY="middle"
-        fillOpacity={opacity}
+        fillOpacity={opacity.current}
       >
         {text}
       </Text>
       <Text
+        ref={numRef}
         font={font}
         fontSize={0.055}
         color="#a0a0a0"
         anchorX="center"
         anchorY="middle"
         position={[0, -0.09, 0]}
-        fillOpacity={opacity * 0.55}
+        fillOpacity={opacity.current * 0.55}
       >
         {number}
       </Text>

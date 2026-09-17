@@ -100,18 +100,18 @@ export function makeWritingMaterials(): WritingMats {
   const micro = getMicroNormal()
   const cover = new THREE.MeshPhysicalMaterial({
     color: '#e0dcd3',
-    roughness: 0.8,
+    roughness: 0.68,
     metalness: 0,
     normalMap: micro,
     normalScale: new THREE.Vector2(0.06, 0.06),
-    sheen: 0.2,
+    sheen: 0.28,
     sheenRoughness: 0.8,
     sheenColor: new THREE.Color('#f5f1e8'),
   })
   // Paper: same family as cover but lighter/warmer, NO visible texture.
   const paper = new THREE.MeshStandardMaterial({
     color: '#f0ebe2',
-    roughness: 0.92,
+    roughness: 0.78,
     metalness: 0,
   })
   const spine = new THREE.MeshPhysicalMaterial({
@@ -137,7 +137,7 @@ export function makeWritingMaterials(): WritingMats {
 export function makeModelBoardMaterial(): THREE.MeshStandardMaterial {
   return new THREE.MeshStandardMaterial({
     color: '#E7E5DE',
-    roughness: 0.7,
+    roughness: 0.58,
     metalness: 0,
     normalMap: getMicroNormal(),
     normalScale: new THREE.Vector2(0.04, 0.04),
@@ -148,7 +148,7 @@ export function makeModelBoardMaterial(): THREE.MeshStandardMaterial {
 export function makeResearchPaperMaterial(): THREE.MeshStandardMaterial {
   return new THREE.MeshStandardMaterial({
     color: '#f0ebe2',
-    roughness: 0.92,
+    roughness: 0.78,
     metalness: 0,
   })
 }
@@ -161,4 +161,37 @@ export function makeSteelMaterial(): THREE.MeshStandardMaterial {
     metalness: 1.0,
     envMapIntensity: 1.2,
   })
+}
+
+const aoCache = new Map<string, THREE.Texture>()
+
+/** Baked-Blender AO multiply. Async load; material updates when ready. */
+export function applyAOMap(
+  material: THREE.MeshStandardMaterial | THREE.MeshPhysicalMaterial,
+  url: string,
+  intensity = 0.55
+): void {
+  let tex = aoCache.get(url)
+  if (!tex) {
+    tex = new THREE.TextureLoader().load(url, () => {
+      material.needsUpdate = true
+    })
+    tex.colorSpace = THREE.NoColorSpace
+    aoCache.set(url, tex)
+  }
+  material.aoMap = tex
+  material.aoMapIntensity = intensity
+}
+
+/** aoMap samples the second UV set — mirror uv into uv1 (shared ref). */
+export function ensureUV1(geometry: THREE.BufferGeometry): void {
+  const attrs = geometry.attributes as Record<string, THREE.BufferAttribute>
+  if (attrs.uv && !attrs.uv1) {
+    geometry.setAttribute('uv1', attrs.uv)
+  }
+}
+
+/** Base-aware public URL helper. */
+export function publicUrl(p: string): string {
+  return `${import.meta.env.BASE_URL}${p.replace(/^\//, '')}`
 }

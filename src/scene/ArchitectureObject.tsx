@@ -5,7 +5,7 @@ import * as THREE from 'three'
 import { useStore } from '../store'
 import { METERS_TO_SCENE } from './WritingObject'
 
-import { makeModelBoardMaterial } from './webMaterials'
+import { makeModelBoardMaterial, applyAOMap, ensureUV1 } from './webMaterials'
 import { writingDebug } from './WritingObject'
 
 // Base-aware URL: dev serves at /, Pages serves at /Portfolio_2026/.
@@ -54,7 +54,11 @@ function tuneAcrylic(m: THREE.Material): void {
 
 function ArchitectureModel({ fadeMats }: { fadeMats: React.MutableRefObject<THREE.Material[]> }) {
   const { scene } = useGLTF(MODEL_URL)
-  const board = useMemo(() => makeModelBoardMaterial(), [])
+  const board = useMemo(() => {
+    const m = makeModelBoardMaterial()
+    applyAOMap(m, `${import.meta.env.BASE_URL}textures/architecture_ao.png`, 0.5)
+    return m
+  }, [])
 
   useEffect(() => {
     // Collect-once: shadow flags, model-board override for white solids,
@@ -64,6 +68,7 @@ function ArchitectureModel({ fadeMats }: { fadeMats: React.MutableRefObject<THRE
       if (!(child instanceof THREE.Mesh)) return
       child.castShadow = true
       child.receiveShadow = true
+      ensureUV1(child.geometry)
       const materials = Array.isArray(child.material) ? child.material : [child.material]
       const next = materials.map((m) => {
         const physical = m as THREE.MeshPhysicalMaterial

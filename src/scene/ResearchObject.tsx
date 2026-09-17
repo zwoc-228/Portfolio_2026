@@ -5,15 +5,27 @@ import * as THREE from 'three'
 import { useStore } from '../store'
 import { METERS_TO_SCENE } from './WritingObject'
 
-import { makeResearchPaperMaterial, makeSteelMaterial } from './webMaterials'
+import { makeResearchPaperMaterial, makeSteelMaterial, applyAOMap, ensureUV1 } from './webMaterials'
+import { getResearchPrint } from './researchPrint'
 
 // Base-aware URL: dev serves at /, Pages serves at /Portfolio_2026/.
 const MODEL_URL = `${import.meta.env.BASE_URL}models/research.glb`
 
 function ResearchModel({ fadeMats }: { fadeMats: React.MutableRefObject<THREE.Material[]> }) {
   const { scene } = useGLTF(MODEL_URL)
-  const paper = useMemo(() => makeResearchPaperMaterial(), [])
+  const paper = useMemo(() => {
+    const m = makeResearchPaperMaterial()
+    applyAOMap(m, `${import.meta.env.BASE_URL}textures/research_ao.png`, 0.5)
+    return m
+  }, [])
   const steel = useMemo(() => makeSteelMaterial(), [])
+  // Top sheet carries the real printed research content (own instance:
+  // print UVs must not share the AO atlas material).
+  const topPrint = useMemo(() => {
+    const m = makeResearchPaperMaterial()
+    m.map = getResearchPrint()
+    return m
+  }, [])
 
   useEffect(() => {
     // Collect-once: shadow flags; sheets share the warm paper family
@@ -25,11 +37,13 @@ function ResearchModel({ fadeMats }: { fadeMats: React.MutableRefObject<THREE.Ma
       if (!(child instanceof THREE.Mesh)) return
       child.castShadow = true
       child.receiveShadow = true
+      ensureUV1(child.geometry)
       const materials = Array.isArray(child.material) ? child.material : [child.material]
       const next = materials.map((m) => {
         const std = m as THREE.MeshStandardMaterial
         if (std.metalness !== undefined && std.metalness > 0.5) return steel
         if (std.map) return m // keep printed content untouched
+        if (child.name.startsWith('TopSheet')) return topPrint
         return paper
       })
       child.material = Array.isArray(child.material) ? next : next[0]

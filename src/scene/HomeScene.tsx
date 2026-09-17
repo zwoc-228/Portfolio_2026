@@ -8,6 +8,7 @@ import WritingObject from './WritingObject'
 import ArchitectureObject from './ArchitectureObject'
 import ResearchObject from './ResearchObject'
 import WorldLabels from './WorldLabels'
+import PerfProbe from './PerfProbe'
 import { useEffect, Suspense } from 'react'
 import { useStore } from '../store'
 
@@ -31,12 +32,14 @@ export default function HomeScene() {
   const setIsMobile = useStore((s) => s.setIsMobile)
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
+    check() // initial value on mount; listener covers resizes
     window.addEventListener('resize', check)
     return () => window.removeEventListener('resize', check)
   }, [setIsMobile])
 
   return (
     <Canvas
+      shadows
       camera={{
         fov: 31,
         near: 0.1,
@@ -73,6 +76,7 @@ export default function HomeScene() {
       <color attach="background" args={['#dde1e5']} />
 
       <CameraRig />
+      <PerfProbe />
       <Lighting />
       {/* Local CC0 studio HDRI (public/hdri) — reflections only, no CDN. */}
       <Environment files={`${import.meta.env.BASE_URL}hdri/studio_small_09_1k.hdr`} background={false} />
@@ -91,6 +95,7 @@ export default function HomeScene() {
         scale={10}
         blur={1.6}
         far={3}
+        frames={1}
         color="#7a8088"
       />
     </Canvas>

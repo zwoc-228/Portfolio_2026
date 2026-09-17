@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 import { useStore } from '../store'
-import { makeWritingMaterials } from './webMaterials'
+import { makeWritingMaterials, applyAOMap, ensureUV1, publicUrl } from './webMaterials'
 
 // Real-world meters (Blender) -> homepage scene units.
 export const METERS_TO_SCENE = 5.4
@@ -26,7 +26,15 @@ export const writingDebug: { rows: MeshDebugRow[] } = { rows: [] }
 
 function WritingModel({ fadeMats }: { fadeMats: React.MutableRefObject<THREE.Material[]> }) {
   const { scene } = useGLTF(MODEL_URL)
-  const mats = useMemo(() => makeWritingMaterials(), [])
+  const mats = useMemo(() => {
+    const m = makeWritingMaterials()
+    // Blender-baked crevice AO (page block, spine folds). Base color untouched.
+    const ao = publicUrl('textures/writing_ao.png')
+    applyAOMap(m.cover, ao, 0.5)
+    applyAOMap(m.paper, ao, 0.6)
+    applyAOMap(m.spine, ao, 0.5)
+    return m
+  }, [])
 
   useEffect(() => {
     const seen = new Set<THREE.Material>()
@@ -35,6 +43,7 @@ function WritingModel({ fadeMats }: { fadeMats: React.MutableRefObject<THREE.Mat
       if (!(child instanceof THREE.Mesh)) return
       child.castShadow = true
       child.receiveShadow = true
+      ensureUV1(child.geometry)
       const n = child.name
       let mat: THREE.Material = mats.paper
       if (n.startsWith('BackCover') || n.startsWith('FrontCover')) mat = mats.cover

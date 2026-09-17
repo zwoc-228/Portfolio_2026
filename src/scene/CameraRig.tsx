@@ -28,6 +28,9 @@ export default function CameraRig() {
   const mouse = useRef({ x: 0, y: 0 })
   const targetPos = useRef(defaultPos.clone())
   const targetLookAt = useRef(defaultTarget.clone())
+  // Lerped anchors. The camera is ASSIGNED from anchor + parallax offset
+  // every frame — parallax is never accumulated with +=.
+  const basePos = useRef(defaultPos.clone())
   const currentLookAt = useRef(defaultTarget.clone())
   const selectedCategory = useStore((s) => s.selectedCategory)
   const isTransitioning = useStore((s) => s.isTransitioning)
@@ -73,15 +76,28 @@ export default function CameraRig() {
     if (!ready) return
 
     const speed = 2.5
-    camera.position.lerp(targetPos.current, delta * speed)
-    currentLookAt.current.lerp(targetLookAt.current, delta * speed)
-
-    if (!reducedMotion && !isTransitioning && !isMobile) {
-      const parallaxX = mouse.current.x * 0.03
-      const parallaxY = mouse.current.y * 0.015
-      camera.position.x += parallaxX
-      camera.position.y += parallaxY
+    const k = Math.min(delta * speed, 1)
+    basePos.current.lerp(targetPos.current, k)
+    currentLookAt.current.lerp(targetLookAt.current, k)
+    // Epsilon guards: snap idle interpolation instead of creeping forever.
+    if (basePos.current.distanceToSquared(targetPos.current) < 1e-8) {
+      basePos.current.copy(targetPos.current)
     }
+    if (currentLookAt.current.distanceToSquared(targetLookAt.current) < 1e-8) {
+      currentLookAt.current.copy(targetLookAt.current)
+    }
+
+    let offsetX = 0
+    let offsetY = 0
+    if (!reducedMotion && !isTransitioning && !isMobile) {
+      offsetX = mouse.current.x * 0.03
+      offsetY = mouse.current.y * 0.015
+    }
+    camera.position.set(
+      basePos.current.x + offsetX,
+      basePos.current.y + offsetY,
+      basePos.current.z
+    )
 
     camera.lookAt(currentLookAt.current)
   })
