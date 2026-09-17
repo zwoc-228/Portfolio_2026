@@ -84,8 +84,8 @@ Problem = shared generic material strategy + no reflection studio.
 - NOT claimed: final-reference matching (reference/final-home.png still
   missing — QA bundles ui-baseline.png) and production PBR completion
   (tools/blender/cc0_sources.txt still absent — procedural stand-ins).
-- NOTE: reference/final-home.png NOT in repo (only reference/ui-baseline.png);
-  QA bundles ui-baseline.png as reference until it lands.
+- FINAL REFERENCE (declared 2026-09-17): `reference/ui-baseline.png`.
+  QA bundles it as `reference.png`. No `final-home.png` needed.
 - Direct: key dir 1.5 upper-left (shadows 1024 + normalBias 0.02), fill 0.18.
   RectAreaLight REMOVED (did not show in reflections). No ambient/hemisphere.
   ?tm=aces + ?envrot= hooks kept. `LOOKDEV_AUDIT.md` = per-file record.

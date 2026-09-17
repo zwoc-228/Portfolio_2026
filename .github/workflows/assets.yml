@@ -216,8 +216,8 @@ jobs:
           set -euo pipefail
           mkdir -p qa
           node scripts/visual-check.mjs --url "${{ inputs.qa_url || 'https://zwoc-228.github.io/Portfolio_2026/' }}" --crops --out qa
-          if [ -f reference/final-home.png ]; then cp reference/final-home.png qa/reference.png
-          else cp reference/ui-baseline.png qa/reference.png; fi
+          # reference/ui-baseline.png IS the final reference (declared 2026-09-17).
+          cp reference/ui-baseline.png qa/reference.png
           ls -la qa
 
       - name: Upload QA bundle (frames + crops + reference)

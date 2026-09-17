@@ -5,10 +5,9 @@
 > daemons. Heavy work → `.github/workflows/assets.yml` (CI-first).
 > Local = edit + `tsc` + `vite build` only.
 >
-> ReferenceNote: brief asks for `reference/final-home.png`. Repo contains
-> `reference/ui-baseline.png` only. Audit locks composition to
-> `ui-baseline.png` + `MASTER_SPEC.md §2–4` + `LOCKED_RULES.md` until
-> `final-home.png` lands. Do NOT redesign layout/taste.
+> Reference: `reference/ui-baseline.png` IS the final reference
+> (declared 2026-09-17). Audit locks composition to it + `MASTER_SPEC.md`
+> §2–4 + `LOCKED_RULES.md`. Do NOT redesign layout/taste.
 
 ## Geometry audit (lightweight GLB JSON parse, no Blender launch)
 
