@@ -3,8 +3,11 @@
 - Repository: https://github.com/zwoc-228/Portfolio_2026
 - Branch: `main` (deploy on push via `.github/workflows/deploy.yml`)
 - Live site: https://zwoc-228.github.io/Portfolio_2026/ (Vite `base: /Portfolio_2026/`)
-- Latest tested commit: `90e2980` "Blender GLB pipeline + GitHub Pages deploy"
-  (Actions: build success, deploy success, site HTTP 200, writing.glb 112900 B served)
+- Latest tested commit: `95d98b6` "Web rendering parity: explicit web materials,
+  simplified studio, all-GLB homepage" (Actions: build success, deploy
+  success; live HTTP 200; all assets byte-exact; live screenshot inspected
+  2026-09-17 — homepage matches reference: 3 GLB objects, serif labels,
+  high-key floor, zero console errors)
 
 ## Architecture overview
 - React 18 + Vite 5 + Three.js + R3F v8 + Drei v9 + Zustand + React Router
@@ -73,8 +76,9 @@ Geometry accepted. Problem = flat/washed-out shading in browser.
 - writing.glb 112900 B / research.glb 205796 B / architecture.glb 103072 B
 
 ## Next task
-Establish Playwright visual loop; fix web materials/lighting per gate;
-only then set FOCUS_WRITING=false.
+PDF content extraction per PROJECT_CONTENT_MAP.md (project pages still
+placeholder). Optional follow-ups: ribbon close-up check, frosted-acrylic
+read on real GPU, code-split the 1.1 MB bundle.
 
 ## Commands
 - Build/typecheck: `npx tsc --noEmit && npm run build`
