@@ -55,11 +55,11 @@ export default function HomeScene() {
       onCreated={({ scene }) => {
         // Studio env is reflections support: strong enough to model the
         // whites, tame enough that paper never blows out.
-        scene.environmentIntensity = 1.1
+        scene.environmentIntensity = 1.35
         // Backdrop lift is INDEPENDENT of lighting: AgX crushes light-grey
         // backgrounds to murk, so the canvas backdrop gets its own gain
         // instead of raising exposure (which would blow paper out).
-        scene.backgroundIntensity = 1.0
+        scene.backgroundIntensity = 1.08
         // ?envrot=<radians> rotates the studio for A/B tests (default 0).
         // Puts a bright softbox behind camera-facing normals (acrylic faces).
         if (typeof window !== 'undefined') {
@@ -77,10 +77,12 @@ export default function HomeScene() {
         zIndex: 0,
       }}
     >
-      <color attach="background" args={['#c9ced3']} />
+      <color attach="background" args={['#d7dadd']} />
 
       <CameraRig />
       <PerfProbe />
+      <ambientLight intensity={0.75} color="#eef1f3" />
+      <hemisphereLight args={['#ffffff', '#aeb7bf', 0.55]} />
       <Lighting />
       {/* Reflection-controlled studio (Lightformer cards, frames=1 static).
           Local CC0 HDRI public/hdri/studio_small_09_1k.hdr remains the

@@ -108,9 +108,9 @@ export default function WritingObject() {
   return (
     <group
       ref={groupRef}
-      position={[-1.593, 0, -0.098]}
-      rotation={[0, 0.27, 0]}
-      scale={METERS_TO_SCENE * 1.15}
+      position={[-1.51, 0, 0.20]}
+      rotation={[0, 0.18, 0]}
+      scale={METERS_TO_SCENE * 1.11}
       onPointerOver={(e) => {
         e.stopPropagation()
         setHovered(true)

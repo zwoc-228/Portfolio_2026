@@ -245,8 +245,12 @@ export default function ArchitectureObject() {
   return (
     <group
       ref={groupRef}
-      position={[0.06, 0, 0.135]}
-      scale={METERS_TO_SCENE * 1.235}
+      position={[0.06, 0, 1.10]}
+      scale={[
+        METERS_TO_SCENE * 1.12,
+        METERS_TO_SCENE * 0.90,
+        METERS_TO_SCENE * 1.12,
+      ]}
       onPointerOver={(e) => {
         e.stopPropagation()
         setHovered(true)
