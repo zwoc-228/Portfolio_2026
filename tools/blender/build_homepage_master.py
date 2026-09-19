@@ -77,17 +77,20 @@ def main():
     before = set(bpy.context.scene.objects)
     generate_architecture.build()
     arch = _take_new(before)
-    _xform(arch, (0.06 / S, -0.135 / S, 0), 0.0, 1.235)
+    _xform(arch, (0.06 / S, -1.10 / S, 0), 0.0, 1.12)
+    for o in arch:
+        if hasattr(o, "scale"):
+            o.scale.z *= 0.90
 
     before = set(bpy.context.scene.objects)
     generate_writing.build()
     writing = _take_new(before)  # keep all (incl. ribbon)
-    _xform(writing, (-1.593 / S, 0.098 / S, 0), 0.27, 1.15)
+    _xform(writing, (-1.51 / S, -0.20 / S, 0), 0.18, 1.11)
 
     before = set(bpy.context.scene.objects)
     generate_research.build()
     research = _take_new(before)
-    _xform(research, (2.138 / S, 0.237 / S, 0), -0.26, 1.30)
+    _xform(research, (2.098 / S, -0.15 / S, 0), -0.185, 1.24)
 
     print(f"MASTER assembly: arch={len(arch)} writing={len(writing)} "
           f"research={len(research)}")
@@ -183,7 +186,7 @@ def _highkey_rig():
     if wm is not None and wm.use_nodes:
         for n in wm.node_tree.nodes:
             if n.type == "BACKGROUND":
-                n.inputs["Strength"].default_value = 0.6
+                n.inputs["Strength"].default_value = 0.9
 
 
 def report_framing(cam, groups):

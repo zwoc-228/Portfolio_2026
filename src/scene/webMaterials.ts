@@ -212,12 +212,16 @@ export function makeWritingMaterials(): WritingMats {
     sheen: 0.4,
     sheenRoughness: 0.55,
     sheenColor: new THREE.Color('#f5f1e8'),
+    emissive: new THREE.Color('#6b6256'),
+    emissiveIntensity: 0.035,
   })
   // Family B paper: NO normal map — identity from edges/layering/shadow.
   const paper = new THREE.MeshStandardMaterial({
     color: '#faf7ef',
     roughness: 0.82,
     metalness: 0,
+    emissive: new THREE.Color('#777268'),
+    emissiveIntensity: 0.025,
   })
   const spine = new THREE.MeshPhysicalMaterial({
     color: '#e1dbcf',
@@ -228,11 +232,15 @@ export function makeWritingMaterials(): WritingMats {
     sheen: 0.15,
     sheenRoughness: 0.85,
     sheenColor: new THREE.Color('#f5f1e8'),
+    emissive: new THREE.Color('#6b6256'),
+    emissiveIntensity: 0.03,
   })
   const ribbon = new THREE.MeshStandardMaterial({
     color: '#c2b7a7',
     roughness: 0.52,
     metalness: 0,
+    emissive: new THREE.Color('#777268'),
+    emissiveIntensity: 0.025,
   })
   return { cover, paper, spine, ribbon }
 }
@@ -249,6 +257,8 @@ export function makeModelBoardMaterial(): THREE.MeshStandardMaterial {
     metalness: 0,
     normalMap: getBoardNormal(),
     normalScale: new THREE.Vector2(0.025, 0.025),
+    emissive: new THREE.Color('#77746e'),
+    emissiveIntensity: 0.028,
   })
 }
 

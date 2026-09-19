@@ -88,9 +88,9 @@ export default function ResearchObject() {
   return (
     <group
       ref={groupRef}
-      position={[2.138, 0, -0.237]}
-      rotation={[0, -0.26, 0]}
-      scale={METERS_TO_SCENE * 1.3}
+      position={[2.098, 0, 0.15]}
+      rotation={[0, -0.185, 0]}
+      scale={METERS_TO_SCENE * 1.24}
       onPointerOver={(e) => {
         e.stopPropagation()
         setHovered(true)
