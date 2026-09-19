@@ -43,8 +43,8 @@ def build():
     B("Base", (0.22, 0.16, 0.006), (0, 0, 0.003), m_board, BEV)
     z0 = 0.006
 
-    # 2 tower, center-back (reference tower top reaches y0=0.30)
-    B("Tower", (0.042, 0.040, 0.110), (-0.01, 0.030, z0 + 0.055),
+    # 2 tower, center-back: a clean monolithic vertical anchor.
+    B("Tower", (0.040, 0.040, 0.118), (-0.01, 0.030, z0 + 0.059),
       m_board, BEV)
     # 3 spanning slab: tower → terracotta, modest, just above mid height
     B("SpanSlab", (0.110, 0.045, 0.007), (0.020, 0.010, z0 + 0.060),
@@ -65,13 +65,17 @@ def build():
       m_board, bevel_width=0.0005)
     # 6 clear acrylic, front-center (screen-overlaps CourtBlock behind it,
     # 3D separation kept) — layered transparent read without intersection
-    B("AcrylicClear", (0.034, 0.030, 0.022), (-0.005, -0.042, z0 + 0.011),
+    B("AcrylicClear", (0.038, 0.032, 0.026), (-0.005, -0.042, z0 + 0.013),
       m_clear, bevel_width=0.0012)
     # 7a frosted lower + 7b frosted upper, stacked left (layer lines read)
-    B("AcrylicFrosted", (0.036, 0.034, 0.050), (-0.058, -0.005, z0 + 0.025),
+    B("AcrylicFrosted", (0.038, 0.036, 0.052), (-0.058, -0.005, z0 + 0.026),
       m_frost, bevel_width=0.0012)
-    B("AcrylicFrostedTall", (0.034, 0.032, 0.035), (-0.048, 0.022, z0 + 0.0675),
+    B("AcrylicFrostedTall", (0.035, 0.033, 0.039), (-0.048, 0.022, z0 + 0.0695),
       m_frost, bevel_width=0.0012)
+    # 7c shallow clear canopy: gives the maquette a recognizable
+    # architectural threshold rather than a pile of isolated cubes.
+    B("GlassCanopy", (0.050, 0.034, 0.010), (-0.018, 0.044, z0 + 0.080),
+      m_clear, bevel_width=0.0009)
     # 8 cantilever plate on 2 slim pilotis, back-right
     B("PilotisA", (0.006, 0.006, 0.038), (0.030, 0.052, z0 + 0.019),
       m_board, bevel_width=0.0003)
