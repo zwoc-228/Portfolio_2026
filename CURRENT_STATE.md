@@ -10,9 +10,9 @@
 - Completed work: major visual correction pass raised scene exposure and direct fill, restored the satin-metal floor reflection, brightened paper/board families, and increased Writing/Research group yaw to match the reference angle.
 - Completed work: rebuilt the realtime presentation path with ambient/hemisphere fill, physically readable paper/board emissive lift, reference-matched major object placement, and nonuniform architecture scaling. Final master frame boxes: Writing 0.080–0.382 / 0.363–0.610, Architecture 0.394–0.627 / 0.284–0.584, Research 0.692–0.934 / 0.336–0.601.
 - Unresolved problems: live browser build cannot be run locally because npm/Node is unavailable; GitHub Pages deployment is required for the final website check.
-- Latest commit SHA: `6986bca` (rebuild pass uncommitted).
+- Latest commit SHA: `39d3df5` (rebuild pass; merged to `main` as `1e866e6`).
 - Current branch: `zwoc-228-work-dashboard`.
-- Next action: deploy this rebuild and review the opened website against `reference/comparison-last-v-new.png`.
+- Next action: review the opened rebuilt website against `reference/comparison-last-v-new.png`.
 
 - Repository: https://github.com/zwoc-228/Portfolio_2026
 - Branch: `main` (deploy on push via `.github/workflows/deploy.yml`)
