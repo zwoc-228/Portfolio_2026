@@ -40,25 +40,29 @@ function toColoredAcrylic(
     return new THREE.MeshPhysicalMaterial({
       color: base,
       metalness: 0,
-      transmission: 0.5,
-      roughness: 0.3,
+      transmission: 0.36,
+      roughness: 0.22,
+      clearcoat: 0.28,
+      clearcoatRoughness: 0.22,
       ior: 1.47,
       thickness: 0.03,
       attenuationColor: new THREE.Color('#9fb9c8'),
-      attenuationDistance: 0.2,
+      attenuationDistance: 0.1,
       envMapIntensity: 0.9,
     })
   }
   return new THREE.MeshPhysicalMaterial({
     color: '#4a5055',
     metalness: 0,
-    transmission: 0.5,
-    roughness: 0.18,
+    transmission: 0.32,
+    roughness: 0.16,
+    clearcoat: 0.24,
+    clearcoatRoughness: 0.2,
     ior: 1.49,
     thickness: 0.03,
     attenuationColor: new THREE.Color('#3a4046'),
-    attenuationDistance: 0.12,
-    envMapIntensity: 1.2,
+    attenuationDistance: 0.055,
+    envMapIntensity: 1.05,
   })
 }
 
@@ -87,23 +91,27 @@ function tuneAcrylic(m: THREE.Material, nodeName: string): void {
     mat.envMapIntensity = 0.9
   } else if (name.includes('blue')) {
     // Family G muted blue acrylic: low-saturation architectural, controlled.
-    mat.transmission = 0.5
-    mat.roughness = 0.3
+    mat.transmission = 0.36
+    mat.roughness = 0.22
+    mat.clearcoat = 0.28
+    mat.clearcoatRoughness = 0.22
     mat.ior = 1.47
     mat.thickness = 0.03
     mat.attenuationColor = new THREE.Color('#9fb9c8')
-    mat.attenuationDistance = 0.2
+    mat.attenuationDistance = 0.1
     mat.envMapIntensity = 0.9
   } else if (name.includes('charcoal') || name.includes('smok')) {
     // Family F smoked acrylic: transparent + dense, never opaque black.
-    mat.transmission = 0.5
-    mat.roughness = 0.18
+    mat.transmission = 0.32
+    mat.roughness = 0.16
+    mat.clearcoat = 0.24
+    mat.clearcoatRoughness = 0.2
     mat.ior = 1.49
     mat.thickness = 0.03
     mat.color = new THREE.Color('#4a5055')
     mat.attenuationColor = new THREE.Color('#3a4046')
-    mat.attenuationDistance = 0.12
-    mat.envMapIntensity = 1.2
+    mat.attenuationDistance = 0.055
+    mat.envMapIntensity = 1.05
   } else if (name.includes('terracotta') || name.includes('terra')) {
     // Muted terracotta accent stays opaque architectural solid.
     mat.transmission = 0
