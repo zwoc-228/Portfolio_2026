@@ -6,7 +6,7 @@
 - Completed work: consolidated final-effect pass brightening the neutral backdrop, strengthening soft grounding shadows, refining key-light lift, and tightening acrylic attenuation for clearer blue/smoked reads.
 - Completed work: reference correction pass restored the darker satin-floor/high-key balance, reduced background wash, added restrained acrylic clearcoat/attenuation, and increased research-stack AO for readable sheet layering.
 - Unresolved problems: frosted/smoked acrylic still reads flat in Eevee; floor softbox band/grain remain weak; live post-arc-removal comparison is still pending.
-- Latest commit SHA: `3522f0a` (reference correction pass uncommitted).
+- Latest commit SHA: `bea224c` (consolidated reference correction pass).
 - Current branch: `zwoc-228-work-dashboard`.
 - Next action: compare the live site against `reference/ui-baseline.png`, checking label alignment, object bboxes, and phase-5-only lighting/material issues.
 
