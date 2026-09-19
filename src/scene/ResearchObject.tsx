@@ -14,7 +14,7 @@ function ResearchModel({ fadeMats }: { fadeMats: React.MutableRefObject<THREE.Ma
   const { scene } = useGLTF(MODEL_URL)
   const paper = useMemo(() => {
     const m = makeResearchPaperMaterial()
-    applyAOMap(m, `${import.meta.env.BASE_URL}textures/research_ao.png`, 0.5)
+    applyAOMap(m, `${import.meta.env.BASE_URL}textures/research_ao.png`, 0.68)
     return m
   }, [])
   const steel = useMemo(() => makeSteelMaterial(), [])

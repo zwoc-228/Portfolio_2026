@@ -1,5 +1,15 @@
 # CURRENT_STATE.md — persistent project memory (repository is source of truth)
 
+## Session handoff — 2026-09-19
+- Completed work: opened a side-panel Work Dashboard summarizing the locked reconstruction phases, current risks, guardrails, and next visual-validation step.
+- Completed work: tuned phase-5 WebGL fill for stronger reference-like material separation (`environmentIntensity` 0.95→0.75; floor `envMapIntensity` 1.9→1.6).
+- Completed work: consolidated final-effect pass brightening the neutral backdrop, strengthening soft grounding shadows, refining key-light lift, and tightening acrylic attenuation for clearer blue/smoked reads.
+- Completed work: reference correction pass restored the darker satin-floor/high-key balance, reduced background wash, added restrained acrylic clearcoat/attenuation, and increased research-stack AO for readable sheet layering.
+- Unresolved problems: frosted/smoked acrylic still reads flat in Eevee; floor softbox band/grain remain weak; live post-arc-removal comparison is still pending.
+- Latest commit SHA: `3522f0a` (reference correction pass uncommitted).
+- Current branch: `zwoc-228-work-dashboard`.
+- Next action: compare the live site against `reference/ui-baseline.png`, checking label alignment, object bboxes, and phase-5-only lighting/material issues.
+
 - Repository: https://github.com/zwoc-228/Portfolio_2026
 - Branch: `main` (deploy on push via `.github/workflows/deploy.yml`)
 - Live site: https://zwoc-228.github.io/Portfolio_2026/ (Vite `base: /Portfolio_2026/`)

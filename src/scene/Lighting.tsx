@@ -12,7 +12,7 @@ export default function Lighting() {
       {/* Key light - large soft from upper-left (primary shadows) */}
       <directionalLight
         position={[-4, 7, 5]}
-        intensity={1.5}
+        intensity={1.55}
         color="#f8f6f2"
         castShadow
         shadow-mapSize-width={1024}
