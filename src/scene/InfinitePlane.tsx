@@ -23,18 +23,18 @@ export default function InfinitePlane() {
     rough.needsUpdate = true
 
     const mat = new THREE.MeshPhysicalMaterial({
-      color: '#cbd0d4',
-      metalness: 0.85,
+      color: '#bfc6cc',
+      metalness: 0.72,
       // Absolute roughness lives in the map (~0.38–0.54, satin).
       roughness: 1.0,
       roughnessMap: rough,
       normalMap: normal,
       normalScale: new THREE.Vector2(0.04, 0.04),
-      envMapIntensity: 1.35,
+      envMapIntensity: 1.85,
     })
     // Subtle directional response where the renderer supports it (r155+).
     try {
-      mat.anisotropy = 0.5
+      mat.anisotropy = 0.8
       mat.anisotropyRotation = 0
     } catch {
       /* older pipeline — maps + studio still carry the read */

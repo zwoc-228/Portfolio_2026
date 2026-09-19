@@ -48,18 +48,18 @@ export default function HomeScene() {
       gl={{
         antialias: true,
         toneMapping: resolveToneMapping(),
-        toneMappingExposure: 0.9,
+        toneMappingExposure: 1.05,
         outputColorSpace: THREE.SRGBColorSpace,
       }}
       dpr={[1, 1.5]}
       onCreated={({ scene }) => {
         // Studio env is reflections support: strong enough to model the
         // whites, tame enough that paper never blows out.
-        scene.environmentIntensity = 0.82
+        scene.environmentIntensity = 1.1
         // Backdrop lift is INDEPENDENT of lighting: AgX crushes light-grey
         // backgrounds to murk, so the canvas backdrop gets its own gain
         // instead of raising exposure (which would blow paper out).
-        scene.backgroundIntensity = 1.12
+        scene.backgroundIntensity = 1.0
         // ?envrot=<radians> rotates the studio for A/B tests (default 0).
         // Puts a bright softbox behind camera-facing normals (acrylic faces).
         if (typeof window !== 'undefined') {
@@ -77,7 +77,7 @@ export default function HomeScene() {
         zIndex: 0,
       }}
     >
-      <color attach="background" args={['#d5d9dd']} />
+      <color attach="background" args={['#c9ced3']} />
 
       <CameraRig />
       <PerfProbe />

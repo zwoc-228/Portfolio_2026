@@ -47,7 +47,7 @@ function toColoredAcrylic(
       ior: 1.47,
       thickness: 0.03,
       attenuationColor: new THREE.Color('#9fb9c8'),
-      attenuationDistance: 0.1,
+      attenuationDistance: 0.07,
       envMapIntensity: 0.9,
     })
   }
@@ -61,7 +61,7 @@ function toColoredAcrylic(
     ior: 1.49,
     thickness: 0.03,
     attenuationColor: new THREE.Color('#3a4046'),
-    attenuationDistance: 0.055,
+    attenuationDistance: 0.04,
     envMapIntensity: 1.05,
   })
 }
@@ -98,7 +98,7 @@ function tuneAcrylic(m: THREE.Material, nodeName: string): void {
     mat.ior = 1.47
     mat.thickness = 0.03
     mat.attenuationColor = new THREE.Color('#9fb9c8')
-    mat.attenuationDistance = 0.1
+    mat.attenuationDistance = 0.07
     mat.envMapIntensity = 0.9
   } else if (name.includes('charcoal') || name.includes('smok')) {
     // Family F smoked acrylic: transparent + dense, never opaque black.
@@ -110,7 +110,7 @@ function tuneAcrylic(m: THREE.Material, nodeName: string): void {
     mat.thickness = 0.03
     mat.color = new THREE.Color('#4a5055')
     mat.attenuationColor = new THREE.Color('#3a4046')
-    mat.attenuationDistance = 0.055
+    mat.attenuationDistance = 0.04
     mat.envMapIntensity = 1.05
   } else if (name.includes('terracotta') || name.includes('terra')) {
     // Muted terracotta accent stays opaque architectural solid.

@@ -89,7 +89,7 @@ export default function ResearchObject() {
     <group
       ref={groupRef}
       position={[2.138, 0, -0.237]}
-      rotation={[0, -0.185, 0]}
+      rotation={[0, -0.26, 0]}
       scale={METERS_TO_SCENE * 1.3}
       onPointerOver={(e) => {
         e.stopPropagation()

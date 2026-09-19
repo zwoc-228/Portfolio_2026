@@ -7,10 +7,11 @@
 - Completed work: reference correction pass restored the darker satin-floor/high-key balance, reduced background wash, added restrained acrylic clearcoat/attenuation, and increased research-stack AO for readable sheet layering.
 - Completed work: remodeled the architecture maquette with a taller monolithic tower, larger clear/frosted volumes, and a shallow glass canopy; rebuilt the research stack with a tenth sheet and stronger edge offsets; regenerated all homepage assets.
 - Comparison artifact: `reference/comparison-last-v-new.png` (left = last master render, right = new master render).
+- Completed work: major visual correction pass raised scene exposure and direct fill, restored the satin-metal floor reflection, brightened paper/board families, and increased Writing/Research group yaw to match the reference angle.
 - Unresolved problems: live browser build cannot be run locally because npm/Node is unavailable; GitHub Pages deployment is required for the final website check.
-- Latest commit SHA: `d22ff51` (remodel pass uncommitted).
+- Latest commit SHA: `d49a1e9` (major visual correction pass uncommitted).
 - Current branch: `zwoc-228-work-dashboard`.
-- Next action: commit and merge the remodel pass to `main`, then verify the deployed website and comparison image.
+- Next action: commit and merge this correction pass to `main`, then verify the deployed website and comparison image.
 
 - Repository: https://github.com/zwoc-228/Portfolio_2026
 - Branch: `main` (deploy on push via `.github/workflows/deploy.yml`)
