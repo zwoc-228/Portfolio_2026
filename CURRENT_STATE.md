@@ -3,7 +3,7 @@
 - Repository: https://github.com/zwoc-228/Portfolio_2026
 - Branch: `main` (deploy on push via `.github/workflows/deploy.yml`)
 - Live site: https://zwoc-228.github.io/Portfolio_2026/ (Vite `base: /Portfolio_2026/`)
-- Latest commit: `d2494ca` (pre-fix HEAD, before 2026-09-19 arc-removal patch) — `e5c7461` (regen GLBs) — `f5c200e` (overlay rebuild) — `c4de87e` (reset arc + layout)
+- Latest commit: `cf531c6` (remove decorative guide arc overlay) — `d2494ca` (pre-fix HEAD) — `e5c7461` (regen GLBs) — `f5c200e` (overlay rebuild)
 - Actions: deploy.yml green after each push; assets.yml green (run 35261497666)
 
 ## Architecture overview
