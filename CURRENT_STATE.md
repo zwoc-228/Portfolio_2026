@@ -9,9 +9,9 @@
 - Comparison artifact: `reference/comparison-last-v-new.png` (left = last master render, right = new master render).
 - Completed work: major visual correction pass raised scene exposure and direct fill, restored the satin-metal floor reflection, brightened paper/board families, and increased Writing/Research group yaw to match the reference angle.
 - Unresolved problems: live browser build cannot be run locally because npm/Node is unavailable; GitHub Pages deployment is required for the final website check.
-- Latest commit SHA: `d49a1e9` (major visual correction pass uncommitted).
+- Latest commit SHA: `6986bca` (major visual correction pass; merged to `main` as `044729f`).
 - Current branch: `zwoc-228-work-dashboard`.
-- Next action: commit and merge this correction pass to `main`, then verify the deployed website and comparison image.
+- Next action: use the opened website and comparison artifact for final visual review.
 
 - Repository: https://github.com/zwoc-228/Portfolio_2026
 - Branch: `main` (deploy on push via `.github/workflows/deploy.yml`)
