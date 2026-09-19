@@ -5,10 +5,12 @@
 - Completed work: tuned phase-5 WebGL fill for stronger reference-like material separation (`environmentIntensity` 0.95→0.75; floor `envMapIntensity` 1.9→1.6).
 - Completed work: consolidated final-effect pass brightening the neutral backdrop, strengthening soft grounding shadows, refining key-light lift, and tightening acrylic attenuation for clearer blue/smoked reads.
 - Completed work: reference correction pass restored the darker satin-floor/high-key balance, reduced background wash, added restrained acrylic clearcoat/attenuation, and increased research-stack AO for readable sheet layering.
-- Unresolved problems: frosted/smoked acrylic still reads flat in Eevee; floor softbox band/grain remain weak; live post-arc-removal comparison is still pending.
-- Latest commit SHA: `bea224c` (consolidated reference correction pass).
+- Completed work: remodeled the architecture maquette with a taller monolithic tower, larger clear/frosted volumes, and a shallow glass canopy; rebuilt the research stack with a tenth sheet and stronger edge offsets; regenerated all homepage assets.
+- Comparison artifact: `reference/comparison-last-v-new.png` (left = last master render, right = new master render).
+- Unresolved problems: live browser build cannot be run locally because npm/Node is unavailable; GitHub Pages deployment is required for the final website check.
+- Latest commit SHA: `d22ff51` (remodel pass uncommitted).
 - Current branch: `zwoc-228-work-dashboard`.
-- Next action: compare the live site against `reference/ui-baseline.png`, checking label alignment, object bboxes, and phase-5-only lighting/material issues.
+- Next action: commit and merge the remodel pass to `main`, then verify the deployed website and comparison image.
 
 - Repository: https://github.com/zwoc-228/Portfolio_2026
 - Branch: `main` (deploy on push via `.github/workflows/deploy.yml`)

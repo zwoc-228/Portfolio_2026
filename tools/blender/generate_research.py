@@ -34,11 +34,11 @@ def build():
     m_steel = materials.steel()
 
     z = 0.0
-    for i in range(9):
-        jx = random.uniform(-0.0033, 0.0033)
-        jy = random.uniform(-0.0033, 0.0033)
-        w = W - i * 0.0006
-        obj = common.new_box(f"Sheet{i:02d}", (w, D - i * 0.0006, SHEET_T),
+    for i in range(10):
+        jx = random.uniform(-0.0038, 0.0038)
+        jy = random.uniform(-0.0038, 0.0038)
+        w = W - i * 0.0007
+        obj = common.new_box(f"Sheet{i:02d}", (w, D - i * 0.0007, SHEET_T),
                              (jx, jy, z + SHEET_T / 2),
                              m_paper, bevel_width=0.00015, bevel_segments=1)
         obj.rotation_euler = (0, 0, random.uniform(-0.018, 0.018))
@@ -49,7 +49,7 @@ def build():
     bpy.ops.mesh.primitive_plane_add(size=1.0, location=(0, 0, z + 0.0002))
     top = bpy.context.active_object
     top.name = "TopSheet"
-    top.scale = (W - 0.004, D - 0.004, 1.0)
+    top.scale = (W - 0.003, D - 0.003, 1.0)
     bpy.ops.object.transform_apply(scale=True)
     bpy.ops.object.mode_set(mode="EDIT")
     bpy.ops.mesh.subdivide(number_cuts=6)
