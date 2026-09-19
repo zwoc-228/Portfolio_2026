@@ -203,8 +203,8 @@ export interface WritingMats {
 /** Family A + B: Writing notebook (assign per-mesh). */
 export function makeWritingMaterials(): WritingMats {
   const cover = new THREE.MeshPhysicalMaterial({
-    color: '#dbd5c7',
-    roughness: 0.7,
+    color: '#e3ddd0',
+    roughness: 0.62,
     metalness: 0,
     normalMap: getClothNormal(),
     // Disappears at homepage distance; lives in highlight breakup only.
@@ -215,13 +215,13 @@ export function makeWritingMaterials(): WritingMats {
   })
   // Family B paper: NO normal map — identity from edges/layering/shadow.
   const paper = new THREE.MeshStandardMaterial({
-    color: '#f5f1e8',
-    roughness: 0.9,
+    color: '#faf7ef',
+    roughness: 0.82,
     metalness: 0,
   })
   const spine = new THREE.MeshPhysicalMaterial({
-    color: '#d8d2c5',
-    roughness: 0.75,
+    color: '#e1dbcf',
+    roughness: 0.68,
     metalness: 0,
     normalMap: getClothNormal(),
     normalScale: new THREE.Vector2(0.03, 0.03),
@@ -230,8 +230,8 @@ export function makeWritingMaterials(): WritingMats {
     sheenColor: new THREE.Color('#f5f1e8'),
   })
   const ribbon = new THREE.MeshStandardMaterial({
-    color: '#b3aa9c',
-    roughness: 0.6,
+    color: '#c2b7a7',
+    roughness: 0.52,
     metalness: 0,
   })
   return { cover, paper, spine, ribbon }
@@ -244,8 +244,8 @@ export function makeWritingMaterials(): WritingMats {
  */
 export function makeModelBoardMaterial(): THREE.MeshStandardMaterial {
   return new THREE.MeshStandardMaterial({
-    color: '#E9E7E2',
-    roughness: 0.78,
+    color: '#f1efea',
+    roughness: 0.68,
     metalness: 0,
     normalMap: getBoardNormal(),
     normalScale: new THREE.Vector2(0.025, 0.025),
@@ -255,8 +255,8 @@ export function makeModelBoardMaterial(): THREE.MeshStandardMaterial {
 /** Family B: warm paper shared by Writing + Research (no visible texture). */
 export function makeResearchPaperMaterial(): THREE.MeshStandardMaterial {
   return new THREE.MeshStandardMaterial({
-    color: '#f5f1e8',
-    roughness: 0.9,
+    color: '#faf7ef',
+    roughness: 0.82,
     metalness: 0,
   })
 }

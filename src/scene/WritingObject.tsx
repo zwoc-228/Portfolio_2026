@@ -109,7 +109,7 @@ export default function WritingObject() {
     <group
       ref={groupRef}
       position={[-1.593, 0, -0.098]}
-      rotation={[0, 0.18, 0]}
+      rotation={[0, 0.27, 0]}
       scale={METERS_TO_SCENE * 1.15}
       onPointerOver={(e) => {
         e.stopPropagation()

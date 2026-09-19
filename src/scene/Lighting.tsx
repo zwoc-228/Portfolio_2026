@@ -12,7 +12,7 @@ export default function Lighting() {
       {/* Key light - large soft from upper-left (primary shadows) */}
       <directionalLight
         position={[-4, 7, 5]}
-        intensity={1.55}
+        intensity={2.25}
         color="#f8f6f2"
         castShadow
         shadow-mapSize-width={1024}
@@ -28,7 +28,7 @@ export default function Lighting() {
       {/* Fill light - weak from right */}
       <directionalLight
         position={[4, 4, 3]}
-        intensity={0.18}
+        intensity={0.42}
         color="#eef1f4"
       />
     </>
@@ -57,7 +57,7 @@ export function StudioEnvironment() {
           Broad bright brushed-metal reflection on floor-left. */}
       <Lightformer
         form="rect"
-        intensity={5.0}
+        intensity={7.0}
         color="#fdfbf7"
         position={[-5, 2.5, 2]}
         rotation-y={Math.PI / 2}
@@ -67,7 +67,7 @@ export function StudioEnvironment() {
           Book cover, paper, model-board highlights. */}
       <Lightformer
         form="rect"
-        intensity={3.0}
+        intensity={4.5}
         color="#ffffff"
         position={[0.5, 5, 3]}
         rotation-x={Math.PI / 2}
@@ -77,7 +77,7 @@ export function StudioEnvironment() {
           Acrylic edge definition. */}
       <Lightformer
         form="rect"
-        intensity={5.0}
+        intensity={7.0}
         color="#ffffff"
         position={[2.5, 2, -1]}
         rotation-y={-Math.PI / 3}
@@ -87,7 +87,7 @@ export function StudioEnvironment() {
           Separates transparent / translucent pieces. */}
       <Lightformer
         form="rect"
-        intensity={1.5}
+        intensity={2.4}
         color="#eef1f4"
         position={[4, 1.5, -2.5]}
         rotation-y={-Math.PI / 2}
@@ -104,7 +104,7 @@ export function StudioEnvironment() {
       {/* F. Large dim frontal card — soft paper/board frontal modelling. */}
       <Lightformer
         form="rect"
-        intensity={1.0}
+        intensity={1.8}
         color="#f5f3ee"
         position={[0, 1.5, 6]}
         scale={[8, 3, 1]}
