@@ -2,13 +2,12 @@
  * Screen-space editorial overlay, measured from reference/ui-baseline.png.
  *
  * Components (all in viewport-fraction coordinates, Y DOWN):
- *  1. Guide arc — shallow SMILE bezier, thin stroke, fades at both ends
- *  2. Labels — italic serif ("Writing" / "Architecture" / "Research")
- *  3. Ticks — short horizontal line above each number
- *  4. Numbers — "01" / "02" / "03"
+ *  1. Labels — italic serif ("Writing" / "Architecture" / "Research")
+ *  2. Ticks — short horizontal line above each number
+ *  3. Numbers — "01" / "02" / "03"
  *
- * Everything lives in this single component so the arc + labels + ticks
- * form one coherent editorial system.  pointer-events: none — purely
+ * Everything lives in this single component so labels + ticks + numbers
+ * form one coherent editorial system. pointer-events: none — purely
  * decorative overlay above the R3F canvas.
  */
 import layoutData from '../../reference/home-layout.json'
@@ -20,8 +19,6 @@ interface LabelEntry {
   number_anchor: [number, number]
 }
 
-const ARC_PATH: string = (layoutData as unknown as { arc: { svg_cubic: string } })
-  .arc.svg_cubic
 const LABEL_MAP = (layoutData as unknown as { labels: Record<string, LabelEntry> })
   .labels
 
@@ -47,30 +44,6 @@ export default function ArcOverlay() {
         overflow: 'hidden',
       }}
     >
-      {/* ── Guide arc ─────────────────────────────────────────── */}
-      <svg
-        viewBox="0 0 100 100"
-        preserveAspectRatio="none"
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
-      >
-        <defs>
-          <linearGradient id="arcFade" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%"   stopColor="#9a9fa4" stopOpacity="0" />
-            <stop offset="10%"  stopColor="#9a9fa4" stopOpacity="0.35" />
-            <stop offset="50%"  stopColor="#9a9fa4" stopOpacity="0.45" />
-            <stop offset="90%"  stopColor="#9a9fa4" stopOpacity="0.35" />
-            <stop offset="100%" stopColor="#9a9fa4" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <path
-          d={ARC_PATH}
-          fill="none"
-          stroke="url(#arcFade)"
-          strokeWidth={0.7}
-          vectorEffect="non-scaling-stroke"
-        />
-      </svg>
-
       {/* ── Labels + ticks + numbers ──────────────────────────── */}
       {LABELS.map((l) => (
         <div key={l.key}>

@@ -3,7 +3,7 @@
 - Repository: https://github.com/zwoc-228/Portfolio_2026
 - Branch: `main` (deploy on push via `.github/workflows/deploy.yml`)
 - Live site: https://zwoc-228.github.io/Portfolio_2026/ (Vite `base: /Portfolio_2026/`)
-- Latest commit: `e5c7461` (regen GLBs) — `f5c200e` (overlay rebuild) — `c4de87e` (reset arc + layout)
+- Latest commit: `cf531c6` (remove decorative guide arc overlay) — `d2494ca` (pre-fix HEAD) — `e5c7461` (regen GLBs) — `f5c200e` (overlay rebuild)
 - Actions: deploy.yml green after each push; assets.yml green (run 35261497666)
 
 ## Architecture overview
@@ -22,6 +22,10 @@ REFERENCE-LOCKED RECONSTRUCTION (2026-09-17). User declared a strict
 5-phase plan: (1) home-layout.json ✅, (2) editorial overlay ✅,
 (3) 3D objects conform to master ✅, (4) camera/projection match —
 NEEDS VERIFICATION, (5) lighting/materials — PENDING.
+
+2026-09-19 minimal compliance patch: removed the decorative SVG guide arc
+from `src/components/ArcOverlay.tsx` to satisfy locked-rule prohibition on
+visible guide arcs. Kept measured label/tick/number anchors and yaw only.
 
 Phase 1: `reference/home-layout.json` — measured object bboxes, smile
 arc cubic, label/number anchors, DOM row positions.
@@ -75,6 +79,9 @@ floor softbox band + grain not yet distinct; needs live verdict.
 4. `useFrame` traverses whole GLB hierarchy every frame (perf).
 5. DPR `[1,2]` too high for target hardware.
 6. No browser-verification loop yet (this session adds Playwright).
+7. `npm run visual-check` reports `console.error: Failed to load resource:
+   net::ERR_NAME_NOT_RESOLVED` on both viewports in this sandbox (likely
+   external resource/network), even though screenshots are produced.
 
 ## Resolved problems
 - Y-up/Z-up axis bug (book built standing) — caught via GLB node parse.
@@ -136,15 +143,11 @@ floor softbox band + grain not yet distinct; needs live verdict.
   `a8af4b3` + `b8eaf6b` pushed 2026-09-17 via `portfolio_2026_deploy` key.
 
 ## Next task
-URGENT: User must check the live site (https://zwoc-228.github.io/Portfolio_2026/)
-and compare to reference/ui-baseline.png. Report:
-1. Do the3D objects (Writing/Architecture/Research) align with the
-   editorial overlay labels? Or are they offset?
-2. Is the arc visible and correctly shaped (shallow smile)?
-3. Are the tick marks and numbers visible?
-
-Based on feedback, adjust camera position/fov or object x-positions
-to match the target bboxes exactly. Then proceed to Phase 5 (lighting).
+Check the live site against `reference/ui-baseline.png` after the arc-removal
+patch and confirm:
+1. Labels/ticks/numbers still align to object groups without a visible guide arc.
+2. Object bbox alignment still matches the solved phase-4 composition law.
+3. Lighting/material readability issues remain isolated to phase-5 tuning.
 
 ## Commands
 - Build/typecheck: `npx tsc --noEmit && npm run build`
