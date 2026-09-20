@@ -6,8 +6,8 @@ const linen=mat('Linen',0xf1eee7,.76,0,{map:textures.linenColor,roughnessMap:tex
 const paper=mat('Paper',0xf5f2eb,.90,0,{map:textures.paperColor,roughnessMap:textures.paperRough,normalMap:textures.paperNormal,bumpMap:textures.paper,bumpScale:.00030,normalScale:new T.Vector2(.12,.12)});
 const edge=mat('Page edges',0xe8e2d7,.88,0,{map:textures.paperColor,roughnessMap:textures.paperRough,normalMap:textures.paperNormal,bumpMap:textures.paper,bumpScale:.00014,normalScale:new T.Vector2(.07,.07)});
 const stone=mat('White mineral',0xf0ece4,.64,0,{map:textures.stoneColor,roughnessMap:textures.stoneRough,normalMap:textures.stoneNormal,bumpMap:textures.stone,bumpScale:.0008,normalScale:new T.Vector2(.17,.17),clearcoat:.01,clearcoatRoughness:.92});
-const glass=mat('Clear acrylic',0xfbfcfb,.085,0,{transmission:.98,ior:1.49,thickness:.82,attenuationColor:new T.Color(0xf5f8f8),attenuationDistance:7.5,clearcoat:.10,clearcoatRoughness:.10});
-const frosted=mat('Frosted acrylic',0xf1f3f1,.24,0,{transmission:.9,ior:1.49,thickness:.76,attenuationColor:new T.Color(0xeef4f2),attenuationDistance:2.0,clearcoat:.08,clearcoatRoughness:.20});
+const glass=mat('Clear acrylic',0xfcfdfc,.06,0,{transmission:.99,ior:1.49,thickness:.92,attenuationColor:new T.Color(0xf7fbfb),attenuationDistance:8.2,clearcoat:.12,clearcoatRoughness:.08});
+const frosted=mat('Frosted acrylic',0xf1f4f1,.18,0,{transmission:.92,ior:1.49,thickness:.78,attenuationColor:new T.Color(0xf0f6f4),attenuationDistance:2.4,clearcoat:.08,clearcoatRoughness:.16});
 const copper=mat('Copper accent',0xb18a72,.34,1,{roughnessMap:textures.archCopperRough||textures.copperRough,anisotropy:.26,clearcoat:.04,clearcoatRoughness:.34});
 const dark=mat('Graphite acrylic',0x8f9899,.26,0,{transmission:.72,ior:1.48,thickness:.68,attenuationColor:new T.Color(0x8f9798),attenuationDistance:1.0,clearcoat:.08,clearcoatRoughness:.16});
 const steel=mat('Paperclip stainless steel',0xd8dbdd,.18,1,{roughnessMap:textures.steelRough,clearcoat:.14,clearcoatRoughness:.18});
@@ -19,8 +19,8 @@ const writingClothNormal=texClone(textures.linenNormal,1.45);
 const architectureStoneColor=texClone(textures.archMineralColor||textures.stoneColor,1.38);
 const architectureStoneRough=texClone(textures.archMineralRough||textures.stoneRough,1.38);
 const architectureStoneNormal=texClone(textures.archMineralNormal||textures.stoneNormal,1.38);
-const architectureStone=mat('Architecture mineral',0xf3efe8,.54,0,{map:architectureStoneColor,roughnessMap:architectureStoneRough,normalMap:architectureStoneNormal,bumpMap:textures.stone,bumpScale:.0026,normalScale:new T.Vector2(.48,.48),clearcoat:.004,clearcoatRoughness:.98});
-const architectureStoneDark=mat('Architecture graphite mineral',0xb8bab6,.43,0,{map:architectureStoneColor,roughnessMap:architectureStoneRough,normalMap:architectureStoneNormal,bumpMap:textures.stone,bumpScale:.0020,normalScale:new T.Vector2(.34,.34),clearcoat:.006,clearcoatRoughness:.96});
+const architectureStone=mat('Architecture mineral',0xf3efe8,.50,0,{map:architectureStoneColor,roughnessMap:architectureStoneRough,normalMap:architectureStoneNormal,bumpMap:textures.stone,bumpScale:.0024,normalScale:new T.Vector2(.44,.44),clearcoat:.004,clearcoatRoughness:.98});
+const architectureStoneDark=mat('Architecture graphite mineral',0x9fa4a1,.38,0,{map:architectureStoneColor,roughnessMap:architectureStoneRough,normalMap:architectureStoneNormal,bumpMap:textures.stone,bumpScale:.0016,normalScale:new T.Vector2(.28,.28),clearcoat:.006,clearcoatRoughness:.96});
 function box(g,name,w,h,d,x,y,z,m,r=.014){const mesh=new T.Mesh(new RoundedBoxGeometry(w,h,d,2,Math.min(r,w/3,h/3,d/3)),m);mesh.name=name;mesh.position.set(x,y,z);// Give each transparent solid its own optical path length.
 if(m.transmission>0){mesh.material=m.clone();mesh.material.thickness=Math.min(w,h,d);}
 mesh.castShadow=!(m.transmission>.5);mesh.receiveShadow=true;g.add(mesh);return mesh;}
@@ -65,18 +65,18 @@ let verts=[],uv=[],idx=[];for(let i=0;i<=20;i++){let t=i/20;let z=1.40+t*.70;let
 let rg=new T.BufferGeometry();rg.setAttribute('position',new T.Float32BufferAttribute(verts,3));rg.setAttribute('uv',new T.Float32BufferAttribute(uv,2));rg.setIndex(idx);rg.computeVertexNormals();let ribbon=new T.Mesh(rg,writingCover);ribbon.material=writingCover;ribbon.material.side=T.DoubleSide;ribbon.name='Woven bookmark ribbon';ribbon.castShadow=true;writing.add(ribbon);
 writing.userData.writingController={revealCurrent:0,materials:[writingCover,writingPaper,writingPageEdge]};
 const architecture=new T.Group();architecture.name='Architecture';
-const archPlinth=box(architecture,'Mineral plinth',3.22,.22,2.82,0,.11,0,architectureStone,.014);
-const rearTower=box(architecture,'Rear mineral tower',.90,1.52,.88,.06,.98,-.34,architectureStone,.024);
-const mainShelf=box(architecture,'Main cantilever slab',1.78,.10,.62,.20,1.20,-.18,architectureStone,.010);
-const frontPodium=box(architecture,'Front mineral podium',1.10,.44,.88,-.42,.44,.86,architectureStone,.018);
-const lowShelf=box(architecture,'Low mineral shelf',.98,.082,.64,-.86,.58,.16,architectureStone,.010);
-const leftFrost=box(architecture,'Left frosted tower',.72,1.08,.74,-1.04,.78,-.06,frosted,.016);leftFrost.rotation.z=.07;leftFrost.rotation.x=-.03;
-const clearLeft=box(architecture,'Left clear volume',.54,.56,.54,-.98,.40,.84,glass,.016);clearLeft.rotation.y=.18;clearLeft.rotation.z=-.08;
-const clearFin=box(architecture,'Center clear fin',.22,.66,.26,.22,.42,.46,glass,.012);clearFin.rotation.z=.06;
-const copperAnchor=box(architecture,'Copper anchor',.72,.56,.64,1.02,.50,-.04,copper,.012);copperAnchor.rotation.y=-.14;copperAnchor.rotation.z=.02;
-const graphiteBase=box(architecture,'Graphite base',.82,.58,.82,1.04,.48,.86,architectureStoneDark,.016);
-const smokedCap=box(architecture,'Smoked glass cap',.76,.30,.76,1.04,.92,.86,mat('Smoked acrylic',0xb7bfbe,.14,0,{transmission:.88,ior:1.49,thickness:.56,attenuationColor:new T.Color(0xaab3b5),attenuationDistance:1.8,clearcoat:.10,clearcoatRoughness:.12}),.012);smokedCap.rotation.y=.08;
-const bridge=box(architecture,'Clear bridge',.72,.08,.28,-.18,.66,.52,glass,.008);bridge.rotation.z=.04;
+box(architecture,'Mineral plinth',3.24,.22,2.84,0,.11,0,architectureStone,.014);
+box(architecture,'Rear mineral tower',.74,1.34,.74,-.08,.89,-.42,architectureStone,.022);
+box(architecture,'Main cantilever slab',1.14,.08,.54,.96,1.02,-.10,architectureStone,.009);
+box(architecture,'Front mineral podium',.98,.38,.78,-.34,.41,.78,architectureStone,.016);
+box(architecture,'Low mineral shelf',.90,.075,.60,-.86,.58,.18,architectureStone,.010);
+const leftFrost=box(architecture,'Left frosted tower',.68,1.02,.72,-1.02,.73,-.04,frosted,.016);leftFrost.rotation.z=.05;leftFrost.rotation.x=-.02;
+const clearLeft=box(architecture,'Left clear volume',.46,.46,.52,-.88,.35,.82,glass,.014);clearLeft.rotation.y=.16;clearLeft.rotation.z=-.06;
+const clearFin=box(architecture,'Center clear fin',.18,.58,.22,.16,.40,.34,glass,.010);clearFin.rotation.z=.04;
+const bridge=box(architecture,'Clear bridge',.52,.06,.24,-.02,.61,.34,glass,.006);bridge.rotation.z=.02;
+const copperAnchor=box(architecture,'Copper anchor',.64,.48,.56,.96,.46,-.06,copper,.010);copperAnchor.rotation.y=-.10;
+box(architecture,'Graphite base',.74,.46,.74,.98,.46,.80,architectureStoneDark,.014);
+const smokedCap=box(architecture,'Smoked glass cap',.70,.26,.70,.98,.83,.80,mat('Smoked acrylic',0xa6afb1,.14,0,{transmission:.86,ior:1.49,thickness:.54,attenuationColor:new T.Color(0xa0aaad),attenuationDistance:1.8,clearcoat:.10,clearcoatRoughness:.12}),.010);smokedCap.rotation.y=.06;
 const research=new T.Group();research.name='Research';
 // Closed, individually bowed sheets with continuous top/edge geometry.
 const curl=(x,z,phase)=>.006*Math.pow(Math.abs(x)/1.375,5)*(1+.4*Math.sin(z*2+phase))+.005*Math.pow(Math.abs(z)/1.675,8)+.0015*Math.sin(z*3+phase)*(x/1.375);
