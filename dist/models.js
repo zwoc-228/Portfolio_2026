@@ -8,6 +8,10 @@ const edge=mat('Page edges',0xe9e3d9,.86,0,{map:textures.paperColor,roughnessMap
 const glass=mat('Clear acrylic',0xf8fbfc,.055,0,{transmission:1,ior:1.49,thickness:.82,attenuationColor:new T.Color(0xf2f7f8),attenuationDistance:7.5,clearcoat:.12,clearcoatRoughness:.08});const blue=mat('Blue acrylic',0x8ca7b2,.13,0,{transmission:.84,ior:1.49,thickness:.82,attenuationColor:new T.Color(0x9bb6c1),attenuationDistance:2.4,clearcoat:.10,clearcoatRoughness:.10});
 const copper=mat('Copper',0xb97d69,.38,1,{roughnessMap:textures.copperRough,anisotropy:.28,clearcoat:.04,clearcoatRoughness:.42});const dark=mat('Dark mineral',0x667075,.52,0,{map:textures.stoneColor,roughnessMap:textures.stoneRough,normalMap:textures.stoneNormal,bumpMap:textures.stone,bumpScale:.0013,normalScale:new T.Vector2(.26,.26)});
 const steel=mat('Paperclip stainless steel',0xd0d3d4,.16,1,{roughnessMap:textures.steelRough,clearcoat:.18,clearcoatRoughness:.16});const ink=mat('Printed paper',0xffffff,.94,0,{map:textures.print,roughnessMap:textures.paperRough,normalMap:textures.paperNormal,normalScale:new T.Vector2(.10,.10)});
+function texClone(t,repeat=1){if(!t)return t;const c=t.clone();c.wrapS=c.wrapT=T.RepeatWrapping;c.repeat.copy(new T.Vector2(repeat,repeat));c.offset.set(0,0);c.center.set(.5,.5);c.rotation=0;c.needsUpdate=true;return c;}
+const writingClothColor=texClone(textures.linenColor,1.45);
+const writingClothRough=texClone(textures.linenRough,1.45);
+const writingClothNormal=texClone(textures.linenNormal,1.45);
 function box(g,name,w,h,d,x,y,z,m,r=.014){const mesh=new T.Mesh(new RoundedBoxGeometry(w,h,d,2,Math.min(r,w/3,h/3,d/3)),m);mesh.name=name;mesh.position.set(x,y,z);// Give each transparent solid its own optical path length.
 if(m.transmission>0){mesh.material=m.clone();mesh.material.thickness=Math.min(w,h,d);}
 mesh.castShadow=!(m.transmission>.5);mesh.receiveShadow=true;g.add(mesh);return mesh;}
@@ -21,18 +25,18 @@ function revealableMaterial(name,opts,closed,opened){
   shader.fragmentShader='uniform float uReveal;\n'+shader.fragmentShader;
   shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>','#include <map_fragment>\ndiffuseColor.rgb=mix(vec3(0.975,0.975,0.968),diffuseColor.rgb,uReveal);');
  };
- m.customProgramCacheKey=()=>name+'-reveal-v1';
+ m.customProgramCacheKey=()=>name+'-reveal-v2';
  return m;
 }
 const writingCover=revealableMaterial('Writing cover cloth',{
- color:0xffffff,map:textures.writingCoverColor,roughness:.80,roughnessMap:textures.writingCoverRough,metalness:0,normalMap:textures.writingCoverNormal,normalScale:new T.Vector2(.01,.01),sheen:.05,sheenColor:new T.Color(0xdfe8ee),sheenRoughness:.72,clearcoat:.015,clearcoatRoughness:.88
- },{roughness:.84,normalScale:[.01,.01],sheen:.04,clearcoat:.01},{roughness:.73,normalScale:[.34,.34],sheen:.30,clearcoat:.02});
+ color:0xffffff,map:writingClothColor,roughness:.81,roughnessMap:writingClothRough,metalness:0,normalMap:writingClothNormal,normalScale:new T.Vector2(.008,.008),sheen:.04,sheenColor:new T.Color(0xdde4ea),sheenRoughness:.75,clearcoat:.012,clearcoatRoughness:.90
+ },{color:0xf8f7f3,roughness:.85,normalScale:[.008,.008],sheen:.03,clearcoat:.01},{color:0x647687,roughness:.74,normalScale:[.18,.18],sheen:.24,clearcoat:.018});
 const writingPaper=revealableMaterial('Writing paper',{
  color:0xffffff,map:textures.writingPaperColor,roughness:.92,roughnessMap:textures.writingPaperRough,metalness:0,normalMap:textures.writingPaperNormal,normalScale:new T.Vector2(.01,.01)
- },{roughness:.94,normalScale:[.005,.005]},{roughness:.88,normalScale:[.16,.16]});
+ },{color:0xfbfbf8,roughness:.94,normalScale:[.005,.005]},{color:0xf2eee5,roughness:.88,normalScale:[.16,.16]});
 const writingPageEdge=revealableMaterial('Writing page edge',{
  color:0xffffff,map:textures.writingPaperColor,roughness:.93,roughnessMap:textures.writingPaperRough,metalness:0,normalMap:textures.writingPaperNormal,normalScale:new T.Vector2(.008,.008)
- },{roughness:.95,normalScale:[.004,.004]},{roughness:.90,normalScale:[.11,.11]});
+ },{color:0xfbfbf8,roughness:.95,normalScale:[.004,.004]},{color:0xebe5da,roughness:.90,normalScale:[.11,.11]});
 const writingElastic=mat('Writing elastic',0xeae8e2,.78,0,{normalMap:textures.writingPaperNormal,normalScale:new T.Vector2(.03,.03)});
 
 const lowerCover=box(writing,'Lower linen cover',2.55,.048,3.20,0,.035,0,writingCover,.024);
