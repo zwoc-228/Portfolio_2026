@@ -1,27 +1,19 @@
-# Yuanlong Zhu Portfolio — AI Website Handoff Package
+# Yuanlong Zhu — reference-led 3D portfolio
 
-This package is the implementation handoff for the 3D portfolio website.
+Private reconstruction study from the two supplied images. Read specs/VISUAL_SPEC.md, SCENE_SPEC.md, INTERACTION_SPEC.md, ASSET_LIST.md, QA_SPEC.md before changing implementation. qa/QA_REPORT.md records actual validation and outstanding fidelity issues.
 
-## Goal
-Build a restrained, high-fidelity 3D portfolio website with a locked three-object homepage:
+## Deliverables
+- dist/models/writing.glb, architecture.glb, research.glb: independently editable named meshes with embedded PBR textures.
+- dist/models/portfolio-scene.glb: arranged three-object assembly with fitted root transforms.
+- dist/models.js: reusable editable procedural geometry source. No screenshot billboards replace geometry.
+- scripts/export-models.mjs: deterministic GLB exporter. Run from project root with Node.
+- scripts/textures.py: deterministic material maps and reference-image crops; requires Pillow and NumPy.
+- dist/: self-contained hosted HTML/JS/WebGL experience with local fonts and dependencies.
 
-- Writing
-- Architecture
-- Research
+Import any GLB into Blender using File → Import → glTF 2.0; inspect and edit named meshes/materials, then save .blend. No .blend file is claimed in this delivery. The standalone GLB assembly does not include the browser floor and lighting rig.
 
-The homepage composition must remain structurally unchanged. The work is to improve material fidelity, camera, lighting, interaction, category menus, project transitions, and content extraction — not to redesign the homepage.
+Seven state URLs use #home, #writing/preview, #architecture/preview, #research/preview, and matching /index endings. The HOME object or category label opens preview; Enter opens index; Back/Escape reverses.
 
-## Files
-- `MASTER_SPEC.md` — complete design + interaction + implementation specification.
-- `AI_HANDOFF_PROMPT.md` — copy-paste prompt for a coding/web agent.
-- `PROJECT_CONTENT_MAP.md` — source PDFs and project/page mapping.
-- `ANIMATION_TIMELINE.md` — exact motion sequencing and timing.
-- `ASSET_PIPELINE.md` — model/material/PDF asset workflow.
-- `LOCKED_RULES.md` — non-negotiable constraints and QA checklist.
-- `reference/ui-baseline.png` — current visual baseline reference.
-- `sources/` — original portfolio PDFs in the full package.
+Reference imagery and titles are supplied design evidence. Original project content, contact address and exact font have not been supplied. Do not publish this study as a completed authored portfolio without replacing study content and completing visual QA.
 
-## Recommended workflow
-Read `LOCKED_RULES.md` first, then `MASTER_SPEC.md`, then `ASSET_PIPELINE.md` and `ANIMATION_TIMELINE.md`. Use `PROJECT_CONTENT_MAP.md` when ingesting portfolio content.
-
-Do not expand the scope of a requested change. If the request is “only change typography”, change only typography.
+Local development: npm run dev. No package installation is needed; dependencies are bundled. The managed environment uses sites-preview.

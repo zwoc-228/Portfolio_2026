@@ -1,0 +1,5 @@
+import fs from 'node:fs';import {createModels} from '../dist/models.js';
+let count=0,triangles=0;
+for(const root of createModels())root.traverse(o=>{if(!o.isMesh)return;count++;const g=o.geometry;for(const key of ['position','normal','uv']){if(!g.attributes[key])throw Error(o.name+' missing '+key);for(const x of g.attributes[key].array)if(!Number.isFinite(x))throw Error(o.name+' has nonfinite '+key);}const indices=g.index?.array;if(indices)for(const i of indices)if(i>=g.attributes.position.count)throw Error('Bad index '+o.name);triangles+=(indices?.length??g.attributes.position.count)/3;});
+for(const name of ['writing','architecture','research','portfolio-scene']){const b=fs.readFileSync('dist/models/'+name+'.glb');if(b.readUInt32LE(0)!==0x46546c67||b.readUInt32LE(8)!==b.length)throw Error('Invalid GLB '+name);let n=b.readUInt32LE(12),j=JSON.parse(b.subarray(20,20+n));for(const v of j.bufferViews)if(v.byteOffset+v.byteLength>j.buffers[0].byteLength)throw Error('Bad buffer '+name);}
+console.log(JSON.stringify({meshes:count,triangles,geometry:'finite',gltfContainers:'valid'}));
