@@ -9,3 +9,17 @@ body.index #failure{display:none}
 #brand{font-size:25px;border-bottom:1px solid #7d8385;padding-bottom:2px}.identity{display:flex;align-items:flex-start;gap:20px}.profession{position:absolute;left:0;top:40px;font-size:14px;color:#737a7e}.coordinates{font-size:12px;line-height:1.05}nav{font-size:14px;gap:43px}
 #home-labels{display:block;inset:0;pointer-events:none}#home-labels button{position:absolute;min-width:170px;pointer-events:auto;font-size:29px;line-height:1.12;transform-origin:50% 0}#home-labels button:nth-child(1){left:18.1%;top:68.4%;transform:translateX(-50%) rotate(16.5deg)}#home-labels button:nth-child(2){left:50.0%;top:74.2%;transform:translateX(-50%)}#home-labels button:nth-child(3){left:81.7%;top:68.9%;transform:translateX(-50%) rotate(-16.5deg)}#home-labels small{font-size:15px}.home-arc{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;opacity:.44}.home-arc path{fill:none;stroke:#f5f6f6;stroke-width:.78;vector-effect:non-scaling-stroke}body:not(.home) .home-arc{opacity:0}#home-bottom{bottom:9.7%}#home-bottom p{font-size:19px}footer{bottom:3.55%}
 @media(max-width:650px){#brand{font-size:21px}.profession{font-size:11px;top:31px}nav{gap:14px;font-size:12px}#home-labels button{font-size:20px;min-width:0}#home-labels button:nth-child(1){left:17%;top:62%}#home-labels button:nth-child(2){left:50%;top:65%}#home-labels button:nth-child(3){left:83%;top:62%}.home-arc{display:none}#home-bottom p{font-size:17px}}
+
+/* Round 5 — lighter neutral typography over the dark metal plane. */
+body.home{color:#7f878b}
+body.home #brand{color:#737b7f;border-bottom-color:#8e969a}
+body.home .coordinates,body.home .profession{color:#8f979b;opacity:.88}
+body.home nav{color:#858d91}
+body.home nav button:hover{color:#a5adb1;opacity:1}
+body.home .disc{background:#727a7e;color:#cfd3d5}
+body.home #home-labels button{color:#858d91}
+body.home #home-labels button:hover{color:#a3aaad}
+body.home #home-labels small{color:#969da1}
+body.home .rule{background:#90989b}
+body.home #home-bottom,body.home footer{color:#91999d}
+body.home .hint i{border-color:#929a9e}

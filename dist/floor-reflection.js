@@ -6,13 +6,14 @@ export function createFloorReflection(renderer,scene,ground){
  if('samples' in rt)rt.samples=4;
  const mirror=new T.PerspectiveCamera();const matrix=new T.Matrix4();
  const bias=new T.Matrix4().set(.5,0,0,.5,0,.5,0,.5,0,0,.5,.5,0,0,0,1);
- const uniforms={floorReflection:{value:rt.texture},floorProjection:{value:matrix},reflectionTexel:{value:new T.Vector2(1/2048,1/1152)}};
+ const uniforms={floorReflection:{value:rt.texture},floorProjection:{value:matrix},reflectionTexel:{value:new T.Vector2(1/2048,1/1152)},glowWorldXZ:{value:new T.Vector2(0,0)},glowStrength:{value:0},glowRadius:{value:2.45}};
  ground.material.onBeforeCompile=shader=>{
   Object.assign(shader.uniforms,uniforms);
-  shader.vertexShader='varying vec4 vFloorProjection; uniform mat4 floorProjection;\n'+shader.vertexShader;
-  shader.vertexShader=shader.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\nvFloorProjection = floorProjection * modelMatrix * vec4(transformed,1.0);');
-  shader.fragmentShader='uniform sampler2D floorReflection; uniform vec2 reflectionTexel; varying vec4 vFloorProjection;\n'+shader.fragmentShader;
-  shader.fragmentShader=shader.fragmentShader.replace('#include <opaque_fragment>',`
+  shader.vertexShader='varying vec4 vFloorProjection; varying vec3 vFloorWorldPosition; uniform mat4 floorProjection;\n'+shader.vertexShader;
+  shader.vertexShader=shader.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\nvec4 floorWorld = modelMatrix * vec4(transformed,1.0);\nvFloorWorldPosition = floorWorld.xyz;\nvFloorProjection = floorProjection * floorWorld;');
+  shader.fragmentShader='uniform sampler2D floorReflection; uniform vec2 reflectionTexel; uniform vec2 glowWorldXZ; uniform float glowStrength; uniform float glowRadius; varying vec4 vFloorProjection; varying vec3 vFloorWorldPosition; float floorGlowMask(){vec2 gd=vFloorWorldPosition.xz-glowWorldXZ; return exp(-dot(gd,gd)/(2.0*glowRadius*glowRadius))*glowStrength;}\n'+shader.fragmentShader;
+  shader.fragmentShader=shader.fragmentShader.replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\nroughnessFactor *= mix(1.0,0.66,clamp(floorGlowMask(),0.0,1.0));');
+ shader.fragmentShader=shader.fragmentShader.replace('#include <opaque_fragment>',`
   vec2 reflectionUV=vFloorProjection.xy/vFloorProjection.w;
   vec4 reflected=vec4(0.0);
   float totalWeight=0.0;
@@ -25,11 +26,13 @@ export function createFloorReflection(renderer,scene,ground){
   float reflectedAlpha=clamp(reflected.a,0.0,1.0)*inside;
   vec3 reflectedColor=reflected.rgb/max(reflected.a,.001);
   outgoingLight=mix(outgoingLight,reflectedColor,.46*reflectedAlpha);
+  float pointerGlow=clamp(floorGlowMask(),0.0,1.0);
+  outgoingLight += vec3(.035,.043,.050)*pointerGlow;
   #include <opaque_fragment>`);
  };
- ground.material.customProgramCacheKey=()=> 'reference-floor-v3';
+ ground.material.customProgramCacheKey=()=> 'reference-floor-v4-pointer-glow';
  const color=new T.Color(),look=new T.Vector3();
- return {update(camera){
+ return {setGlow(x,z,strength=1){uniforms.glowWorldXZ.value.set(x,z);uniforms.glowStrength.value=strength;},update(camera){
   mirror.copy(camera);mirror.position.y=2*ground.position.y-camera.position.y;
   camera.getWorldDirection(look);look.add(camera.position);look.y=2*ground.position.y-look.y;
   mirror.up.set(0,-1,0);mirror.lookAt(look);mirror.updateMatrixWorld();
