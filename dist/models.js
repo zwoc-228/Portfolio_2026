@@ -2,12 +2,12 @@ import * as T from './assets/three.module.js';
 import {RoundedBoxGeometry} from './assets/RoundedBoxGeometry.js';
 export function createModels(textures={}){
 const mat=(name,color,roughness=0.7,metalness=0,extra={})=>{let m=new T.MeshPhysicalMaterial({color,roughness,metalness,...Object.fromEntries(Object.entries(extra).filter(([k,v])=>v!==undefined))});m.name=name;return m;};
-const linen=mat('Linen',0xe8e5de,.78,0,{map:textures.linenColor,roughnessMap:textures.linenRough,bumpMap:textures.linen,bumpScale:.0036,sheen:.48,sheenColor:new T.Color(0xefe7db),sheenRoughness:.72});
-const paper=mat('Paper',0xf0eee7,.84,0,{map:textures.paperColor,bumpMap:textures.paper,bumpScale:.0018});
-const edge=mat('Page edges',0xe2ded5,.82,0,{map:textures.paperColor,bumpMap:textures.paper,bumpScale:.0007});const stone=mat('White mineral',0xe4e1d9,.66,0,{map:textures.stoneColor,roughnessMap:textures.stoneRough,bumpMap:textures.stone,bumpScale:.0026});
-const glass=mat('Clear acrylic',0xf7fafb,.06,0,{transmission:1,ior:1.49,thickness:.85,attenuationColor:new T.Color(0xf1f5f6),attenuationDistance:6.0});const blue=mat('Blue acrylic',0x86a1aa,.16,0,{transmission:.82,ior:1.49,thickness:.86,attenuationColor:new T.Color(0x93aeb6),attenuationDistance:2.05});
-const copper=mat('Copper',0xaf7865,.46,1,{roughnessMap:textures.copperRough,anisotropy:.2});const dark=mat('Dark mineral',0x737b80,.60,0,{map:textures.stoneColor,roughnessMap:textures.stoneRough,bumpMap:textures.stone,bumpScale:.0035});
-const steel=mat('Paperclip stainless steel',0xc2c4c2,.21,1,{roughnessMap:textures.steelRough});const ink=mat('Printed paper',0xffffff,.9,0,{map:textures.print});
+const linen=mat('Linen',0xf1ede6,.72,0,{map:textures.linenColor,roughnessMap:textures.linenRough,normalMap:textures.linenNormal,bumpMap:textures.linen,bumpScale:.0016,normalScale:new T.Vector2(.32,.32),sheen:.34,sheenColor:new T.Color(0xf2eee6),sheenRoughness:.68,clearcoat:.02,clearcoatRoughness:.78});
+const paper=mat('Paper',0xf6f3ec,.88,0,{map:textures.paperColor,roughnessMap:textures.paperRough,normalMap:textures.paperNormal,bumpMap:textures.paper,bumpScale:.00045,normalScale:new T.Vector2(.20,.20)});
+const edge=mat('Page edges',0xe9e3d9,.86,0,{map:textures.paperColor,roughnessMap:textures.paperRough,normalMap:textures.paperNormal,bumpMap:textures.paper,bumpScale:.0002,normalScale:new T.Vector2(.10,.10)});const stone=mat('White mineral',0xefeae1,.58,0,{map:textures.stoneColor,roughnessMap:textures.stoneRough,normalMap:textures.stoneNormal,bumpMap:textures.stone,bumpScale:.0012,normalScale:new T.Vector2(.30,.30),clearcoat:.02,clearcoatRoughness:.84});
+const glass=mat('Clear acrylic',0xf8fbfc,.055,0,{transmission:1,ior:1.49,thickness:.82,attenuationColor:new T.Color(0xf2f7f8),attenuationDistance:7.5,clearcoat:.12,clearcoatRoughness:.08});const blue=mat('Blue acrylic',0x8ca7b2,.13,0,{transmission:.84,ior:1.49,thickness:.82,attenuationColor:new T.Color(0x9bb6c1),attenuationDistance:2.4,clearcoat:.10,clearcoatRoughness:.10});
+const copper=mat('Copper',0xb97d69,.38,1,{roughnessMap:textures.copperRough,anisotropy:.28,clearcoat:.04,clearcoatRoughness:.42});const dark=mat('Dark mineral',0x667075,.52,0,{map:textures.stoneColor,roughnessMap:textures.stoneRough,normalMap:textures.stoneNormal,bumpMap:textures.stone,bumpScale:.0013,normalScale:new T.Vector2(.26,.26)});
+const steel=mat('Paperclip stainless steel',0xd0d3d4,.16,1,{roughnessMap:textures.steelRough,clearcoat:.18,clearcoatRoughness:.16});const ink=mat('Printed paper',0xffffff,.94,0,{map:textures.print,roughnessMap:textures.paperRough,normalMap:textures.paperNormal,normalScale:new T.Vector2(.10,.10)});
 function box(g,name,w,h,d,x,y,z,m,r=.014){const mesh=new T.Mesh(new RoundedBoxGeometry(w,h,d,2,Math.min(r,w/3,h/3,d/3)),m);mesh.name=name;mesh.position.set(x,y,z);// Give each transparent solid its own optical path length.
 if(m.transmission>0){mesh.material=m.clone();mesh.material.thickness=Math.min(w,h,d);}
 mesh.castShadow=!(m.transmission>.5);mesh.receiveShadow=true;g.add(mesh);return mesh;}
@@ -16,13 +16,13 @@ const writing=new T.Group();writing.name='Writing';
 box(writing,'Lower linen cover',2.55,.047,3.2,0,.035,0,linen,.023);
 box(writing,'Page block',2.39,.15,3.02,.025,.135,0,paper,.018);
 for(let i=0;i<32;i++){
- const leaf=box(writing,'Page edge '+i,2.418+.007*Math.sin(i*2.7),.0024,3.047+.008*Math.cos(i*1.13),.025+.002*Math.sin(i),.072+i*.00435,.003*Math.sin(i*1.73),i%5===0?edge:paper,.0008);
+ const leaf=box(writing,'Page edge '+i,2.418+.008*Math.sin(i*2.7),.00235,3.048+.010*Math.cos(i*1.13),.025+.002*Math.sin(i),.072+i*.00438,.004*Math.sin(i*1.73),i%5===0?edge:paper,.0008);
  const a=leaf.geometry.attributes.position;
- for(let j=0;j<a.count;j++){const x=a.getX(j),z=a.getZ(j);a.setY(j,a.getY(j)+.0015*Math.sin(z*3.3+i*.16)*(x+1.21)/2.42);}
+ for(let j=0;j<a.count;j++){const x=a.getX(j),z=a.getZ(j);a.setY(j,a.getY(j)+.0018*Math.sin(z*3.3+i*.16)*(x+1.21)/2.42+.0005*Math.sin(x*5.0+i));}
  leaf.geometry.computeVertexNormals();
 }
 const cover=box(writing,'Upper linen cover',2.55,.049,3.2,0,.239,0,linen,.022);
-const cv=cover.geometry.attributes.position;for(let i=0;i<cv.count;i++){let x=cv.getX(i),z=cv.getZ(i);cv.setY(i,cv.getY(i)+.0052*Math.cos(z*1.35)*(1-(x/1.275)**2)+.0008*Math.sin(x*4.2));}cover.geometry.computeVertexNormals();
+const cv=cover.geometry.attributes.position;for(let i=0;i<cv.count;i++){let x=cv.getX(i),z=cv.getZ(i);cv.setY(i,cv.getY(i)+.0060*Math.cos(z*1.35)*(1-(x/1.275)**2)+.0011*Math.sin(x*4.2));}cover.geometry.computeVertexNormals();
 // Curved closed spine with a recessed page-side opening.
 const spine=box(writing,'Rounded cloth spine',.11,.229,3.19,-1.25,.137,0,linen,.048);
 box(writing,'Spine end inset',.054,.133,.009,-1.241,.135,1.598,edge,.009);
@@ -69,7 +69,7 @@ function sheetGeometry(w,d,h,phase){
  for(let i=0;i<boundary.length;i++){let a=boundary[i],b=boundary[(i+1)%boundary.length];ix.push(a,b,a+stride,b,b+stride,a+stride);}
  let g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(v,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setIndex(ix);g.computeVertexNormals();return g;
 }
-for(let i=0;i<23;i++){let sheet=new T.Mesh(sheetGeometry(2.75,3.35,.0036,i*.7),paper);sheet.name='Paper sheet '+i;sheet.position.set(Math.sin(i*1.7)*.018,.008+i*.0056+Math.sin(i*.53)*.0007,Math.cos(i*2.1)*.018);sheet.rotation.y=Math.sin(i*.8)*.0052;sheet.rotation.x=Math.sin(i*.41)*.0019;sheet.rotation.z=Math.cos(i*.58)*.0016;sheet.castShadow=true;sheet.receiveShadow=true;research.add(sheet);}
+for(let i=0;i<23;i++){let sheet=new T.Mesh(sheetGeometry(2.75,3.35,.0036,i*.7),paper);sheet.name='Paper sheet '+i;sheet.position.set(Math.sin(i*1.7)*.024,.008+i*.00555+Math.sin(i*.53)*.0009,Math.cos(i*2.1)*.022);sheet.rotation.y=Math.sin(i*.8)*.0068;sheet.rotation.x=Math.sin(i*.41)*.0024;sheet.rotation.z=Math.cos(i*.58)*.0021;sheet.castShadow=true;sheet.receiveShadow=true;research.add(sheet);}
 const pg=new T.PlaneGeometry(2.75,3.35,28,36);pg.rotateX(-Math.PI/2);const pa=pg.attributes.position;for(let i=0;i<pa.count;i++){let x=pa.getX(i),z=pa.getZ(i);pa.setY(i,.147+curl(x,z,16.1));}pg.computeVertexNormals();const top=new T.Mesh(pg,paper);top.name='Unprinted top research sheet';top.receiveShadow=true;top.castShadow=true;research.add(top);
 // A smooth double-loop wire clip: open tips, straight legs, round bends.
 const cp=[];const cy=.171;for(let i=0;i<=12;i++){let a=Math.PI+i/12*Math.PI;cp.push([1.065+Math.cos(a)*.094,cy,-1.545+Math.sin(a)*.094]);}cp.push([1.159,cy,-1.07]);for(let i=0;i<=12;i++){let a=i/12*Math.PI;cp.push([1.081+Math.cos(a)*.078,cy,-1.07+Math.sin(a)*.078]);}cp.push([1.003,cy,-1.49]);for(let i=0;i<=12;i++){let a=Math.PI+i/12*Math.PI;cp.push([1.063+Math.cos(a)*.060,cy+.004,-1.49+Math.sin(a)*.060]);}cp.push([1.123,cy+.004,-1.16]);
@@ -79,5 +79,5 @@ for(const [i,p] of cp.entries()){
  // Wire sits on the curled top leaf; residual bow models spring tension.
  p[1]=.147+curl(p[0],p[2],16.1)+.0065+.0018*Math.sin(i/(cp.length-1)*Math.PI);
 }
-tube(research,'Bent steel paperclip',cp,.0065,steel);
+tube(research,'Bent steel paperclip',cp,.0059,steel);
 return [writing,architecture,research];}
