@@ -5,22 +5,32 @@ const mat=(name,color,roughness=0.7,metalness=0,extra={})=>{let m=new T.MeshPhys
 const linen=mat('Linen',0xf1eee7,.76,0,{map:textures.linenColor,roughnessMap:textures.linenRough,normalMap:textures.linenNormal,bumpMap:textures.linen,bumpScale:.0012,normalScale:new T.Vector2(.22,.22),sheen:.22,sheenColor:new T.Color(0xf1ede6),sheenRoughness:.82,clearcoat:.012,clearcoatRoughness:.88});
 const paper=mat('Paper',0xf5f2eb,.90,0,{map:textures.paperColor,roughnessMap:textures.paperRough,normalMap:textures.paperNormal,bumpMap:textures.paper,bumpScale:.00030,normalScale:new T.Vector2(.12,.12)});
 const edge=mat('Page edges',0xe8e2d7,.88,0,{map:textures.paperColor,roughnessMap:textures.paperRough,normalMap:textures.paperNormal,bumpMap:textures.paper,bumpScale:.00014,normalScale:new T.Vector2(.07,.07)});
-const stone=mat('White mineral',0xf0ece4,.64,0,{map:textures.stoneColor,roughnessMap:textures.stoneRough,normalMap:textures.stoneNormal,bumpMap:textures.stone,bumpScale:.0008,normalScale:new T.Vector2(.17,.17),clearcoat:.01,clearcoatRoughness:.92});
 const glass=mat('Clear acrylic',0xfcfdfc,.05,0,{transmission:.99,ior:1.49,thickness:.92,attenuationColor:new T.Color(0xf7fbfb),attenuationDistance:8.2,clearcoat:.16,clearcoatRoughness:.06});
-const frosted=mat('Frosted acrylic',0xf3f5f3,.20,0,{transmission:.90,ior:1.49,thickness:.78,attenuationColor:new T.Color(0xf2f7f5),attenuationDistance:2.7,clearcoat:.11,clearcoatRoughness:.14});
-const copper=mat('Copper accent',0xba8b6d,.28,1,{roughnessMap:textures.archCopperRough||textures.copperRough,anisotropy:.32,clearcoat:.06,clearcoatRoughness:.22});
-const dark=mat('Graphite acrylic',0x90999a,.24,0,{transmission:.74,ior:1.48,thickness:.68,attenuationColor:new T.Color(0x94a0a2),attenuationDistance:1.2,clearcoat:.10,clearcoatRoughness:.14});
+// Plastic013A is used without adding a new transparent-shader texture budget: only the existing
+// single roughness slot is retained; its color/normal character is folded into scalar parameters.
+const frosted=mat('Plastic013A frosted acrylic',0xeeeae8,.72,0,{roughnessMap:textures.archPlasticRough,transmission:.76,ior:1.47,thickness:.78,attenuationColor:new T.Color(0xf0ebe9),attenuationDistance:2.35,clearcoat:.08,clearcoatRoughness:.18});
+// Metal044A informs the scalar metal response here; the textured Metal044A surface is reserved
+// for the graphite block below so this accent does not gain extra texture lookups.
+const copper=mat('Copper accent',0xc28f6f,.31,1,{anisotropy:.28,clearcoat:.06,clearcoatRoughness:.24});
 const steel=mat('Paperclip stainless steel',0xd8dbdd,.18,1,{roughnessMap:textures.steelRough,clearcoat:.14,clearcoatRoughness:.18});
 const ink=mat('Printed paper',0xffffff,.95,0,{map:textures.print,roughnessMap:textures.paperRough,normalMap:textures.paperNormal,normalScale:new T.Vector2(.08,.08)});
 function texClone(t,repeat=1){if(!t)return t;const c=t.clone();c.wrapS=c.wrapT=T.RepeatWrapping;c.repeat.copy(new T.Vector2(repeat,repeat));c.offset.set(0,0);c.center.set(.5,.5);c.rotation=0;c.needsUpdate=true;return c;}
 const writingClothColor=texClone(textures.linenColor,1.45);
 const writingClothRough=texClone(textures.linenRough,1.45);
 const writingClothNormal=texClone(textures.linenNormal,1.45);
-const architectureStoneColor=texClone(textures.archMineralColor||textures.stoneColor,1.12);
-const architectureStoneRough=texClone(textures.archMineralRough||textures.stoneRough,1.12);
-const architectureStoneNormal=texClone(textures.archMineralNormal||textures.stoneNormal,1.12);
-const architectureStone=mat('Architecture mineral',0xf4f0e9,.58,0,{map:architectureStoneColor,roughnessMap:architectureStoneRough,normalMap:architectureStoneNormal,bumpMap:textures.stone,bumpScale:.0010,normalScale:new T.Vector2(.22,.22),clearcoat:.018,clearcoatRoughness:.90});
-const architectureStoneDark=mat('Architecture graphite mineral',0x8b9394,.42,0,{map:architectureStoneColor,roughnessMap:architectureStoneRough,normalMap:architectureStoneNormal,bumpMap:textures.stone,bumpScale:.0009,normalScale:new T.Vector2(.16,.16),clearcoat:.02,clearcoatRoughness:.86});
+const architectureStoneColor=texClone(textures.archMarbleColor,1.08);
+const architectureStoneRough=texClone(textures.archMarbleRough,1.08);
+const architectureStoneNormal=texClone(textures.archMarbleNormal,1.08);
+// Marble021 displacement has already been baked into the optimized normal map offline. Runtime
+// therefore uses 3 samples instead of the former color+roughness+normal+bump 4-sample stack.
+const architectureStone=mat('Marble021 architectural mineral',0xf7f3ed,.78,0,{map:architectureStoneColor,roughnessMap:architectureStoneRough,normalMap:architectureStoneNormal,normalScale:new T.Vector2(.44,.44),clearcoat:.035,clearcoatRoughness:.68});
+const architectureMetalColor=texClone(textures.archMetalColor,1.24);
+const architectureMetalRough=texClone(textures.archMetalRough,1.24);
+const architectureMetalNormal=texClone(textures.archMetalNormal,1.24);
+// Metal044A metalness is virtually solid white, so metalness stays scalar=1 and no metalness map
+// is sampled. Displacement is baked into the normal map for the same reason.
+const architectureMetal=mat('Metal044A graphite metal',0x737b7c,.78,1,{map:architectureMetalColor,roughnessMap:architectureMetalRough,normalMap:architectureMetalNormal,normalScale:new T.Vector2(.58,.58),clearcoat:.045,clearcoatRoughness:.30,anisotropy:.16});
+const architectureGlow=mat('Warm window glow',0xffe8bd,.18,0,{emissive:0xffd59a,emissiveIntensity:2.25,clearcoat:.10,clearcoatRoughness:.18});
 function box(g,name,w,h,d,x,y,z,m,r=.014){const mesh=new T.Mesh(new RoundedBoxGeometry(w,h,d,2,Math.min(r,w/3,h/3,d/3)),m);mesh.name=name;mesh.position.set(x,y,z);// Give each transparent solid its own optical path length.
 if(m.transmission>0){mesh.material=m.clone();mesh.material.thickness=Math.min(w,h,d);}
 mesh.castShadow=!(m.transmission>.5);mesh.receiveShadow=true;g.add(mesh);return mesh;}
@@ -75,28 +85,39 @@ box(architecture,'Left clear volume',.40,.40,.44,-.96,.25,.82,glass,.012);
 box(architecture,'Center clear fin',.16,.48,.18,.12,.35,.26,glass,.008);
 box(architecture,'Clear bridge',.42,.06,.20,.06,.58,.26,glass,.006);
 box(architecture,'Copper anchor',.60,.46,.46,.88,.45,.02,copper,.010);
-box(architecture,'Graphite base',.74,.46,.74,.92,.46,.82,architectureStoneDark,.014);
-box(architecture,'Smoked glass cap',.70,.22,.70,.92,.80,.82,mat('Smoked acrylic',0xa8b0b2,.10,0,{transmission:.90,ior:1.49,thickness:.52,attenuationColor:new T.Color(0xa3adb0),attenuationDistance:2.2,clearcoat:.12,clearcoatRoughness:.10}),.010);
-const research=new T.Group();research.name='Research';
-// Closed, individually bowed sheets with continuous top/edge geometry.
-const curl=(x,z,phase)=>.006*Math.pow(Math.abs(x)/1.375,5)*(1+.4*Math.sin(z*2+phase))+.005*Math.pow(Math.abs(z)/1.675,8)+.0015*Math.sin(z*3+phase)*(x/1.375);
-function sheetGeometry(w,d,h,phase){
- const nx=14,nz=18,v=[],uv=[],ix=[];const stride=(nx+1)*(nz+1);
- for(let side=0;side<2;side++)for(let j=0;j<=nz;j++)for(let i=0;i<=nx;i++){let x=(i/nx-.5)*w,z=(j/nz-.5)*d;v.push(x,curl(x,z,phase)+(side===0?h/2:-h/2),z);uv.push(i/nx,1-j/nz);}
- for(let side=0;side<2;side++)for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){let a=side*stride+j*(nx+1)+i,b=a+1,c=a+nx+1,e=c+1;if(side===0)ix.push(a,c,b,b,c,e);else ix.push(a,b,c,b,e,c);}
- let boundary=[];for(let i=0;i<=nx;i++)boundary.push(i);for(let j=1;j<=nz;j++)boundary.push(j*(nx+1)+nx);for(let i=nx-1;i>=0;i--)boundary.push(nz*(nx+1)+i);for(let j=nz-1;j>0;j--)boundary.push(j*(nx+1));
- for(let i=0;i<boundary.length;i++){let a=boundary[i],b=boundary[(i+1)%boundary.length];ix.push(a,b,a+stride,b,b+stride,a+stride);}
- let g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(v,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setIndex(ix);g.computeVertexNormals();return g;
+box(architecture,'Graphite base',.74,.46,.74,.92,.46,.82,architectureMetal,.014);
+box(architecture,'Smoked glass cap',.70,.22,.70,.92,.80,.82,mat('Plastic013A smoked acrylic',0xa6aaab,.18,0,{transmission:.88,ior:1.48,thickness:.52,attenuationColor:new T.Color(0xa6a09d),attenuationDistance:2.0,clearcoat:.10,clearcoatRoughness:.13}),.010);
+// Small warm openings: a restrained luminous detail inspired by architectural-map visualization,
+// deliberately kept tiny so the model still reads as a physical maquette rather than a neon object.
+for(const [x,y,z,w] of [[-.06,.72,.024,.25],[-.06,.90,.024,.25],[-.06,1.08,.024,.25]]){
+ const win=box(architecture,'Warm tower window',w,.032,.010,x,y,z,architectureGlow,.003);win.castShadow=false;win.receiveShadow=false;
 }
-for(let i=0;i<18;i++){let sheet=new T.Mesh(sheetGeometry(2.75,3.35,.0036,i*.7),paper);sheet.name='Paper sheet '+i;sheet.position.set(Math.sin(i*1.7)*.020,.008+i*.0059+Math.sin(i*.53)*.0008,Math.cos(i*2.1)*.018);sheet.rotation.y=Math.sin(i*.8)*.0068;sheet.rotation.x=Math.sin(i*.41)*.0024;sheet.rotation.z=Math.cos(i*.58)*.0021;sheet.castShadow=true;sheet.receiveShadow=true;research.add(sheet);}
-const pg=new T.PlaneGeometry(2.75,3.35,28,36);pg.rotateX(-Math.PI/2);const pa=pg.attributes.position;for(let i=0;i<pa.count;i++){let x=pa.getX(i),z=pa.getZ(i);pa.setY(i,.147+curl(x,z,16.1));}pg.computeVertexNormals();const top=new T.Mesh(pg,paper);top.name='Unprinted top research sheet';top.receiveShadow=true;top.castShadow=true;research.add(top);
+const podiumWindow=box(architecture,'Warm podium window',.34,.030,.010,-.06,.44,1.185,architectureGlow,.003);podiumWindow.castShadow=false;podiumWindow.receiveShadow=false;
+
+const research=new T.Group();research.name='Research';
+// Anti-moire paper construction: one continuous page block carries the edge mass,
+// while only a handful of broad leaves create visible layering. This avoids the dozens
+// of sub-pixel parallel edge bands that produced the previous "mosaic" shimmer.
+const researchPageBlock=box(research,'Research page block',2.76,.112,3.36,0,.068,0,edge,.010);
+researchPageBlock.castShadow=true;researchPageBlock.receiveShadow=true;
+for(let i=0;i<5;i++){
+ const sheet=box(research,'Research visible leaf '+i,2.765,.0065,3.365,
+  (i-2)*.006,.128+i*.008,(2-i)*.006,paper,.0045);
+ sheet.rotation.y=(i-2)*.0016;sheet.rotation.z=(2-i)*.0010;sheet.castShadow=true;sheet.receiveShadow=true;
+}
+// Top leaf gets one subtle, low-frequency bow; there are no tessellated side walls to alias.
+const pg=new T.PlaneGeometry(2.765,3.365,12,14);pg.rotateX(-Math.PI/2);const pa=pg.attributes.position;
+for(let i=0;i<pa.count;i++){
+ const x=pa.getX(i),z=pa.getZ(i),edgeX=Math.pow(Math.abs(x)/1.3825,4),edgeZ=Math.pow(Math.abs(z)/1.6825,5);
+ pa.setY(i,.170+.0050*edgeX+.0030*edgeZ+.0012*Math.sin(z*1.8)*(x/1.3825));
+}
+pg.computeVertexNormals();const top=new T.Mesh(pg,paper);top.name='Top research leaf';top.receiveShadow=true;top.castShadow=true;research.add(top);
 // A smooth double-loop wire clip: open tips, straight legs, round bends.
-const cp=[];const cy=.171;for(let i=0;i<=12;i++){let a=Math.PI+i/12*Math.PI;cp.push([1.065+Math.cos(a)*.094,cy,-1.545+Math.sin(a)*.094]);}cp.push([1.159,cy,-1.07]);for(let i=0;i<=12;i++){let a=i/12*Math.PI;cp.push([1.081+Math.cos(a)*.078,cy,-1.07+Math.sin(a)*.078]);}cp.push([1.003,cy,-1.49]);for(let i=0;i<=12;i++){let a=Math.PI+i/12*Math.PI;cp.push([1.063+Math.cos(a)*.060,cy+.004,-1.49+Math.sin(a)*.060]);}cp.push([1.123,cy+.004,-1.16]);
-// Scale the loop around its contact centre; preserve contact height.
+const curl=(x,z)=>.0050*Math.pow(Math.abs(x)/1.3825,4)+.0030*Math.pow(Math.abs(z)/1.6825,5)+.0012*Math.sin(z*1.8)*(x/1.3825);
+const cp=[];const cy=.194;for(let i=0;i<=12;i++){let a=Math.PI+i/12*Math.PI;cp.push([1.065+Math.cos(a)*.094,cy,-1.545+Math.sin(a)*.094]);}cp.push([1.159,cy,-1.07]);for(let i=0;i<=12;i++){let a=i/12*Math.PI;cp.push([1.081+Math.cos(a)*.078,cy,-1.07+Math.sin(a)*.078]);}cp.push([1.003,cy,-1.49]);for(let i=0;i<=12;i++){let a=Math.PI+i/12*Math.PI;cp.push([1.063+Math.cos(a)*.060,cy+.004,-1.49+Math.sin(a)*.060]);}cp.push([1.123,cy+.004,-1.16]);
 for(const [i,p] of cp.entries()){
  p[0]=1.065+(p[0]-1.065)*.67;p[2]=-1.30+(p[2]+1.30)*.67;
- // Wire sits on the curled top leaf; residual bow models spring tension.
- p[1]=.147+curl(p[0],p[2],16.1)+.0065+.0018*Math.sin(i/(cp.length-1)*Math.PI);
+ p[1]=.170+curl(p[0],p[2])+.0065+.0016*Math.sin(i/(cp.length-1)*Math.PI);
 }
-tube(research,'Bent steel paperclip',cp,.0052,steel);
+tube(research,'Bent steel paperclip',cp,.0050,steel);
 return [writing,architecture,research];}

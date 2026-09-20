@@ -1,3 +1,7 @@
+# Latest round: 2026-09-20 Round 22
+
+See `UPDATE_2026-09-20_ROUND22_MATERIAL_SWAP.md` first, then Round 21. Round 22 swaps the architecture surface system to the user-uploaded Marble021 / Metal044A / Plastic013A packs while reducing the runtime texture budget. Round 21 contains the architecture scale, research anti-moire rebuild, unified glass UI, transition performance changes, brighter metal environment, and emissive window details.
+
 # 接手说明 / deployment handoff
 
 ## 运行与部署

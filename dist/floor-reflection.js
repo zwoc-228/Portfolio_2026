@@ -1,12 +1,12 @@
 import * as T from './assets/three.module.js';
 // Planar capture of the actual scene. Broad, premultiplied filtering approximates a rough silver surface.
 export function createFloorReflection(renderer,scene,ground){
- const rt=new T.WebGLRenderTarget(1536,864,{type:T.HalfFloatType,depthBuffer:true});
+ const rt=new T.WebGLRenderTarget(1024,576,{type:T.HalfFloatType,depthBuffer:true});
  rt.texture.generateMipmaps=true;rt.texture.minFilter=T.LinearMipmapLinearFilter;rt.texture.magFilter=T.LinearFilter;
  if('samples' in rt)rt.samples=2;
  const mirror=new T.PerspectiveCamera();const matrix=new T.Matrix4();
  const bias=new T.Matrix4().set(.5,0,0,.5,0,.5,0,.5,0,0,.5,.5,0,0,0,1);
- const uniforms={floorReflection:{value:rt.texture},floorProjection:{value:matrix},reflectionTexel:{value:new T.Vector2(1/1536,1/864)},glowWorldXZ:{value:new T.Vector2(0,0)},glowStrength:{value:0},glowRadius:{value:.36}};
+ const uniforms={floorReflection:{value:rt.texture},floorProjection:{value:matrix},reflectionTexel:{value:new T.Vector2(1/1024,1/576)},glowWorldXZ:{value:new T.Vector2(0,0)},glowStrength:{value:0},glowRadius:{value:.36}};
  ground.material.onBeforeCompile=shader=>{
   Object.assign(shader.uniforms,uniforms);
   shader.vertexShader='varying vec4 vFloorProjection; varying vec3 vFloorWorldPosition; uniform mat4 floorProjection;\n'+shader.vertexShader;
@@ -25,12 +25,12 @@ export function createFloorReflection(renderer,scene,ground){
   float inside=step(0.0,reflectionUV.x)*step(reflectionUV.x,1.0)*step(0.0,reflectionUV.y)*step(reflectionUV.y,1.0)*step(0.0,vFloorProjection.w);
   float reflectedAlpha=clamp(reflected.a,0.0,1.0)*inside;
   vec3 reflectedColor=reflected.rgb/max(reflected.a,.001);
-  outgoingLight=mix(outgoingLight,reflectedColor,.50*reflectedAlpha);
+  outgoingLight=mix(outgoingLight,reflectedColor,.44*reflectedAlpha);
   float pointerGlow=clamp(floorGlowMask(),0.0,1.0);
   outgoingLight += vec3(.024,.028,.034)*pointerGlow;
   #include <opaque_fragment>`);
  };
- ground.material.customProgramCacheKey=()=> 'reference-floor-v7-brighter';
+ ground.material.customProgramCacheKey=()=> 'reference-floor-v8-light-silver';
  const color=new T.Color(),look=new T.Vector3();
  return {setGlow(x,z,strength=1){uniforms.glowWorldXZ.value.set(x,z);uniforms.glowStrength.value=strength;},update(camera){
   mirror.copy(camera);mirror.position.y=2*ground.position.y-camera.position.y;

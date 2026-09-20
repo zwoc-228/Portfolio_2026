@@ -17,3 +17,7 @@ Seven state URLs use #home, #writing/preview, #architecture/preview, #research/p
 Reference imagery and titles are supplied design evidence. Original project content, contact address and exact font have not been supplied. Do not publish this study as a completed authored portfolio without replacing study content and completing visual QA.
 
 Local development: npm run dev. No package installation is needed; dependencies are bundled. The managed environment uses sites-preview.
+
+
+## Latest material pass
+See `UPDATE_2026-09-20_ROUND22_MATERIAL_SWAP.md` for the uploaded Marble021 / Metal044A / Plastic013A architecture material replacement and render-budget notes.
