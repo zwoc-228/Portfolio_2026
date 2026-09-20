@@ -16,6 +16,11 @@ function texClone(t,repeat=1){if(!t)return t;const c=t.clone();c.wrapS=c.wrapT=T
 const writingClothColor=texClone(textures.linenColor,1.45);
 const writingClothRough=texClone(textures.linenRough,1.45);
 const writingClothNormal=texClone(textures.linenNormal,1.45);
+const architectureStoneColor=texClone(textures.stoneColor,3.15);
+const architectureStoneRough=texClone(textures.stoneRough,3.15);
+const architectureStoneNormal=texClone(textures.stoneNormal,3.15);
+const architectureStone=mat('Architecture mineral',0xf0ece4,.60,0,{map:architectureStoneColor,roughnessMap:architectureStoneRough,normalMap:architectureStoneNormal,bumpMap:textures.stone,bumpScale:.0015,normalScale:new T.Vector2(.27,.27),clearcoat:.008,clearcoatRoughness:.94});
+const architectureStoneDark=mat('Architecture graphite mineral',0xb7b9b6,.52,0,{map:architectureStoneColor,roughnessMap:architectureStoneRough,normalMap:architectureStoneNormal,bumpMap:textures.stone,bumpScale:.0012,normalScale:new T.Vector2(.22,.22),clearcoat:.01,clearcoatRoughness:.90});
 function box(g,name,w,h,d,x,y,z,m,r=.014){const mesh=new T.Mesh(new RoundedBoxGeometry(w,h,d,2,Math.min(r,w/3,h/3,d/3)),m);mesh.name=name;mesh.position.set(x,y,z);// Give each transparent solid its own optical path length.
 if(m.transmission>0){mesh.material=m.clone();mesh.material.thickness=Math.min(w,h,d);}
 mesh.castShadow=!(m.transmission>.5);mesh.receiveShadow=true;g.add(mesh);return mesh;}
@@ -60,22 +65,22 @@ let verts=[],uv=[],idx=[];for(let i=0;i<=20;i++){let t=i/20;let z=1.40+t*.70;let
 let rg=new T.BufferGeometry();rg.setAttribute('position',new T.Float32BufferAttribute(verts,3));rg.setAttribute('uv',new T.Float32BufferAttribute(uv,2));rg.setIndex(idx);rg.computeVertexNormals();let ribbon=new T.Mesh(rg,writingCover);ribbon.material=writingCover;ribbon.material.side=T.DoubleSide;ribbon.name='Woven bookmark ribbon';ribbon.castShadow=true;writing.add(ribbon);
 writing.userData.writingController={revealCurrent:0,materials:[writingCover,writingPaper,writingPageEdge]};
 const architecture=new T.Group();architecture.name='Architecture';
-box(architecture,'Mineral plinth',2.96,.22,2.56,0,.11,0,stone,.013);
-box(architecture,'Tower lower',.70,.82,.68,.07,.63,-.31,stone);
-box(architecture,'Tower upper',.67,.77,.67,.10,1.56,-.38,stone);
-box(architecture,'Cantilever slab',1.48,.095,.60,.13,1.19,-.33,stone,.008);
-box(architecture,'Clear left tall',.60,1.11,.61,-.74,.80,-.28,frosted,.008);
-box(architecture,'Clear front left',.44,.58,.49,-.97,.46,.41,glass,.009);
-box(architecture,'Clear bridge',.77,.095,.50,-.53,.84,.12,glass,.006);
-box(architecture,'Frosted front mass',.84,.50,.69,-.32,.47,.76,frosted,.01);
-box(architecture,'Clear front column',.34,.83,.40,.26,.63,.52,glass,.008);
-box(architecture,'Copper rear mass',.62,.50,.57,.83,.47,-.30,copper,.008);
-box(architecture,'Dark front base',.68,.35,.66,.91,.39,.57,dark,.012);
-box(architecture,'Smoked upper glass',.68,.42,.66,.91,.74,.57,mat('Smoked acrylic',0xaeb6b8,.18,0,{transmission:.84,ior:1.49,thickness:.5,attenuationColor:new T.Color(0xa0a8aa),attenuationDistance:1.3,clearcoat:.08,clearcoatRoughness:.14}),.009);
-box(architecture,'Left middle shelf',.80,.08,.73,-.64,.56,.19,stone,.006);
-box(architecture,'Narrow mineral column',.14,.77,.28,-.23,.61,.10,stone,.008);
-box(architecture,'Clear inner support',.19,.42,.24,-.18,.29,.47,glass,.006);
-box(architecture,'Mineral rear support',.21,.50,.22,.38,.36,.20,stone,.006);
+box(architecture,'Mineral plinth',3.16,.22,2.72,0,.11,0,architectureStone,.013);
+box(architecture,'Tower lower',.70,.82,.68,.14,.63,-.38,architectureStone);
+box(architecture,'Tower upper',.67,.77,.67,.18,1.56,-.45,architectureStone);
+box(architecture,'Cantilever slab',1.58,.095,.60,.20,1.19,-.38,architectureStone,.008);
+box(architecture,'Frosted left tall',.60,1.11,.61,-.98,.80,-.38,frosted,.008);
+box(architecture,'Clear front left',.44,.58,.49,-1.18,.46,.63,glass,.009);
+box(architecture,'Clear bridge',.84,.095,.50,-.65,.84,.14,glass,.006);
+box(architecture,'Frosted front mass',.82,.48,.66,-.48,.45,.92,frosted,.01);
+box(architecture,'Clear front column',.34,.83,.40,.36,.63,.68,glass,.008);
+box(architecture,'Copper rear mass',.58,.48,.53,1.08,.45,-.34,copper,.008);
+box(architecture,'Graphite front base',.68,.35,.66,1.16,.39,.78,architectureStoneDark,.012);
+box(architecture,'Smoked upper glass',.68,.42,.66,1.16,.74,.78,mat('Smoked acrylic',0xaeb6b8,.18,0,{transmission:.84,ior:1.49,thickness:.5,attenuationColor:new T.Color(0xa0a8aa),attenuationDistance:1.3,clearcoat:.08,clearcoatRoughness:.14}),.009);
+box(architecture,'Left middle shelf',.88,.08,.73,-.82,.56,.28,architectureStone,.006);
+box(architecture,'Narrow mineral column',.14,.77,.28,-.26,.61,.16,architectureStone,.008);
+box(architecture,'Clear inner support',.19,.42,.24,-.08,.29,.58,glass,.006);
+box(architecture,'Mineral rear support',.21,.50,.22,.49,.36,.28,architectureStone,.006);
 const research=new T.Group();research.name='Research';
 // Closed, individually bowed sheets with continuous top/edge geometry.
 const curl=(x,z,phase)=>.006*Math.pow(Math.abs(x)/1.375,5)*(1+.4*Math.sin(z*2+phase))+.005*Math.pow(Math.abs(z)/1.675,8)+.0015*Math.sin(z*3+phase)*(x/1.375);
