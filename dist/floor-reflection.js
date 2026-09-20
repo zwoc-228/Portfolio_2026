@@ -6,7 +6,7 @@ export function createFloorReflection(renderer,scene,ground){
  if('samples' in rt)rt.samples=4;
  const mirror=new T.PerspectiveCamera();const matrix=new T.Matrix4();
  const bias=new T.Matrix4().set(.5,0,0,.5,0,.5,0,.5,0,0,.5,.5,0,0,0,1);
- const uniforms={floorReflection:{value:rt.texture},floorProjection:{value:matrix},reflectionTexel:{value:new T.Vector2(1/2048,1/1152)},glowWorldXZ:{value:new T.Vector2(0,0)},glowStrength:{value:0},glowRadius:{value:.48}};
+ const uniforms={floorReflection:{value:rt.texture},floorProjection:{value:matrix},reflectionTexel:{value:new T.Vector2(1/2048,1/1152)},glowWorldXZ:{value:new T.Vector2(0,0)},glowStrength:{value:0},glowRadius:{value:.36}};
  ground.material.onBeforeCompile=shader=>{
   Object.assign(shader.uniforms,uniforms);
   shader.vertexShader='varying vec4 vFloorProjection; varying vec3 vFloorWorldPosition; uniform mat4 floorProjection;\n'+shader.vertexShader;
@@ -30,7 +30,7 @@ export function createFloorReflection(renderer,scene,ground){
   outgoingLight += vec3(.020,.024,.029)*pointerGlow;
   #include <opaque_fragment>`);
  };
- ground.material.customProgramCacheKey=()=> 'reference-floor-v5-flashlight';
+ ground.material.customProgramCacheKey=()=> 'reference-floor-v6-volumetric';
  const color=new T.Color(),look=new T.Vector3();
  return {setGlow(x,z,strength=1){uniforms.glowWorldXZ.value.set(x,z);uniforms.glowStrength.value=strength;},update(camera){
   mirror.copy(camera);mirror.position.y=2*ground.position.y-camera.position.y;
