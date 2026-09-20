@@ -20,7 +20,6 @@
   .home-orb{width:23px;height:23px}
   .category-panel{left:18px;top:108px;width:min(calc(100vw - 36px),420px);padding:22px 22px 20px;border-radius:24px}
   .index-content{left:18px;right:18px;top:360px;bottom:20px;border-radius:24px}
-  .glass-surface{-webkit-backdrop-filter:blur(20px) saturate(145%) brightness(1.05);backdrop-filter:blur(20px) saturate(145%) brightness(1.05)}
 }
 
 @media(max-width:650px){

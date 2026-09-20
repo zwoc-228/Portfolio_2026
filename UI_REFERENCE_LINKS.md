@@ -29,3 +29,12 @@
 
 10. GSAP — quickTo (reviewed for high-frequency pointer animation patterns; not added as a dependency)
     https://gsap.com/docs/v3/GSAP/gsap.quickTo%28%29/
+
+## Round 26 professional site pass
+- Codrops Webzibition page 2 — https://tympanus.net/codrops/webzibition/page/2/
+- Infinite Liquid Glass Grid — https://tympanus.net/codrops/2026/09/08/building-an-infinite-liquid-glass-grid-with-three-js-webgpu-and-tsl/
+- MERSI Architecture — https://www.mersi-architecture.com/
+- Oliver Gareis — https://www.olivergareis.com/
+- Antinomy Studio — https://www.antinomy.studio/
+- Kononenko Architectural Bureau — https://kononenkogroup.com/
+- Haoqi Wen — https://haoqi.design/

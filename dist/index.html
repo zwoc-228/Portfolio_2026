@@ -13,16 +13,18 @@
   <div id="scene" aria-label="Three dimensional portfolio objects"></div>
   <div id="failure" hidden role="status">Interactive 3D could not load on this device. You can still explore the categories below.</div>
 
-  <header class="site-header glass-surface glass-surface--bar" data-glass>
-    <button id="brand" class="brand" aria-label="Return to home">Yuanlong Zhu</button>
-    <span class="coordinates" aria-label="Coordinates">40.8075° N<br>73.9626° W</span>
-    <span class="profession">Architect <i>|</i> Researcher <i>|</i> Writer</span>
-    <nav aria-label="Primary navigation">
+  <header class="site-header liquid-header" data-liquid-header>
+    <div class="liquid-header__left">
+      <button id="brand" class="brand" aria-label="Return to home">Yuanlong Zhu</button>
+      <span class="coordinates" aria-label="Coordinates">40.8075° N<br>73.9626° W</span>
+      <span class="profession">Architect <i>|</i> Researcher <i>|</i> Writer</span>
+    </div>
+    <nav class="liquid-header__right" aria-label="Primary navigation">
       <button data-dialog="about">About</button>
       <button id="archive">Archive</button>
       <button data-dialog="contact">Contact</button>
-      <button id="home-button" class="home-orb glass-orb" aria-label="Home" title="Home"><span aria-hidden="true"></span></button>
     </nav>
+    <button id="home-button" class="home-orb liquid-orb-button" aria-label="Home" title="Home"><span aria-hidden="true"></span></button>
   </header>
 
   <main>
@@ -39,7 +41,7 @@
     </div>
 
     <section id="category" hidden>
-      <aside class="category-panel glass-surface glass-surface--panel" data-glass>
+      <aside class="category-panel liquid-panel-dom">
         <small id="number"></small>
         <h1 id="category-title"></h1>
         <span class="rule"></span>
@@ -49,13 +51,13 @@
           <button id="back">← <span>Back</span></button>
         </div>
       </aside>
-      <div id="index-content" class="index-content glass-surface glass-surface--content" data-glass></div>
+      <div id="index-content" class="index-content liquid-panel-dom"></div>
     </section>
   </main>
 
   <footer class="site-footer"><span>© 2024&nbsp; Y. Zhu&nbsp;&nbsp; All rights reserved.</span></footer>
 
-  <dialog id="info" class="glass-surface glass-surface--dialog" data-glass>
+  <dialog id="info" class="liquid-dialog-dom">
     <button class="close" aria-label="Close">×</button>
     <div id="info-body"></div>
   </dialog>
