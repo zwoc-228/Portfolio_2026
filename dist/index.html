@@ -1,7 +1,65 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Yuanlong Zhu — Writing, Architecture, Research</title><meta name="description" content="Writing, architecture and research by Yuanlong Zhu. An interactive portfolio study."><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23d4d5d4'/%3E%3Ctext x='7' y='24' font-family='serif' font-size='24'%3EY%3C/text%3E%3C/svg%3E"><link rel="stylesheet" href="style.css"></head><body>
-<div id="scene" aria-label="Three dimensional portfolio objects"></div><div id="failure" hidden>Interactive 3D could not load on this device. You can still explore the categories below.</div>
-<header><button id="brand">Yuanlong Zhu</button><span class="coordinates">40.8075° N<br>73.9626° W</span><span class="profession">Architect &nbsp;|&nbsp; Researcher &nbsp;|&nbsp; Writer</span><nav><button data-dialog="about">About</button><button id="archive">Archive</button><button data-dialog="contact">Contact</button><button id="home-button" class="disc" aria-label="Home" title="Home"><span aria-hidden="true"></span></button></nav></header>
-<main><div id="home-labels"><button data-category="0"><em>Writing</em><span class="rule"></span><small>01</small></button><button data-category="1">Architecture<span class="rule"></span><small>02</small></button><button data-category="2">Research<span class="rule"></span><small>03</small></button></div>
-<section id="category" hidden><aside><small id="number"></small><h1 id="category-title"></h1><span class="rule"></span><div id="filters"></div><button id="enter">← &nbsp; Enter</button><button id="back">← &nbsp; Back</button></aside><div id="index-content"></div></section>
-</main><div id="home-bottom"><p>Thinking through<br>Architecture and the World.</p><span class="hint"><i></i>Scroll or click an object</span></div><footer><span>© 2024 &nbsp;Y. Zhu &nbsp;&nbsp; All rights reserved.</span><span>Seattle, WA &nbsp; | &nbsp; New York, NY</span></footer>
-<dialog id="info"><button class="close" aria-label="Close">×</button><div id="info-body"></div></dialog><script type="module" src="app.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#aeb6bc">
+  <title>Yuanlong Zhu — Writing, Architecture, Research</title>
+  <meta name="description" content="Writing, architecture and research by Yuanlong Zhu. An interactive portfolio study.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23d4d5d4'/%3E%3Ctext x='7' y='24' font-family='serif' font-size='24'%3EY%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="home">
+  <div id="scene" aria-label="Three dimensional portfolio objects"></div>
+  <div id="failure" hidden role="status">Interactive 3D could not load on this device. You can still explore the categories below.</div>
+
+  <header class="site-header glass-surface glass-surface--bar" data-glass>
+    <button id="brand" class="brand" aria-label="Return to home">Yuanlong Zhu</button>
+    <span class="coordinates" aria-label="Coordinates">40.8075° N<br>73.9626° W</span>
+    <span class="profession">Architect <i>|</i> Researcher <i>|</i> Writer</span>
+    <nav aria-label="Primary navigation">
+      <button data-dialog="about">About</button>
+      <button id="archive">Archive</button>
+      <button data-dialog="contact">Contact</button>
+      <button id="home-button" class="home-orb glass-orb" aria-label="Home" title="Home"><span aria-hidden="true"></span></button>
+    </nav>
+  </header>
+
+  <main>
+    <div id="home-labels" class="home-labels" aria-label="Portfolio categories">
+      <button data-category="0" class="object-label object-label--writing">
+        <em>Writing</em><span class="rule"></span><small>01</small>
+      </button>
+      <button data-category="1" class="object-label object-label--architecture">
+        <em>Architecture</em><span class="rule"></span><small>02</small>
+      </button>
+      <button data-category="2" class="object-label object-label--research">
+        <em>Research</em><span class="rule"></span><small>03</small>
+      </button>
+    </div>
+
+    <section id="category" hidden>
+      <aside class="category-panel glass-surface glass-surface--panel" data-glass>
+        <small id="number"></small>
+        <h1 id="category-title"></h1>
+        <span class="rule"></span>
+        <div id="filters"></div>
+        <div class="category-actions">
+          <button id="enter">← <span>Enter</span></button>
+          <button id="back">← <span>Back</span></button>
+        </div>
+      </aside>
+      <div id="index-content" class="index-content glass-surface glass-surface--content" data-glass></div>
+    </section>
+  </main>
+
+  <footer class="site-footer"><span>© 2024&nbsp; Y. Zhu&nbsp;&nbsp; All rights reserved.</span></footer>
+
+  <dialog id="info" class="glass-surface glass-surface--dialog" data-glass>
+    <button class="close" aria-label="Close">×</button>
+    <div id="info-body"></div>
+  </dialog>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

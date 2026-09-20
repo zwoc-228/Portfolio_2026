@@ -30,7 +30,6 @@ const architectureMetalNormal=texClone(textures.archMetalNormal,1.24);
 // Metal044A metalness is virtually solid white, so metalness stays scalar=1 and no metalness map
 // is sampled. Displacement is baked into the normal map for the same reason.
 const architectureMetal=mat('Metal044A graphite metal',0x737b7c,.78,1,{map:architectureMetalColor,roughnessMap:architectureMetalRough,normalMap:architectureMetalNormal,normalScale:new T.Vector2(.58,.58),clearcoat:.045,clearcoatRoughness:.30,anisotropy:.16});
-const architectureGlow=mat('Warm window glow',0xffe8bd,.18,0,{emissive:0xffd59a,emissiveIntensity:2.25,clearcoat:.10,clearcoatRoughness:.18});
 function box(g,name,w,h,d,x,y,z,m,r=.014){const mesh=new T.Mesh(new RoundedBoxGeometry(w,h,d,2,Math.min(r,w/3,h/3,d/3)),m);mesh.name=name;mesh.position.set(x,y,z);// Give each transparent solid its own optical path length.
 if(m.transmission>0){mesh.material=m.clone();mesh.material.thickness=Math.min(w,h,d);}
 mesh.castShadow=!(m.transmission>.5);mesh.receiveShadow=true;g.add(mesh);return mesh;}
@@ -87,12 +86,6 @@ box(architecture,'Clear bridge',.42,.06,.20,.06,.58,.26,glass,.006);
 box(architecture,'Copper anchor',.60,.46,.46,.88,.45,.02,copper,.010);
 box(architecture,'Graphite base',.74,.46,.74,.92,.46,.82,architectureMetal,.014);
 box(architecture,'Smoked glass cap',.70,.22,.70,.92,.80,.82,mat('Plastic013A smoked acrylic',0xa6aaab,.18,0,{transmission:.88,ior:1.48,thickness:.52,attenuationColor:new T.Color(0xa6a09d),attenuationDistance:2.0,clearcoat:.10,clearcoatRoughness:.13}),.010);
-// Small warm openings: a restrained luminous detail inspired by architectural-map visualization,
-// deliberately kept tiny so the model still reads as a physical maquette rather than a neon object.
-for(const [x,y,z,w] of [[-.06,.72,.024,.25],[-.06,.90,.024,.25],[-.06,1.08,.024,.25]]){
- const win=box(architecture,'Warm tower window',w,.032,.010,x,y,z,architectureGlow,.003);win.castShadow=false;win.receiveShadow=false;
-}
-const podiumWindow=box(architecture,'Warm podium window',.34,.030,.010,-.06,.44,1.185,architectureGlow,.003);podiumWindow.castShadow=false;podiumWindow.receiveShadow=false;
 
 const research=new T.Group();research.name='Research';
 // Anti-moire paper construction: one continuous page block carries the edge mass,

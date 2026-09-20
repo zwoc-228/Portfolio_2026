@@ -17,3 +17,8 @@
 10. 当前精确字体、真实项目全文和联系信息未提供；不要捏造用户作品。旧规格/历史 QA 与当前代码可能有出入，逐项核对；最新参考与用户指令优先。
 
 执行方式：尽量复用现有项目，不做无关重构。遇到不支持 GPU 的运行环境，明确报告并保留待验收项，不能用空白画面宣称成功。每轮简洁说明具体改了什么、实际测了什么和未解决什么；交付可运行源码与更新后的交接文档。
+
+## Round 23 full UI refactor
+The current working version is the reference-led Round 23 UI refactor. Read `ROUND23_UI_REFACTOR_AUDIT.md` for the component-by-component audit and `UI_REFERENCE_LINKS.md` for every external reference/tool link used in this pass.
+
+UI code is now split into `dist/styles/*`, `dist/glass-ui.js`, `dist/ui-view.js`, and `dist/content-data.js`; `dist/app.js` remains the Three.js scene/orchestration layer. Architecture emissive windows are removed, while the existing scene spotlight / volumetric interaction remains.

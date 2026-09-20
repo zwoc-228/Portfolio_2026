@@ -50,3 +50,8 @@ See `UPDATE_2026-09-20_ROUND22_MATERIAL_SWAP.md` first, then Round 21. Round 22 
 
 ## 桌面亮度修正
 桌面银色由 #b8bfc2 改为 #d5dade，并单独绑定反射环境、envMapIntensity=1.15；物件环境强度 .65 与全局曝光保持不变。保留拉丝、实体反射和接触阴影。实际 GPU 视觉验收仍待完成。
+
+## Round 23 full UI refactor
+The current working version is the reference-led Round 23 UI refactor. Read `ROUND23_UI_REFACTOR_AUDIT.md` for the component-by-component audit and `UI_REFERENCE_LINKS.md` for every external reference/tool link used in this pass.
+
+UI code is now split into `dist/styles/*`, `dist/glass-ui.js`, `dist/ui-view.js`, and `dist/content-data.js`; `dist/app.js` remains the Three.js scene/orchestration layer. Architecture emissive windows are removed, while the existing scene spotlight / volumetric interaction remains.
