@@ -1,10 +1,10 @@
 import * as T from './assets/three.module.js';
 // Planar capture of the actual scene. Broad, premultiplied filtering approximates a rough silver surface.
 export function createFloorReflection(renderer,scene,ground){
- const rt=new T.WebGLRenderTarget(768,432,{type:T.HalfFloatType,depthBuffer:true});
+ const rt=new T.WebGLRenderTarget(1024,576,{type:T.HalfFloatType,depthBuffer:true});
  const mirror=new T.PerspectiveCamera();const matrix=new T.Matrix4();
  const bias=new T.Matrix4().set(.5,0,0,.5,0,.5,0,.5,0,0,.5,.5,0,0,0,1);
- const uniforms={floorReflection:{value:rt.texture},floorProjection:{value:matrix},reflectionTexel:{value:new T.Vector2(1/768,1/432)}};
+ const uniforms={floorReflection:{value:rt.texture},floorProjection:{value:matrix},reflectionTexel:{value:new T.Vector2(1/1024,1/576)}};
  ground.material.onBeforeCompile=shader=>{
   Object.assign(shader.uniforms,uniforms);
   shader.vertexShader='varying vec4 vFloorProjection; uniform mat4 floorProjection;\n'+shader.vertexShader;
@@ -16,13 +16,13 @@ export function createFloorReflection(renderer,scene,ground){
   float totalWeight=0.0;
   for(int ix=-2;ix<=2;ix++)for(int iy=-2;iy<=2;iy++){
     vec2 tap=vec2(float(ix),float(iy));float weight=exp(-dot(tap,tap)*.36);
-    reflected+=texture2D(floorReflection,reflectionUV+tap*reflectionTexel*4.5)*weight;totalWeight+=weight;
+    reflected+=texture2D(floorReflection,reflectionUV+tap*reflectionTexel*6.4)*weight;totalWeight+=weight;
   }
   reflected/=totalWeight;
   float inside=step(0.0,reflectionUV.x)*step(reflectionUV.x,1.0)*step(0.0,reflectionUV.y)*step(reflectionUV.y,1.0)*step(0.0,vFloorProjection.w);
   float reflectedAlpha=clamp(reflected.a,0.0,1.0)*inside;
   vec3 reflectedColor=reflected.rgb/max(reflected.a,.001);
-  outgoingLight=mix(outgoingLight,reflectedColor,.23*reflectedAlpha);
+  outgoingLight=mix(outgoingLight,reflectedColor,.34*reflectedAlpha);
   #include <opaque_fragment>`);
  };
  ground.material.customProgramCacheKey=()=> 'reference-floor-v2';
