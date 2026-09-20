@@ -38,10 +38,10 @@ function revealableMaterial(name,opts,closed,opened){
  return m;
 }
 const writingCover=revealableMaterial('Writing cover cloth',{
- color:0xffffff,map:writingClothColor,roughness:.81,roughnessMap:writingClothRough,metalness:0,normalMap:writingClothNormal,normalScale:new T.Vector2(.008,.008),sheen:.04,sheenColor:new T.Color(0xdde4ea),sheenRoughness:.75,clearcoat:.012,clearcoatRoughness:.90
+ color:0xffffff,map:writingClothColor,roughness:.79,roughnessMap:writingClothRough,metalness:0,normalMap:writingClothNormal,normalScale:new T.Vector2(.010,.010),sheen:.07,sheenColor:new T.Color(0xe4e8ea),sheenRoughness:.70,clearcoat:.014,clearcoatRoughness:.88
  },{color:0xf9f7f1,roughness:.86,normalScale:[.008,.008],sheen:.03,clearcoat:.01},{color:0xebe7df,roughness:.77,normalScale:[.14,.14],sheen:.16,clearcoat:.014});
 const writingPaper=revealableMaterial('Writing paper',{
- color:0xffffff,map:textures.writingPaperColor,roughness:.92,roughnessMap:textures.writingPaperRough,metalness:0,normalMap:textures.writingPaperNormal,normalScale:new T.Vector2(.01,.01)
+ color:0xffffff,map:textures.writingPaperColor,roughness:.91,roughnessMap:textures.writingPaperRough,metalness:0,normalMap:textures.writingPaperNormal,normalScale:new T.Vector2(.012,.012)
  },{color:0xfbfbf8,roughness:.94,normalScale:[.005,.005]},{color:0xf2eee5,roughness:.88,normalScale:[.16,.16]});
 const writingPageEdge=revealableMaterial('Writing page edge',{
  color:0xffffff,map:textures.writingPaperColor,roughness:.93,roughnessMap:textures.writingPaperRough,metalness:0,normalMap:textures.writingPaperNormal,normalScale:new T.Vector2(.008,.008)
@@ -66,17 +66,17 @@ let rg=new T.BufferGeometry();rg.setAttribute('position',new T.Float32BufferAttr
 writing.userData.writingController={revealCurrent:0,materials:[writingCover,writingPaper,writingPageEdge]};
 const architecture=new T.Group();architecture.name='Architecture';
 box(architecture,'Mineral plinth',3.24,.22,2.84,0,.11,0,architectureStone,.014);
-box(architecture,'Rear mineral tower',.74,1.34,.74,-.08,.89,-.42,architectureStone,.022);
-box(architecture,'Main cantilever slab',1.14,.08,.54,.96,1.02,-.10,architectureStone,.009);
-box(architecture,'Front mineral podium',.98,.38,.78,-.34,.41,.78,architectureStone,.016);
-box(architecture,'Low mineral shelf',.90,.075,.60,-.86,.58,.18,architectureStone,.010);
-const leftFrost=box(architecture,'Left frosted tower',.68,1.02,.72,-1.02,.73,-.04,frosted,.016);leftFrost.rotation.z=.05;leftFrost.rotation.x=-.02;
-const clearLeft=box(architecture,'Left clear volume',.46,.46,.52,-.88,.35,.82,glass,.014);clearLeft.rotation.y=.16;clearLeft.rotation.z=-.06;
-const clearFin=box(architecture,'Center clear fin',.18,.58,.22,.16,.40,.34,glass,.010);clearFin.rotation.z=.04;
-const bridge=box(architecture,'Clear bridge',.52,.06,.24,-.02,.61,.34,glass,.006);bridge.rotation.z=.02;
-const copperAnchor=box(architecture,'Copper anchor',.64,.48,.56,.96,.46,-.06,copper,.010);copperAnchor.rotation.y=-.10;
-box(architecture,'Graphite base',.74,.46,.74,.98,.46,.80,architectureStoneDark,.014);
-const smokedCap=box(architecture,'Smoked glass cap',.70,.26,.70,.98,.83,.80,mat('Smoked acrylic',0xa6afb1,.14,0,{transmission:.86,ior:1.49,thickness:.54,attenuationColor:new T.Color(0xa0aaad),attenuationDistance:1.8,clearcoat:.10,clearcoatRoughness:.12}),.010);smokedCap.rotation.y=.06;
+box(architecture,'Rear mineral tower',.76,1.34,.76,0,.89,-.40,architectureStone,.022);
+box(architecture,'Main cantilever slab',1.22,.08,.56,.86,1.02,-.02,architectureStone,.009);
+box(architecture,'Front mineral podium',1.00,.40,.82,-.30,.42,.78,architectureStone,.016);
+box(architecture,'Low mineral shelf',.92,.075,.62,-.88,.58,.18,architectureStone,.010);
+box(architecture,'Left frosted tower',.66,.98,.70,-1.02,.72,-.02,frosted,.016);
+box(architecture,'Left clear volume',.42,.40,.46,-1.00,.25,.82,glass,.012);
+box(architecture,'Center clear fin',.16,.48,.20,.18,.33,.30,glass,.008);
+box(architecture,'Clear bridge',.52,.06,.22,.00,.58,.30,glass,.006);
+box(architecture,'Copper anchor',.62,.46,.50,.92,.45,-.08,copper,.010);
+box(architecture,'Graphite base',.76,.46,.76,.94,.46,.80,architectureStoneDark,.014);
+box(architecture,'Smoked glass cap',.72,.22,.72,.94,.80,.80,mat('Smoked acrylic',0xa8b0b2,.12,0,{transmission:.88,ior:1.49,thickness:.52,attenuationColor:new T.Color(0xa3adb0),attenuationDistance:1.9,clearcoat:.10,clearcoatRoughness:.12}),.010);
 const research=new T.Group();research.name='Research';
 // Closed, individually bowed sheets with continuous top/edge geometry.
 const curl=(x,z,phase)=>.006*Math.pow(Math.abs(x)/1.375,5)*(1+.4*Math.sin(z*2+phase))+.005*Math.pow(Math.abs(z)/1.675,8)+.0015*Math.sin(z*3+phase)*(x/1.375);

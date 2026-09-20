@@ -23,3 +23,15 @@ body.home #home-labels small{color:#aab1b5}
 body.home .rule{background:#b1b8bc}
 body.home #home-bottom,body.home footer{color:#afb6ba}
 body.home .hint i{border-color:#b4bbbf}
+
+/* Round 18 — preview / secondary UI glass panels and brighter typography */
+body.preview,body.preview button,body.preview a{color:#edf2f4}
+body.preview header{top:3.4vh;left:2.2vw;right:2.2vw;padding:14px 18px;border:1px solid rgba(255,255,255,.10);background:linear-gradient(180deg,rgba(214,222,226,.13),rgba(167,176,181,.07));backdrop-filter:blur(14px) saturate(110%);-webkit-backdrop-filter:blur(14px) saturate(110%);border-radius:24px;box-shadow:0 12px 40px rgba(14,18,20,.08)}
+body.preview #brand{color:#f3f6f7;border-bottom-color:rgba(243,246,247,.6)}
+body.preview .coordinates,body.preview .profession,body.preview nav,body.preview footer,body.preview #number,body.preview h1,body.preview #filters button,body.preview #enter,body.preview #back{color:#eef3f5}
+body.preview nav button:hover,body.preview #filters button:hover,body.preview #filters button.active{color:#ffffff;opacity:1}
+body.preview .disc{background:rgba(245,248,250,.78);color:#5d6569}
+body.preview #category aside{left:3.6%;top:13.5%;width:24%;max-width:450px;padding:28px 32px 26px;border-radius:30px;border:1px solid rgba(255,255,255,.11);background:linear-gradient(180deg,rgba(214,222,226,.12),rgba(168,176,181,.08));backdrop-filter:blur(16px) saturate(115%);-webkit-backdrop-filter:blur(16px) saturate(115%);box-shadow:0 20px 70px rgba(9,13,15,.12)}
+body.preview #category .rule{background:rgba(245,248,250,.56)}
+body.preview #filters button:not(.active){opacity:.78}
+body.preview #filters{gap:7px}
