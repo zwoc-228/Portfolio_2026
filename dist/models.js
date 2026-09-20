@@ -13,34 +13,75 @@ if(m.transmission>0){mesh.material=m.clone();mesh.material.thickness=Math.min(w,
 mesh.castShadow=!(m.transmission>.5);mesh.receiveShadow=true;g.add(mesh);return mesh;}
 function tube(g,name,points,r,m){let c=new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p)));let mesh=new T.Mesh(new T.TubeGeometry(c,name.startsWith('Binding')?12:128,r,name.startsWith('Binding')?6:12,false),m);mesh.name=name;mesh.castShadow=true;g.add(mesh);return mesh;}
 const writing=new T.Group();writing.name='Writing';
-box(writing,'Lower linen cover',2.55,.047,3.2,0,.035,0,linen,.023);
-box(writing,'Page block',2.39,.15,3.02,.025,.135,0,paper,.018);
-for(let i=0;i<32;i++){
- const leaf=box(writing,'Page edge '+i,2.418+.008*Math.sin(i*2.7),.00235,3.048+.010*Math.cos(i*1.13),.025+.002*Math.sin(i),.072+i*.00438,.004*Math.sin(i*1.73),i%5===0?edge:paper,.0008);
- const a=leaf.geometry.attributes.position;
- for(let j=0;j<a.count;j++){const x=a.getX(j),z=a.getZ(j);a.setY(j,a.getY(j)+.0018*Math.sin(z*3.3+i*.16)*(x+1.21)/2.42+.0005*Math.sin(x*5.0+i));}
- leaf.geometry.computeVertexNormals();
+function revealMaterial(base,name,closed,opened){
+ const m=base.clone();m.name=name;m.userData.revealClosed=closed;m.userData.revealOpen=opened;
+ if(closed.color!==undefined)m.color.setHex(closed.color);
+ if(closed.roughness!==undefined)m.roughness=closed.roughness;
+ if(closed.bumpScale!==undefined)m.bumpScale=closed.bumpScale;
+ if(closed.sheen!==undefined)m.sheen=closed.sheen;
+ if(closed.clearcoat!==undefined)m.clearcoat=closed.clearcoat;
+ if(closed.normalScale!==undefined)m.normalScale.set(closed.normalScale[0],closed.normalScale[1]);
+ return m;
 }
-const cover=box(writing,'Upper linen cover',2.55,.049,3.2,0,.239,0,linen,.022);
-const cv=cover.geometry.attributes.position;for(let i=0;i<cv.count;i++){let x=cv.getX(i),z=cv.getZ(i);cv.setY(i,cv.getY(i)+.0060*Math.cos(z*1.35)*(1-(x/1.275)**2)+.0011*Math.sin(x*4.2));}cover.geometry.computeVertexNormals();
-// Curved closed spine with a recessed page-side opening.
-const spine=box(writing,'Rounded cloth spine',.11,.229,3.19,-1.25,.137,0,linen,.048);
-box(writing,'Spine end inset',.054,.133,.009,-1.241,.135,1.598,edge,.009);
-// Cloth is compressed along the hinge and swells slightly over the spine.
+const writingLinen=revealMaterial(linen,'Writing linen',
+ {color:0xf7f6f3,roughness:.82,bumpScale:.00008,normalScale:[.02,.02],sheen:.05,clearcoat:.01},
+ {color:0xf1ede6,roughness:.72,bumpScale:.0016,normalScale:[.32,.32],sheen:.34,clearcoat:.02});
+const writingPaper=revealMaterial(paper,'Writing paper',
+ {color:0xf9f8f5,roughness:.93,bumpScale:.00004,normalScale:[.018,.018]},
+ {color:0xf6f3ec,roughness:.88,bumpScale:.00045,normalScale:[.20,.20]});
+const writingEdge=revealMaterial(edge,'Writing page edges',
+ {color:0xf1ede4,roughness:.90,bumpScale:.00002,normalScale:[.01,.01]},
+ {color:0xe9e3d9,roughness:.86,bumpScale:.0002,normalScale:[.10,.10]});
+const writingRibbonMat=revealMaterial(linen.clone(),'Writing ribbon',
+ {color:0xf7f6f3,roughness:.84,bumpScale:.00005,normalScale:[.015,.015],sheen:.04},
+ {color:0xf1ede6,roughness:.73,bumpScale:.0012,normalScale:[.25,.25],sheen:.26});
+const writingElastic=writingEdge.clone();writingElastic.name='Writing elastic';writingElastic.userData.revealClosed=writingEdge.userData.revealClosed;writingElastic.userData.revealOpen=writingEdge.userData.revealOpen;
+
+const lowerCover=box(writing,'Lower linen cover',2.55,.047,3.2,0,.035,0,writingLinen,.023);
+const lowerPageBlock=box(writing,'Lower page block',2.39,.108,3.02,.025,.116,0,writingPaper,.018);
+const pageBands=[];
+for(let i=0;i<5;i++){
+ const t=i/4;
+ const band=box(writing,'Page band '+i,2.382+.010*Math.sin(i*.9),.0072,3.012+.006*Math.cos(i*.8),.03,.078+i*.020,0,writingEdge,.0028);
+ band.scale.x=.993+.004*i;pageBands.push(band);
+}
+const spine=box(writing,'Rounded cloth spine',.11,.229,3.19,-1.25,.137,0,writingLinen,.048);
+box(writing,'Spine end inset',.054,.133,.009,-1.241,.135,1.598,writingEdge,.009);
 const sp=spine.geometry.attributes.position;
 for(let i=0;i<sp.count;i++){const y=sp.getY(i),z=sp.getZ(i);sp.setX(i,sp.getX(i)-.009*Math.cos(y/.229*Math.PI)*Math.cos(z*.6));}
 spine.geometry.computeVertexNormals();
-const hinge=box(writing,'Spine hinge',.017,.003,3.14,-1.16,.263,0,edge,.001);
-// Small wrapped endband threads are visible only at the head and tail.
+const hingeStrip=box(writing,'Spine hinge',.017,.003,3.14,-1.16,.263,0,writingEdge,.001);
 for(const end of [-1,1])for(let i=0;i<11;i++){
  const x=-1.19+i*.009;
- tube(writing,'Binding endband '+end+' '+i,[[x,.082,end*1.511],[x-.003,.092,end*1.523],[x,.109,end*1.516]],.0026,i%2?linen:edge);
+ tube(writing,'Binding endband '+end+' '+i,[[x,.082,end*1.511],[x-.003,.092,end*1.523],[x,.109,end*1.516]],.0026,i%2?writingLinen:writingEdge);
 }
-box(writing,'Elastic upper band',.035,.013,3.19,1.04,.269,0,edge,.006);
-box(writing,'Elastic fore edge',.035,.238,.022,1.04,.148,1.598,edge,.008);
-// Ribbon is a swept variable-height strip, not a cuboid.
+const elasticUpper=box(writing,'Elastic upper band',.035,.013,3.19,1.04,.269,0,writingElastic,.006);
+const elasticFore=box(writing,'Elastic fore edge',.035,.238,.022,1.04,.148,1.598,writingElastic,.008);
 let verts=[],uv=[],idx=[];for(let i=0;i<=24;i++){let t=i/24;let z=1.40+t*.70;let yy=.11*(1-t)+.015+Math.sin(t*Math.PI)*.015;for(let side of [-1,1]){verts.push(-.93+side*.08+Math.sin(t*2)*.02,yy,z);uv.push(side===-1?0:1,t);}if(i<24){let q=i*2;idx.push(q,q+1,q+2,q+1,q+3,q+2);}}
-let rg=new T.BufferGeometry();rg.setAttribute('position',new T.Float32BufferAttribute(verts,3));rg.setAttribute('uv',new T.Float32BufferAttribute(uv,2));rg.setIndex(idx);rg.computeVertexNormals();let ribbon=new T.Mesh(rg,linen.clone());ribbon.material.side=T.DoubleSide;ribbon.name='Woven bookmark ribbon';ribbon.castShadow=true;writing.add(ribbon);
+let rg=new T.BufferGeometry();rg.setAttribute('position',new T.Float32BufferAttribute(verts,3));rg.setAttribute('uv',new T.Float32BufferAttribute(uv,2));rg.setIndex(idx);rg.computeVertexNormals();let ribbon=new T.Mesh(rg,writingRibbonMat);ribbon.material.side=T.DoubleSide;ribbon.name='Woven bookmark ribbon';ribbon.castShadow=true;writing.add(ribbon);
+
+const topCoverPivot=new T.Group();topCoverPivot.name='Top cover pivot';topCoverPivot.position.set(-1.24,.239,0);writing.add(topCoverPivot);
+const upperCover=box(topCoverPivot,'Upper linen cover',2.55,.049,3.2,1.24,0,0,writingLinen,.022);
+const cv=upperCover.geometry.attributes.position;for(let i=0;i<cv.count;i++){let x=cv.getX(i),z=cv.getZ(i);cv.setY(i,cv.getY(i)+.0060*Math.cos(z*1.35)*(1-(x/1.275)**2)+.0011*Math.sin(x*4.2));}upperCover.geometry.computeVertexNormals();
+
+const topPagesPivot=new T.Group();topPagesPivot.name='Top pages pivot';topPagesPivot.position.set(-1.205,.182,0);writing.add(topPagesPivot);
+const upperPageBlock=box(topPagesPivot,'Upper page block',2.31,.061,2.94,1.185,0,0,writingPaper,.014);
+const previewLeaves=[];
+for(let i=0;i<4;i++){
+ const pivot=new T.Group();pivot.name='Preview leaf pivot '+i;pivot.position.set(-1.188,.184,0);writing.add(pivot);
+ const leaf=box(pivot,'Preview leaf '+i,2.28,.0034,2.90,1.165,.022+i*.006,0,writingPaper,.004);
+ const a=leaf.geometry.attributes.position;
+ for(let j=0;j<a.count;j++){
+  const x=a.getX(j),z=a.getZ(j);
+  a.setY(j,a.getY(j)+.010*Math.cos((z/1.45))*Math.max(0,(x+1.14)/2.28)+.0015*Math.sin(x*4.1+i));
+ }
+ leaf.geometry.computeVertexNormals();previewLeaves.push(pivot);
+}
+writing.userData.writingController={
+ openCurrent:0,revealCurrent:0,
+ topCoverPivot,topPagesPivot,previewLeaves,upperPageBlock,lowerPageBlock,pageBands,ribbon,elasticUpper,elasticFore,
+ materials:[writingLinen,writingPaper,writingEdge,writingRibbonMat,writingElastic]
+};
 const architecture=new T.Group();architecture.name='Architecture';
 box(architecture,'Mineral plinth',2.96,.22,2.56,0,.11,0,stone,.013);
 box(architecture,'Tower lower',.70,.82,.68,.07,.63,-.31,stone);
