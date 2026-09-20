@@ -1,4 +1,5 @@
 import * as T from './assets/three.module.js';
+import { FRAME_ACTIVE, FRAME_RENDER } from './frame-runtime.js';
 
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -77,7 +78,7 @@ void main(){
   gl_FragColor = vec4(color,outAlpha);
 }`;
 
-export function createLiquidHeader({ renderer, camera, floorReflection, invalidate }) {
+export function createLiquidHeader({ renderer, camera, floorReflection, runtime }) {
   const headerEl = document.querySelector('.site-header');
   if (!headerEl || !renderer || !camera) return null;
 
@@ -90,7 +91,7 @@ export function createLiquidHeader({ renderer, camera, floorReflection, invalida
   const overlayCamera = new T.OrthographicCamera(-1,1,1,-1,-10,10);
   overlayCamera.position.z = 2;
 
-  const capture = new T.FramebufferTexture(16,16);
+  let capture = new T.FramebufferTexture(16,16);
   capture.minFilter = T.LinearFilter;
   capture.magFilter = T.LinearFilter;
   capture.generateMipmaps = false;
@@ -115,14 +116,20 @@ export function createLiquidHeader({ renderer, camera, floorReflection, invalida
   mesh.renderOrder = 1000;
   overlayScene.add(mesh);
 
-  let current=0, target=0, velocity=0, wobble=0, raf=0, last=0, time=0;
+  let current=0, target=0, velocity=0, wobble=0, time=0;
   let hovering=false, focusWithin=false, collapseTimer=0;
   let cssW=innerWidth, cssH=innerHeight, currentWidth=44, currentHeight=44;
   let captureW=16,captureH=16,captureX=0,captureY=0;
   const drawSize=new T.Vector2();
   const raycaster=new T.Raycaster();
+  const pointerNDC=new T.Vector2();
   const floorPlane=new T.Plane(new T.Vector3(0,1,0),.014);
   const hitL=new T.Vector3(), hitR=new T.Vector3(), hitC=new T.Vector3();
+
+  function configureCaptureTexture(tex){
+    tex.minFilter=T.LinearFilter;tex.magFilter=T.LinearFilter;tex.generateMipmaps=false;tex.flipY=false;
+    return tex;
+  }
 
   function ensureCapture(){
     renderer.getDrawingBufferSize(drawSize);
@@ -130,8 +137,10 @@ export function createLiquidHeader({ renderer, camera, floorReflection, invalida
     const wantedW=Math.max(64,Math.min(Math.floor(drawSize.x),2048));
     const wantedH=Math.max(64,Math.min(Math.floor(132*dpr),Math.floor(drawSize.y)));
     if(capture.image.width!==wantedW || capture.image.height!==wantedH){
-      capture.dispose();
-      capture.image.width=wantedW; capture.image.height=wantedH; capture.needsUpdate=true;
+      const old=capture;
+      capture=configureCaptureTexture(new T.FramebufferTexture(wantedW,wantedH));
+      uniforms.uScene.value=capture;
+      old.dispose();
     }
     captureW=wantedW;captureH=wantedH;
     captureX=Math.max(0,Math.floor((drawSize.x-captureW)*0.5));
@@ -146,8 +155,8 @@ export function createLiquidHeader({ renderer, camera, floorReflection, invalida
   }
 
   function screenRayToFloor(x,y,out){
-    const ndc=new T.Vector2(x/cssW*2-1,1-y/cssH*2);
-    raycaster.setFromCamera(ndc,camera);
+    pointerNDC.set(x/cssW*2-1,1-y/cssH*2);
+    raycaster.setFromCamera(pointerNDC,camera);
     return raycaster.ray.intersectPlane(floorPlane,out);
   }
 
@@ -199,9 +208,8 @@ export function createLiquidHeader({ renderer, camera, floorReflection, invalida
     updateDeskFeedback(p);
   }
 
-  function step(now){
-    raf=0;
-    const dt=last?Math.min(.05,(now-last)/1000):1/60;last=now;time+=dt;
+  function update(dt){
+    time+=dt;
     if(reducedMotion){current=target;velocity=0;wobble=0;}else{
       const stiffness=44,damping=12.5;
       velocity+=(target-current)*stiffness*dt;
@@ -212,10 +220,12 @@ export function createLiquidHeader({ renderer, camera, floorReflection, invalida
       if(Math.abs(target-current)<.0007&&Math.abs(velocity)<.0007){current=target;velocity=0;wobble*=.65;}
     }
     apply(clamp01(current),wobble);
-    invalidate?.(false);
-    if(Math.abs(target-current)>.0007||Math.abs(velocity)>.0007||wobble>.002||hovering||focusWithin)raf=requestAnimationFrame(step);
+    const active=Math.abs(target-current)>.0007||Math.abs(velocity)>.0007||wobble>.002;
+    return FRAME_RENDER | (active?FRAME_ACTIVE:0);
   }
-  function wake(){if(!raf)raf=requestAnimationFrame(step);}
+
+  const removeRuntime=runtime?.add(update) || (()=>{});
+  const wake=()=>runtime?.request(FRAME_RENDER);
   function setTarget(v){target=clamp01(v);wake();}
 
   const onEnter=()=>{clearTimeout(collapseTimer);hovering=true;setTarget(1);};
@@ -227,29 +237,25 @@ export function createLiquidHeader({ renderer, camera, floorReflection, invalida
   headerEl.addEventListener('focusin',onFocusIn);
   headerEl.addEventListener('focusout',onFocusOut);
 
-  function syncLayout(){syncOverlayCamera();ensureCapture();apply(clamp01(current),wobble);}
+  function syncLayout(){syncOverlayCamera();ensureCapture();apply(clamp01(current),wobble);runtime?.request(FRAME_RENDER);}
   syncLayout();
 
   return {
     syncLayout,
-    renderOverlay(){
+    captureBackground(){
       ensureCapture();
       renderer.copyFramebufferToTexture(capture,new T.Vector2(captureX,captureY));
+    },
+    renderOverlay(){
       const oldAuto=renderer.autoClear;renderer.autoClear=false;
       renderer.clearDepth();
       renderer.render(overlayScene,overlayCamera);
       renderer.autoClear=oldAuto;
     },
-    expand(){clearTimeout(collapseTimer);setTarget(1);},
-    collapse(){if(!hovering&&!focusWithin)setTarget(0);},
     dispose(){
-      clearTimeout(collapseTimer);
-      headerEl.removeEventListener('pointerenter',onEnter);
-      headerEl.removeEventListener('pointerleave',onLeave);
-      headerEl.removeEventListener('focusin',onFocusIn);
-      headerEl.removeEventListener('focusout',onFocusOut);
-      if(raf)cancelAnimationFrame(raf);
-      floorReflection?.setUICaustic?.(0,0,1,0,0,1,0);
+      removeRuntime();clearTimeout(collapseTimer);
+      headerEl.removeEventListener('pointerenter',onEnter);headerEl.removeEventListener('pointerleave',onLeave);
+      headerEl.removeEventListener('focusin',onFocusIn);headerEl.removeEventListener('focusout',onFocusOut);
       mesh.geometry.dispose();material.dispose();capture.dispose();
     }
   };

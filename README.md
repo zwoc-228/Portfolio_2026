@@ -1,32 +1,47 @@
-# Yuanlong Zhu — reference-led 3D portfolio
+# Yuanlong Zhu — 3D Portfolio / Round 29
 
-Private reconstruction study from the two supplied images. Read specs/VISUAL_SPEC.md, SCENE_SPEC.md, INTERACTION_SPEC.md, ASSET_LIST.md, QA_SPEC.md before changing implementation. qa/QA_REPORT.md records actual validation and outstanding fidelity issues.
+Round 29 is the full-effect architecture rebuild.
 
-## Deliverables
-- dist/models/writing.glb, architecture.glb, research.glb: independently editable named meshes with embedded PBR textures.
-- dist/models/portfolio-scene.glb: arranged three-object assembly with fitted root transforms.
-- dist/models.js: reusable editable procedural geometry source. No screenshot billboards replace geometry.
-- scripts/export-models.mjs: deterministic GLB exporter. Run from project root with Node.
-- scripts/textures.py: deterministic material maps and reference-image crops; requires Pillow and NumPy.
-- dist/: self-contained hosted HTML/JS/WebGL experience with local fonts and dependencies.
+## Key rule
+Performance work in this round does **not** delete or weaken visual effects. The full spotlight, volumetric beam, particles, planar reflection, liquid glass UI, caustics, transitions, shadows and material system remain enabled.
 
-Import any GLB into Blender using File → Import → glTF 2.0; inspect and edit named meshes/materials, then save .blend. No .blend file is claimed in this delivery. The standalone GLB assembly does not include the browser floor and lighting rig.
+## Runtime architecture
+- Three.js r170 (bundled locally)
+- GSAP 3.15 loaded from jsDelivr when available
+- one shared frame runtime (`dist/frame-runtime.js`)
+- native requestAnimationFrame fallback if GSAP is unavailable
+- main 3D scene rendered once per requested frame
+- liquid header + Preview / Index / Dialog use screen-space framebuffer glass shaders
+- planar desk reflection remains 1024×576 HalfFloat with full blur kernel
 
-Seven state URLs use #home, #writing/preview, #architecture/preview, #research/preview, and matching /index endings. The HOME object or category label opens preview; Enter opens index; Back/Escape reverses.
+## Local preview
 
-Reference imagery and titles are supplied design evidence. Original project content, contact address and exact font have not been supplied. Do not publish this study as a completed authored portfolio without replacing study content and completing visual QA.
+```bash
+npm run dev
+```
 
-Local development: npm run dev. No package installation is needed; dependencies are bundled. The managed environment uses sites-preview.
+Open the local URL printed by the server.
 
+## GitHub Pages
+The repository includes `.github/workflows/pages.yml`.
 
-## Latest material pass
-See `UPDATE_2026-09-20_ROUND22_MATERIAL_SWAP.md` for the uploaded Marble021 / Metal044A / Plastic013A architecture material replacement and render-budget notes.
+## Start here
+1. `ROUND29_FULL_EFFECT_ARCHITECTURE_AUDIT.md`
+2. `ROUND29_REFERENCE_LINKS.md`
+3. `dist/app.js`
+4. `dist/frame-runtime.js`
+5. `dist/liquid-header.js`
+6. `dist/liquid-panels.js`
 
-## Round 23 full UI refactor
-The current working version is the reference-led Round 23 UI refactor. Read `ROUND23_UI_REFACTOR_AUDIT.md` for the component-by-component audit and `UI_REFERENCE_LINKS.md` for every external reference/tool link used in this pass.
+## Validation
 
-UI code is now split into `dist/styles/*`, `dist/glass-ui.js`, `dist/ui-view.js`, and `dist/content-data.js`; `dist/app.js` remains the Three.js scene/orchestration layer. Architecture emissive windows are removed, while the existing scene spotlight / volumetric interaction remains.
+```bash
+node scripts/validate-assets.mjs
+node scripts/audit-runtime.mjs
+```
 
-
-## Latest professional UI pass
-See `ROUND26_PROFESSIONAL_SITE_PASS.md`. The site now uses real Three.js glass bodies for the collapsed/expanded header and for preview/index/dialog panels; the old CSS glass implementation has been removed. DOM remains the crisp accessible text/content overlay.
+Current model validation:
+- 31 meshes
+- 11,848 triangles
+- finite geometry
+- valid glTF containers

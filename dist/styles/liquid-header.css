@@ -31,7 +31,6 @@
   display:flex;
   align-items:center;
   opacity:0;
-  will-change:transform,opacity;
 }
 
 .site-header.liquid-header .liquid-header__left{

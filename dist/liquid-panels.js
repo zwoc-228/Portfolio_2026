@@ -1,217 +1,199 @@
 import * as T from './assets/three.module.js';
-import { RoundedBoxGeometry } from './assets/RoundedBoxGeometry.js';
+import { FRAME_ACTIVE, FRAME_RENDER } from './frame-runtime.js';
 
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const clamp01 = (v) => Math.max(0, Math.min(1, v));
 
-function visibleElement(el) {
-  if (!el) return false;
-  if (el.matches('dialog')) return !!el.open;
-  if (el.hidden || !el.getClientRects().length) return false;
-  const style = getComputedStyle(el);
-  return style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity || 1) > 0.01;
+const vertexShader = `
+varying vec2 vUv;
+void main(){
+  vUv=uv;
+  gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);
+}`;
+
+const fragmentShader = `
+precision highp float;
+uniform sampler2D uScene;
+uniform vec2 uSize;
+uniform float uReveal;
+uniform float uTone;
+uniform float uVelocity;
+uniform float uTime;
+varying vec2 vUv;
+
+float sdRoundBox(vec2 p, vec2 b, float r){
+  vec2 q=abs(p)-b+r;
+  return length(max(q,vec2(0.0)))+min(max(q.x,q.y),0.0)-r;
+}
+float hmap(vec2 p,vec2 b,float r,float bevel){
+  float d=sdRoundBox(p,b,r);
+  float inside=clamp(-d/max(bevel,.001),0.0,1.0);
+  return smoothstep(0.0,1.0,inside);
+}
+void main(){
+  vec2 p=(vUv-.5)*uSize;
+  vec2 halfSize=max(uSize*.5-vec2(1.2),vec2(1.0));
+  float radius=min(30.0,min(uSize.x,uSize.y)*.16);
+  float d=sdRoundBox(p,halfSize,radius);
+  float alpha=(1.0-smoothstep(-1.2,1.2,d))*uReveal;
+  if(alpha<.002) discard;
+
+  float bevel=13.0;
+  float h=hmap(p,halfSize,radius,bevel);
+  float hx=hmap(p+vec2(1.0,0.0),halfSize,radius,bevel)-hmap(p-vec2(1.0,0.0),halfSize,radius,bevel);
+  float hy=hmap(p+vec2(0.0,1.0),halfSize,radius,bevel)-hmap(p-vec2(0.0,1.0),halfSize,radius,bevel);
+  vec3 normal=normalize(vec3(-hx*4.9,-hy*4.9,1.0));
+
+  float speed=clamp(abs(uVelocity)*2.2,0.0,1.0);
+  float wobble=sin((vUv.x*1.8+vUv.y*.65+uTime*.08)*6.2831853)*speed*.0028;
+  vec2 offset=normal.xy*(.015+.006*uTone)+vec2(wobble,0.0);
+  vec3 refracted;
+  refracted.r=texture2D(uScene,vUv+offset*1.14).r;
+  refracted.g=texture2D(uScene,vUv+offset).g;
+  refracted.b=texture2D(uScene,vUv+offset*.86).b;
+
+  float edge=1.0-h;
+  float rim=smoothstep(.60,1.0,edge);
+  float fresnel=pow(clamp(1.0-normal.z,0.0,1.0),2.6);
+  float top=smoothstep(.18,1.0,1.0-vUv.y)*(.08+.04*uTone);
+  vec3 tint=mix(vec3(.965,.985,1.0),vec3(.90,.955,.985),uTone*.32);
+  vec3 color=refracted*tint;
+  color+=vec3(1.0)*(rim*(.18+.04*uTone)+fresnel*.13+top);
+  color+=vec3(.93,.98,1.0)*speed*edge*.05;
+  float body=.28+.07*uTone;
+  gl_FragColor=vec4(color,alpha*(body+rim*.19+fresnel*.05));
+}`;
+
+function visibleElement(el){
+  if(!el)return false;
+  if(el.matches('dialog'))return !!el.open;
+  if(el.hidden||!el.getClientRects().length)return false;
+  const style=getComputedStyle(el);
+  return style.display!=='none'&&style.visibility!=='hidden'&&Number(style.opacity||1)>.01;
 }
 
-function makePanelMaterial(environment, tone = 0) {
-  const tint = tone === 1 ? 0xe5eef2 : tone === 2 ? 0xf4f8fa : 0xeaf3f7;
-  return new T.MeshPhysicalMaterial({
-    color: tint,
-    envMap: environment,
-    envMapIntensity: tone === 2 ? 1.95 : 1.62,
-    roughness: tone === 2 ? 0.075 : 0.11,
-    metalness: 0,
-    transmission: 0.965,
-    dispersion: tone === 2 ? 0.075 : 0.045,
-    ior: 1.16,
-    thickness: tone === 2 ? 1.1 : 0.86,
-    transparent: true,
-    opacity: tone === 2 ? 0.78 : 0.66,
-    attenuationDistance: tone === 2 ? 1.35 : 1.85,
-    attenuationColor: new T.Color(tone === 1 ? 0xdbe9ef : 0xe5f2f7),
-    clearcoat: 1,
-    clearcoatRoughness: 0.06,
-    sheen: 0.36,
-    sheenRoughness: 0.42,
-    sheenColor: new T.Color(0xf6fbff),
-    depthWrite: false,
-  });
-}
+function createPanel(renderer,overlayScene,spec){
+  const el=document.querySelector(spec.selector);
+  const uniforms={
+    uScene:{value:null},uSize:{value:new T.Vector2(1,1)},uReveal:{value:0},uTone:{value:spec.tone||0},uVelocity:{value:0},uTime:{value:0}
+  };
+  let capture=new T.FramebufferTexture(16,16);
+  capture.minFilter=T.LinearFilter;capture.magFilter=T.LinearFilter;capture.generateMipmaps=false;capture.flipY=false;
+  uniforms.uScene.value=capture;
+  const material=new T.ShaderMaterial({uniforms,vertexShader,fragmentShader,transparent:true,depthTest:false,depthWrite:false,toneMapped:false});
+  const mesh=new T.Mesh(new T.PlaneGeometry(1,1),material);
+  mesh.renderOrder=1100+(spec.order||0);
+  mesh.visible=false;
+  overlayScene.add(mesh);
 
-function screenRectToWorld(rect, camera, depth, outPos, outScale) {
-  const vw = innerWidth;
-  const vh = innerHeight;
-  const aspect = camera.aspect;
-  const fov = T.MathUtils.degToRad(camera.fov);
-  const worldH = 2 * Math.tan(fov * 0.5) * depth;
-  const worldW = worldH * aspect;
+  const rect={left:0,top:0,width:1,height:1,bottom:1};
+  const drawSize=new T.Vector2();
+  let reveal=0,target=0,velocity=0,time=0,dirty=true;
+  let captureX=0,captureY=0;
 
-  const cx = rect.left + rect.width * 0.5;
-  const cy = rect.top + rect.height * 0.5;
-  const nx = cx / vw * 2 - 1;
-  const ny = 1 - cy / vh * 2;
-
-  const forward = new T.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
-  const right = new T.Vector3(1, 0, 0).applyQuaternion(camera.quaternion).normalize();
-  const up = new T.Vector3(0, 1, 0).applyQuaternion(camera.quaternion).normalize();
-
-  outPos.copy(camera.position)
-    .addScaledVector(forward, depth)
-    .addScaledVector(right, nx * worldW * 0.5)
-    .addScaledVector(up, ny * worldH * 0.5);
-
-  outScale.set(rect.width / vw * worldW, rect.height / vh * worldH, 1);
-}
-
-function createPanel(scene, camera, environment, spec) {
-  const geometry = new RoundedBoxGeometry(1, 1, 0.10, 5, 0.095);
-  const material = makePanelMaterial(environment, spec.tone || 0);
-  const mesh = new T.Mesh(geometry, material);
-  mesh.renderOrder = 18 + (spec.order || 0);
-  mesh.visible = false;
-
-  const shell = new T.Mesh(
-    geometry,
-    new T.MeshBasicMaterial({
-      color: 0xffffff,
-      transparent: true,
-      opacity: 0.11,
-      blending: T.AdditiveBlending,
-      depthWrite: false,
-      side: T.BackSide,
-    })
-  );
-  shell.renderOrder = mesh.renderOrder + 1;
-  shell.visible = false;
-
-  const rim = new T.Mesh(
-    new T.PlaneGeometry(1, 0.08),
-    new T.MeshBasicMaterial({
-      color: 0xffffff,
-      transparent: true,
-      opacity: 0.11,
-      blending: T.AdditiveBlending,
-      depthWrite: false,
-    })
-  );
-  rim.renderOrder = mesh.renderOrder + 2;
-  rim.visible = false;
-
-  scene.add(mesh, shell, rim);
-
-  const pos = new T.Vector3();
-  const scale = new T.Vector3();
-  let reveal = 0;
-  let target = 0;
-  let velocity = 0;
-  let active = false;
-
-  function syncRect() {
-    const el = document.querySelector(spec.selector);
-    active = visibleElement(el);
-    target = active ? 1 : 0;
-    if (!el || !active) return;
-    const rect = el.getBoundingClientRect();
-    if (rect.width < 2 || rect.height < 2) return;
-    screenRectToWorld(rect, camera, spec.depth || 9.1, pos, scale);
-    mesh.position.copy(pos);
-    mesh.quaternion.copy(camera.quaternion);
-    shell.position.copy(pos);
-    shell.quaternion.copy(camera.quaternion);
-    rim.position.copy(pos);
-    rim.quaternion.copy(camera.quaternion);
-    const fwd = new T.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
-    rim.position.addScaledVector(fwd, -0.060);
-    mesh.userData.targetScale = scale.clone();
-  }
-
-  function step(dt) {
-    if (reducedMotion) {
-      reveal = target;
-      velocity = 0;
-    } else {
-      const stiffness = 30;
-      const damping = 10.5;
-      velocity += (target - reveal) * stiffness * dt;
-      velocity *= Math.exp(-damping * dt);
-      reveal += velocity * dt;
-      reveal = clamp01(reveal);
-      if (Math.abs(target - reveal) < 0.001 && Math.abs(velocity) < 0.001) {
-        reveal = target;
-        velocity = 0;
-      }
+  function ensureCapture(){
+    renderer.getDrawingBufferSize(drawSize);
+    const dpr=renderer.getPixelRatio();
+    const w=Math.max(4,Math.min(Math.round(rect.width*dpr),Math.floor(drawSize.x)));
+    const h=Math.max(4,Math.min(Math.round(rect.height*dpr),Math.floor(drawSize.y)));
+    if(capture.image.width!==w||capture.image.height!==h){
+      const old=capture;
+      capture=new T.FramebufferTexture(w,h);
+      capture.minFilter=T.LinearFilter;capture.magFilter=T.LinearFilter;capture.generateMipmaps=false;capture.flipY=false;
+      uniforms.uScene.value=capture;old.dispose();
     }
-
-    const s = mesh.userData.targetScale || scale;
-    const intro = 0.92 + reveal * 0.08;
-    const drift = (1 - reveal) * (spec.slide || 0.18);
-    const right = new T.Vector3(1,0,0).applyQuaternion(camera.quaternion);
-    const up = new T.Vector3(0,1,0).applyQuaternion(camera.quaternion);
-    const base = pos.clone().addScaledVector(spec.axis === 'x' ? right : up, spec.direction === -1 ? -drift : drift);
-    mesh.position.copy(base);
-    shell.position.copy(base);
-    rim.position.copy(base);
-    const fwd = new T.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
-    rim.position.addScaledVector(fwd, -0.060);
-
-    mesh.scale.set(Math.max(0.001, s.x * intro), Math.max(0.001, s.y * intro), 1);
-    shell.scale.set(mesh.scale.x * 1.013, mesh.scale.y * 1.016, 1.05);
-    rim.scale.set(mesh.scale.x * 0.88, Math.max(0.006, mesh.scale.y * 0.075), 1);
-
-    material.opacity = (spec.tone === 2 ? 0.78 : 0.66) * reveal;
-    shell.material.opacity = 0.11 * reveal;
-    rim.material.opacity = 0.13 * reveal;
-    mesh.visible = shell.visible = rim.visible = reveal > 0.003;
-    return Math.abs(reveal - target) > 0.001 || Math.abs(velocity) > 0.001;
+    captureX=Math.max(0,Math.min(Math.floor(rect.left*dpr),Math.floor(drawSize.x)-w));
+    captureY=Math.max(0,Math.min(Math.floor(drawSize.y-(rect.top+rect.height)*dpr),Math.floor(drawSize.y)-h));
   }
 
-  return { syncRect, step, dispose() {
-    scene.remove(mesh, shell, rim);
-    geometry.dispose(); material.dispose(); shell.material.dispose(); rim.geometry.dispose(); rim.material.dispose();
-  }};
+  function syncRect(cssW,cssH){
+    const active=visibleElement(el);target=active?1:0;
+    if(!active||!el){dirty=false;return;}
+    const r=el.getBoundingClientRect();
+    if(r.width<2||r.height<2){target=0;dirty=false;return;}
+    rect.left=r.left;rect.top=r.top;rect.width=r.width;rect.height=r.height;rect.bottom=r.bottom;
+    uniforms.uSize.value.set(r.width,r.height);
+    const cx=r.left+r.width*.5-cssW*.5;
+    const cy=cssH*.5-(r.top+r.height*.5);
+    mesh.position.set(cx,cy,0);
+    ensureCapture();dirty=false;
+  }
+
+  function update(dt,cssW,cssH){
+    if(dirty)syncRect(cssW,cssH);
+    time+=dt;
+    if(reducedMotion){reveal=target;velocity=0;}else{
+      const stiffness=30,damping=10.5;
+      velocity+=(target-reveal)*stiffness*dt;
+      velocity*=Math.exp(-damping*dt);
+      reveal+=velocity*dt;reveal=clamp01(reveal);
+      if(Math.abs(target-reveal)<.001&&Math.abs(velocity)<.001){reveal=target;velocity=0;}
+    }
+    const intro=.92+reveal*.08;
+    const drift=(1-reveal)*(spec.slidePx||16)*(spec.direction||1);
+    const baseX=rect.left+rect.width*.5-cssW*.5;
+    const baseY=cssH*.5-(rect.top+rect.height*.5);
+    mesh.position.set(baseX+(spec.axis==='x'?drift:0),baseY+(spec.axis==='y'?drift:0),0);
+    mesh.scale.set(Math.max(.001,rect.width*intro),Math.max(.001,rect.height*intro),1);
+    uniforms.uReveal.value=reveal;
+    uniforms.uVelocity.value=velocity;
+    uniforms.uTime.value=time;
+    mesh.visible=reveal>.003;
+    return Math.abs(reveal-target)>.001||Math.abs(velocity)>.001;
+  }
+
+  return {
+    markDirty(){dirty=true;},
+    syncRect,
+    update,
+    captureBackground(){if(!mesh.visible)return;ensureCapture();renderer.copyFramebufferToTexture(capture,new T.Vector2(captureX,captureY));},
+    dispose(){overlayScene.remove(mesh);mesh.geometry.dispose();material.dispose();capture.dispose();}
+  };
 }
 
-export function createLiquidPanels({ scene, camera, environment, invalidate }) {
-  const specs = [
-    { selector: '.category-panel', depth: 9.0, tone: 1, axis: 'x', direction: -1, slide: 0.22, order: 0 },
-    { selector: '.index-content', depth: 9.12, tone: 0, axis: 'y', direction: 1, slide: 0.20, order: 1 },
-    { selector: '#info', depth: 8.8, tone: 2, axis: 'y', direction: 1, slide: 0.15, order: 2 },
+export function createLiquidPanels({renderer,runtime}){
+  const overlayScene=new T.Scene();
+  const overlayCamera=new T.OrthographicCamera(-1,1,1,-1,-10,10);overlayCamera.position.z=2;
+  const specs=[
+    {selector:'.category-panel',tone:1,axis:'x',direction:-1,slidePx:18,order:0},
+    {selector:'.index-content',tone:0,axis:'y',direction:-1,slidePx:16,order:1},
+    {selector:'#info',tone:2,axis:'y',direction:-1,slidePx:14,order:2},
   ];
-  const panels = specs.map((spec) => createPanel(scene, camera, environment, spec));
-  let raf = 0;
-  let last = 0;
-  let dirty = true;
+  const panels=specs.map(spec=>createPanel(renderer,overlayScene,spec));
+  let cssW=innerWidth,cssH=innerHeight,dirty=true;
 
-  function sync() {
-    dirty = false;
-    panels.forEach((p) => p.syncRect());
-    wake();
+  function syncCamera(){
+    cssW=innerWidth;cssH=innerHeight;
+    overlayCamera.left=-cssW/2;overlayCamera.right=cssW/2;overlayCamera.top=cssH/2;overlayCamera.bottom=-cssH/2;overlayCamera.updateProjectionMatrix();
   }
+  function sync(){syncCamera();panels.forEach(p=>p.syncRect(cssW,cssH));dirty=false;runtime?.request(FRAME_RENDER);}
+  function markDirty(){dirty=true;panels.forEach(p=>p.markDirty());runtime?.request(FRAME_RENDER);}
 
-  function frame(now) {
-    raf = 0;
-    const dt = last ? Math.min(0.05, (now - last) / 1000) : 1 / 60;
-    last = now;
-    if (dirty) panels.forEach((p) => p.syncRect());
-    const moving = panels.some((p) => p.step(dt));
-    invalidate?.(false);
-    if (moving) raf = requestAnimationFrame(frame);
+  function update(dt){
+    if(dirty){syncCamera();panels.forEach(p=>p.syncRect(cssW,cssH));dirty=false;}
+    const active=panels.some(p=>p.update(dt,cssW,cssH));
+    return FRAME_RENDER|(active?FRAME_ACTIVE:0);
   }
+  const removeRuntime=runtime?.add(update)||(()=>{});
 
-  function wake() { if (!raf) raf = requestAnimationFrame(frame); }
-
-  const mo = new MutationObserver(() => { dirty = true; sync(); });
-  mo.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['class', 'hidden', 'open'] });
-  const ro = new ResizeObserver(() => { dirty = true; sync(); });
-  document.querySelectorAll('.category-panel,.index-content,#info').forEach((el) => ro.observe(el));
-  window.addEventListener('resize', sync, { passive: true });
+  const bodyObserver=new MutationObserver(markDirty);
+  bodyObserver.observe(document.body,{attributes:true,attributeFilter:['class']});
+  const category=document.querySelector('#category');
+  const dialog=document.querySelector('#info');
+  const categoryObserver=category?new MutationObserver(markDirty):null;
+  categoryObserver?.observe(category,{attributes:true,attributeFilter:['hidden']});
+  const dialogObserver=dialog?new MutationObserver(markDirty):null;
+  dialogObserver?.observe(dialog,{attributes:true,attributeFilter:['open']});
+  const ro=new ResizeObserver(markDirty);
+  document.querySelectorAll('.category-panel,.index-content,#info').forEach(el=>ro.observe(el));
   sync();
 
   return {
-    syncLayout: sync,
-    dispose() {
-      mo.disconnect(); ro.disconnect(); window.removeEventListener('resize', sync);
-      if (raf) cancelAnimationFrame(raf);
-      panels.forEach((p) => p.dispose());
-    }
+    syncLayout:sync,
+    captureBackground(){panels.forEach(p=>p.captureBackground());},
+    renderOverlay(){
+      const oldAuto=renderer.autoClear;renderer.autoClear=false;renderer.clearDepth();renderer.render(overlayScene,overlayCamera);renderer.autoClear=oldAuto;
+    },
+    dispose(){removeRuntime();bodyObserver.disconnect();categoryObserver?.disconnect();dialogObserver?.disconnect();ro.disconnect();panels.forEach(p=>p.dispose());}
   };
 }
