@@ -2,9 +2,9 @@ import * as T from './assets/three.module.js';
 import {RoundedBoxGeometry} from './assets/RoundedBoxGeometry.js';
 export function createModels(textures={}){
 const mat=(name,color,roughness=0.7,metalness=0,extra={})=>{let m=new T.MeshPhysicalMaterial({color,roughness,metalness,...Object.fromEntries(Object.entries(extra).filter(([k,v])=>v!==undefined))});m.name=name;return m;};
-const linen=mat('Linen',0xe4e2dc,.88,0,{map:textures.linenColor,roughnessMap:textures.linenRough,bumpMap:textures.linen,bumpScale:.0035,sheen:.32,sheenColor:new T.Color(0xd9d2c5),sheenRoughness:.82});
-const paper=mat('Paper',0xe6e4de,.87,0,{map:textures.paperColor,bumpMap:textures.paper,bumpScale:.002});
-const edge=mat('Page edges',0xd4d1c8,.85,0,{map:textures.paperColor,bumpMap:textures.paper,bumpScale:.0008});const stone=mat('White mineral',0xd2d1ca,.78,0,{map:textures.stoneColor,roughnessMap:textures.stoneRough,bumpMap:textures.stone,bumpScale:.003});
+const linen=mat('Linen',0xe9e7df,.78,0,{map:textures.linenColor,roughnessMap:textures.linenRough,bumpMap:textures.linen,bumpScale:.0035,sheen:.38,sheenColor:new T.Color(0xe5ded0),sheenRoughness:.76});
+const paper=mat('Paper',0xf0eee8,.82,0,{map:textures.paperColor,bumpMap:textures.paper,bumpScale:.002});
+const edge=mat('Page edges',0xe0ddd4,.80,0,{map:textures.paperColor,bumpMap:textures.paper,bumpScale:.0008});const stone=mat('White mineral',0xe3e2dc,.70,0,{map:textures.stoneColor,roughnessMap:textures.stoneRough,bumpMap:textures.stone,bumpScale:.003});
 const glass=mat('Clear acrylic',0xf4f7f8,.10,0,{transmission:1,ior:1.49,thickness:.65,attenuationColor:new T.Color(0xeaf0f1),attenuationDistance:3.5});const blue=mat('Blue acrylic',0x708993,.22,0,{transmission:.7,ior:1.49,thickness:.8,attenuationColor:new T.Color(0x8199a1),attenuationDistance:1.3});
 const copper=mat('Copper',0x9b6350,.38,1,{roughnessMap:textures.copperRough,anisotropy:.25});const dark=mat('Dark mineral',0x696c6b,.8,0,{map:textures.stoneColor,roughnessMap:textures.stoneRough,bumpMap:textures.stone,bumpScale:.004});
 const steel=mat('Paperclip stainless steel',0xb6b8b5,.24,1,{roughnessMap:textures.steelRough});const ink=mat('Printed paper',0xffffff,.9,0,{map:textures.print});
