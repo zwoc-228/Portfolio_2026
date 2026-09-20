@@ -35,3 +35,15 @@ body.preview #category aside{left:3.6%;top:13.5%;width:24%;max-width:450px;paddi
 body.preview #category .rule{background:rgba(245,248,250,.56)}
 body.preview #filters button:not(.active){opacity:.78}
 body.preview #filters{gap:7px}
+
+/* Round 19 — Dine-inspired darker UI polish */
+body.preview header{background:linear-gradient(180deg,rgba(21,24,28,.50),rgba(17,21,24,.33));border-color:rgba(255,255,255,.12);box-shadow:0 18px 52px rgba(5,8,10,.16), inset 0 1px 0 rgba(255,255,255,.04)}
+body.preview #category aside{background:linear-gradient(180deg,rgba(19,22,25,.42),rgba(17,21,24,.30));border-color:rgba(255,255,255,.10);box-shadow:0 24px 76px rgba(4,8,10,.18), inset 0 1px 0 rgba(255,255,255,.035)}
+body.preview #filters button{padding:4px 0}
+body.preview #filters button.active,body.preview #filters button:hover{text-shadow:0 0 16px rgba(255,255,255,.12)}
+body.preview nav button,body.preview #brand,body.preview #filters button,body.preview #enter,body.preview #back,body.preview h1,body.preview #number,body.preview .coordinates,body.preview .profession{letter-spacing:.01em}
+body.preview #brand{font-size:25px}
+body.preview nav{gap:34px}
+body.preview #category aside h1{margin-top:10px}
+body.preview #home-labels button{transition:opacity .2s,color .2s,transform .2s}
+body.preview #home-labels button:hover{transform:translateY(-1px)}
