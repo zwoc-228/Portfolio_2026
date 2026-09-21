@@ -17,10 +17,11 @@ const fragmentShader = `
 precision highp float;
 uniform sampler2D uScene;
 uniform vec2 uSize;
+uniform vec2 uCaptureScale;
+uniform vec2 uCaptureOffset;
 uniform float uProgress;
 uniform float uVelocity;
 uniform float uTime;
-uniform float uSceneVFlip;
 uniform vec3 uTint;
 varying vec2 vUv;
 
@@ -35,56 +36,84 @@ float glassHeight(vec2 p, vec2 halfSize, float radius, float bevel){
   return smoothstep(0.0,1.0,inside);
 }
 
+vec2 sceneUv(vec2 localUv){
+  return uCaptureOffset + localUv * uCaptureScale;
+}
+
 void main(){
   float progress = smoothstep(0.0,1.0,uProgress);
   vec2 p = (vUv - 0.5) * uSize;
-  vec2 halfSize = max(uSize * 0.5 - vec2(1.25), vec2(1.0));
-  float radius = mix(min(uSize.x,uSize.y)*0.5, 25.5, progress);
+  float shortSide = max(2.0,min(uSize.x,uSize.y));
+  float sphereRadius = shortSide * 0.5 - 1.1;
+  vec2 halfSize = max(uSize * 0.5 - vec2(1.15), vec2(1.0));
+  float capsuleRadius = min(26.0, uSize.y * 0.5 - 1.1);
+  float radius = mix(sphereRadius, capsuleRadius, progress);
   float d = sdRoundBox(p, halfSize, radius);
-  float alpha = 1.0 - smoothstep(-1.2, 1.2, d);
+  float alpha = 1.0 - smoothstep(-1.15, 1.25, d);
   if(alpha < 0.002) discard;
 
-  float bevel = mix(15.0, 11.0, progress);
+  // Collapsed state: true analytical sphere normal, not a flat SDF disc.
+  vec2 sphereP = p / max(sphereRadius,1.0);
+  float sphereR2 = dot(sphereP,sphereP);
+  float sphereZ = sqrt(max(0.0,1.0-sphereR2));
+  vec3 sphereNormal = normalize(vec3(sphereP.x,-sphereP.y,sphereZ));
+  float sphereThickness = sphereZ;
+
+  // Expanded state: rounded capsule with a curved optical edge profile.
+  float bevel = mix(13.5,10.5,progress);
   float h = glassHeight(p,halfSize,radius,bevel);
   float hx = glassHeight(p + vec2(1.0,0.0),halfSize,radius,bevel) - glassHeight(p - vec2(1.0,0.0),halfSize,radius,bevel);
   float hy = glassHeight(p + vec2(0.0,1.0),halfSize,radius,bevel) - glassHeight(p - vec2(0.0,1.0),halfSize,radius,bevel);
-  vec3 normal = normalize(vec3(-hx*5.3,-hy*5.3,1.0));
+  vec3 capsuleNormal = normalize(vec3(-hx*7.2,-hy*7.2,1.0));
+  vec3 normal = normalize(mix(sphereNormal,capsuleNormal,progress));
+  float opticalThickness = mix(sphereThickness, h, progress);
 
-  float motion = clamp(abs(uVelocity)*2.6,0.0,1.0);
-  float ripple = sin((vUv.x*2.2 + uTime*.10)*6.2831853) * motion * 0.0035;
-  vec2 refractOffset = normal.xy * mix(0.030,0.012,progress) + vec2(ripple,0.0);
+  float motion = clamp(abs(uVelocity)*2.2,0.0,1.0);
+  float ripple = sin((vUv.x*2.0 + uTime*.085)*6.2831853) * motion * 0.0028;
+  vec2 refractOffset = normal.xy * mix(0.046,0.014,progress) * (0.34 + opticalThickness*.66) + vec2(ripple,0.0);
 
-  vec2 uv = vUv;
-  if(uSceneVFlip > 0.5) uv.y = 1.0 - uv.y;
+  vec2 uv = sceneUv(vUv);
+  vec2 refractPx = refractOffset * uCaptureScale;
   vec3 refracted;
-  refracted.r = texture2D(uScene, uv + refractOffset * 1.12).r;
-  refracted.g = texture2D(uScene, uv + refractOffset).g;
-  refracted.b = texture2D(uScene, uv + refractOffset * 0.88).b;
+  refracted.r = texture2D(uScene, uv + refractPx * 1.16).r;
+  refracted.g = texture2D(uScene, uv + refractPx).g;
+  refracted.b = texture2D(uScene, uv + refractPx * 0.84).b;
 
   float edge = 1.0 - h;
-  float fresnel = pow(clamp(1.0-normal.z,0.0,1.0),2.7);
-  float rim = smoothstep(0.62,1.0,edge);
-  float topLight = smoothstep(0.25,1.0,1.0-vUv.y) * 0.18;
-  float lowerShade = smoothstep(0.55,1.0,vUv.y) * 0.055;
+  float fresnel = pow(clamp(1.0-normal.z,0.0,1.0),3.2);
+  float rim = smoothstep(0.57,1.0,edge);
 
-  vec3 tint = mix(vec3(1.0),uTint,0.10);
+  // Two directional highlights create readable spherical/capsule volume.
+  vec3 lightA = normalize(vec3(-0.48,0.72,0.50));
+  vec3 lightB = normalize(vec3(0.72,-0.18,0.42));
+  vec3 viewDir = vec3(0.0,0.0,1.0);
+  float specA = pow(max(dot(reflect(-lightA,normal),viewDir),0.0),82.0);
+  float specB = pow(max(dot(reflect(-lightB,normal),viewDir),0.0),34.0) * .36;
+  float topRim = smoothstep(.30,1.0,normal.y) * .11;
+  float lowerShade = smoothstep(.15,.95,-normal.y) * .045;
+
+  // Inner lens/body tone: subtle center clarity + edge density.
+  float lens = mix(sphereThickness, h, progress);
+  float innerLift = smoothstep(.18,.92,lens) * mix(.055,.022,progress);
+  float innerShade = (1.0-lens) * mix(.080,.035,progress);
+
+  vec3 tint = mix(vec3(1.0),uTint,0.075);
   vec3 color = refracted * tint;
-  color += vec3(1.0) * (rim * 0.22 + fresnel * 0.15 + topLight);
-  color -= vec3(0.05,0.06,0.07) * lowerShade;
-  color += vec3(0.94,0.98,1.0) * motion * edge * 0.055;
+  color += vec3(1.0) * (specA*.46 + specB*.30 + fresnel*.20 + rim*.18 + topRim + innerLift);
+  color -= vec3(.055,.065,.075) * (lowerShade + innerShade);
+  color += vec3(.91,.97,1.0) * motion * edge * .045;
 
-  float bodyAlpha = mix(0.52,0.34,progress);
-  float outAlpha = alpha * (bodyAlpha + rim*.20 + fresnel*.06);
+  float bodyAlpha = mix(.63,.36,progress);
+  float outAlpha = alpha * (bodyAlpha + rim*.17 + fresnel*.10 + specA*.08);
   gl_FragColor = vec4(color,outAlpha);
 }`;
 
-export function createLiquidHeader({ renderer, camera, floorReflection, runtime }) {
+export function createLiquidHeader({ renderer, camera, floorReflection, runtime, getBounds }) {
   const headerEl = document.querySelector('.site-header');
   if (!headerEl || !renderer || !camera) return null;
 
   const left = headerEl.querySelector('.liquid-header__left');
   const right = headerEl.querySelector('.liquid-header__right');
-  const orbButton = headerEl.querySelector('#home-button');
   const contentNodes = [left,right].filter(Boolean);
 
   const overlayScene = new T.Scene();
@@ -100,10 +129,11 @@ export function createLiquidHeader({ renderer, camera, floorReflection, runtime 
   const uniforms = {
     uScene:{value:capture},
     uSize:{value:new T.Vector2(44,44)},
+    uCaptureScale:{value:new T.Vector2(1,1)},
+    uCaptureOffset:{value:new T.Vector2(0,0)},
     uProgress:{value:0},
     uVelocity:{value:0},
     uTime:{value:0},
-    uSceneVFlip:{value:0},
     uTint:{value:new T.Color(0xeaf5fb)}
   };
   const material = new T.ShaderMaterial({
@@ -119,12 +149,24 @@ export function createLiquidHeader({ renderer, camera, floorReflection, runtime 
   let current=0, target=0, velocity=0, wobble=0, time=0;
   let hovering=false, focusWithin=false, collapseTimer=0;
   let cssW=innerWidth, cssH=innerHeight, currentWidth=44, currentHeight=44;
+  let currentCenterX=cssW*.5, currentLeft=currentCenterX-22;
   let captureW=16,captureH=16,captureX=0,captureY=0;
   const drawSize=new T.Vector2();
   const raycaster=new T.Raycaster();
   const pointerNDC=new T.Vector2();
   const floorPlane=new T.Plane(new T.Vector3(0,1,0),.014);
   const hitL=new T.Vector3(), hitR=new T.Vector3(), hitC=new T.Vector3();
+
+  function resolveExpandedBounds(){
+    const b=getBounds?.();
+    if(b && Number.isFinite(b.left) && Number.isFinite(b.right) && b.right-b.left>240){
+      const left=clamp(b.left,18,cssW-260);
+      const right=clamp(b.right,260,cssW-18);
+      return {left,right,width:right-left,center:(left+right)*.5};
+    }
+    const width=Math.min(cssW-64,1680);
+    return {left:(cssW-width)*.5,right:(cssW+width)*.5,width,center:cssW*.5};
+  }
 
   function configureCaptureTexture(tex){
     tex.minFilter=T.LinearFilter;tex.magFilter=T.LinearFilter;tex.generateMipmaps=false;tex.flipY=false;
@@ -134,7 +176,9 @@ export function createLiquidHeader({ renderer, camera, floorReflection, runtime 
   function ensureCapture(){
     renderer.getDrawingBufferSize(drawSize);
     const dpr=renderer.getPixelRatio();
-    const wantedW=Math.max(64,Math.min(Math.floor(drawSize.x),2048));
+    const bounds=resolveExpandedBounds();
+    const wantedCssW=Math.max(96,bounds.width+56);
+    const wantedW=Math.max(64,Math.min(Math.ceil(wantedCssW*dpr),Math.floor(drawSize.x),2304));
     const wantedH=Math.max(64,Math.min(Math.floor(132*dpr),Math.floor(drawSize.y)));
     if(capture.image.width!==wantedW || capture.image.height!==wantedH){
       const old=capture;
@@ -143,7 +187,7 @@ export function createLiquidHeader({ renderer, camera, floorReflection, runtime 
       old.dispose();
     }
     captureW=wantedW;captureH=wantedH;
-    captureX=Math.max(0,Math.floor((drawSize.x-captureW)*0.5));
+    captureX=clamp(Math.floor(bounds.center*dpr-captureW*.5),0,Math.max(0,Math.floor(drawSize.x-captureW)));
     captureY=Math.max(0,Math.floor(drawSize.y-captureH-Math.floor(4*dpr)));
   }
 
@@ -164,47 +208,60 @@ export function createLiquidHeader({ renderer, camera, floorReflection, runtime 
     if(!floorReflection?.setUICaustic)return;
     const top=22;
     const y=top+currentHeight+7;
-    const half=currentWidth*0.47;
-    const cx=cssW*0.5;
+    const half=currentWidth*.49;
+    const cx=currentCenterX;
     const l=screenRayToFloor(cx-half,y,hitL);
     const r=screenRayToFloor(cx+half,y,hitR);
     const c=screenRayToFloor(cx,y,hitC);
-    if(!l||!r||!c){floorReflection.setUICaustic(0,0,1,0,0,1,0);return;}
+    if(!l||!r||!c){floorReflection.setUICaustic(0,0,1,0,0,1,0,progress);return;}
     const dx=r.x-l.x,dz=r.z-l.z,len=Math.max(.05,Math.hypot(dx,dz));
     const ax=dx/len,az=dz/len;
-    floorReflection.setUICaustic(c.x,c.z,ax,az,len*.50,Math.max(.12,.16+.08*progress),.10+.10*progress);
+    floorReflection.setUICaustic(c.x,c.z,ax,az,len*.50,Math.max(.11,.15+.075*progress),.20+.15*progress,progress);
+  }
+
+  function updateCaptureMapping(){
+    const dpr=renderer.getPixelRatio();
+    const top=22;
+    const barBottomPx=drawSize.y-(top+currentHeight)*dpr;
+    uniforms.uCaptureOffset.value.set(
+      (currentLeft*dpr-captureX)/captureW,
+      (barBottomPx-captureY)/captureH
+    );
+    uniforms.uCaptureScale.value.set(
+      currentWidth*dpr/captureW,
+      currentHeight*dpr/captureH
+    );
   }
 
   function apply(progress,motion){
     const p=smooth(progress);
-    const expanded=Math.min(cssW-64,1680);
-    currentWidth=T.MathUtils.lerp(44,expanded,p);
-    currentHeight=T.MathUtils.lerp(44,54,p);
+    const bounds=resolveExpandedBounds();
+    currentWidth=T.MathUtils.lerp(44,bounds.width,p);
+    currentHeight=T.MathUtils.lerp(44,56,p);
+    currentCenterX=T.MathUtils.lerp(cssW*.5,bounds.center,p);
+    currentLeft=currentCenterX-currentWidth*.5;
+
     mesh.scale.set(currentWidth,currentHeight,1);
-    mesh.position.set(0,cssH/2-22-currentHeight/2,0);
+    mesh.position.set(currentCenterX-cssW*.5,cssH/2-22-currentHeight/2,0);
     uniforms.uSize.value.set(currentWidth,currentHeight);
     uniforms.uProgress.value=p;
     uniforms.uVelocity.value=motion;
     uniforms.uTime.value=time;
+    updateCaptureMapping();
 
     headerEl.style.width=`${currentWidth}px`;
     headerEl.style.height=`${currentHeight}px`;
+    headerEl.style.left=`${currentCenterX}px`;
     headerEl.style.top='22px';
     headerEl.style.setProperty('--reveal',p.toFixed(4));
     headerEl.dataset.mode=p>.52?'expanded':'collapsed';
 
-    const contentReveal=clamp01((p-.42)/.42);
+    const contentReveal=clamp01((p-.38)/.42);
     contentNodes.forEach((node,index)=>{
       node.style.opacity=contentReveal.toFixed(4);
-      node.style.transform=`translateY(${((1-contentReveal)*(index?5:7)).toFixed(2)}px)`;
+      node.style.transform=`translateY(${((1-contentReveal)*(index?4:6)).toFixed(2)}px)`;
       node.style.pointerEvents=contentReveal>.78?'auto':'none';
     });
-    if(orbButton){
-      const orbReveal=clamp01((p-.52)/.34);
-      orbButton.style.opacity=orbReveal.toFixed(4);
-      orbButton.style.pointerEvents=p>.70?'auto':'none';
-      orbButton.style.transform=`translateY(-50%) scale(${(0.94+.06*orbReveal).toFixed(4)})`;
-    }
     updateDeskFeedback(p);
   }
 
@@ -244,6 +301,7 @@ export function createLiquidHeader({ renderer, camera, floorReflection, runtime 
     syncLayout,
     captureBackground(){
       ensureCapture();
+      updateCaptureMapping();
       renderer.copyFramebufferToTexture(capture,new T.Vector2(captureX,captureY));
     },
     renderOverlay(){

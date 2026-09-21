@@ -209,3 +209,35 @@ body.home .category-panel > *{
   #category-title{font-size:34px}
   #info{padding:42px 30px 34px}
 }
+
+/* Round 31 typography system: editorial display serif + restrained interface sans. */
+.brand,
+.object-label em,
+#category-title,
+.item-title,
+#info h2{font-family:var(--font-display)}
+
+.coordinates,
+.profession,
+.site-header nav,
+.object-label small,
+#number,
+#filters,
+.category-actions,
+.item-description,
+.item-meta,
+.site-footer,
+#info p,
+#info .close{font-family:var(--font-ui)}
+
+.object-label em{font-weight:400;letter-spacing:-.018em}
+.object-label small{font-style:normal;font-size:10px;font-weight:500;letter-spacing:.08em}
+#category-title{font-weight:400;letter-spacing:-.026em}
+#number{font-weight:500;letter-spacing:.10em}
+#filters{font-weight:450;letter-spacing:.005em}
+.category-actions{font-size:12px;font-weight:500;letter-spacing:.035em}
+.item-title{font-weight:400;letter-spacing:-.018em}
+.item-description,.item-meta{font-size:11px;font-weight:450;letter-spacing:.015em}
+.site-footer{font-size:9px;font-weight:450;letter-spacing:.045em}
+#info h2{font-weight:400;letter-spacing:-.026em}
+#info p{font-size:14px;font-weight:430;letter-spacing:.005em}

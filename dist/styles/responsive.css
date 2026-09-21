@@ -17,7 +17,6 @@
   :root{--header-x:18px;--header-y:18px}
   .site-header{padding:12px 15px;border-radius:20px;column-gap:12px}
   .brand{font-size:21px}.coordinates{font-size:10px}.profession{font-size:11px}.site-header nav{gap:16px;font-size:12px}
-  .home-orb{width:23px;height:23px}
   .category-panel{left:18px;top:108px;width:min(calc(100vw - 36px),420px);padding:22px 22px 20px;border-radius:24px}
   .index-content{left:18px;right:18px;top:360px;bottom:20px;border-radius:24px}
 }

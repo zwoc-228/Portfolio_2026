@@ -20,7 +20,7 @@ let selected = 0;
 let filter = 'All';
 let renderer, scene, camera, floorReflection, runtime;
 let liquidHeader, liquidPanels;
-let models = [], home = [], hoverProfiles = [], homeHitBoxes = [], architectureGlassPairs = [], architectureGlassDetailed = false, writingController = null;
+let models = [], home = [], hoverProfiles = [], homeHitBoxes = [], homeHeaderBoxes = [], architectureGlassPairs = [], architectureGlassDetailed = false, writingController = null;
 let keyLight, keyCompanionLight;
 let flashlight, flashlightTarget, beamHalo, beamParticles;
 let transition = null, transitionFrame = 0;
@@ -62,6 +62,35 @@ function drawFrame({ reflection = false, capture = false } = {}) {
 function markKeyShadowDirty() { if (keyLight) keyLight.shadow.needsUpdate = true; }
 function markCompanionShadowDirty() { if (keyCompanionLight) keyCompanionLight.shadow.needsUpdate = true; }
 function markStaticShadowsDirty() { markKeyShadowDirty(); markCompanionShadowDirty(); }
+
+
+function getHomeHeaderScreenBounds() {
+  if (!camera || homeHeaderBoxes.length < 2) return null;
+  const boxes = [homeHeaderBoxes[0], homeHeaderBoxes[2]].filter(Boolean);
+  if (boxes.length < 2) return null;
+  let minX = Infinity, maxX = -Infinity;
+  const v = new T.Vector3();
+  for (const box of boxes) {
+    for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) {
+      v.set(x,y,z).project(camera);
+      const sx = (v.x * .5 + .5) * innerWidth;
+      minX = Math.min(minX, sx); maxX = Math.max(maxX, sx);
+    }
+  }
+  if (!Number.isFinite(minX) || !Number.isFinite(maxX)) return null;
+  const pad = Math.max(8, innerWidth * .006);
+  return { left: minX - pad, right: maxX + pad };
+}
+
+function resetTransientLighting() {
+  glowCurrent.set(0,0,0); glowTarget.set(0,0,0);
+  glowCurrentStrength = 0; glowTargetStrength = 0; hoveredModel = -1;
+  spotIntensityTarget = 0; spotAngleTarget = spotAngleCurrent = T.MathUtils.degToRad(2.0);
+  if (flashlight) { flashlight.intensity = 0; flashlight.visible = false; }
+  if (beamHalo) { beamHalo.visible = false; if (beamHalo.material?.uniforms?.uOpacity) beamHalo.material.uniforms.uOpacity.value = 0; }
+  if (beamParticles) { beamParticles.visible = false; if (beamParticles.material?.uniforms?.uOpacity) beamParticles.material.uniforms.uOpacity.value = 0; }
+  floorReflection?.setGlow(0,0,0);
+}
 
 function applyWritingMaterialReveal(ctrl, reveal) {
   if (!ctrl) return;
@@ -325,7 +354,6 @@ function readHash(push = false) {
 
 function bindUI() {
   $('#brand').onclick = () => navigate('home');
-  $('#home-button').onclick = () => navigate('home');
   $('#archive').onclick = () => navigate('index', selected);
   $('#enter').onclick = () => navigate('index');
   $('#back').onclick = () => navigate(state === 'index' ? 'preview' : 'home');
@@ -371,6 +399,12 @@ function bindSceneInput() {
   document.addEventListener('visibilitychange', () => {
     runtime.setPaused(document.hidden);
     if (!document.hidden) runtime.renderWithReflection();
+  });
+  window.addEventListener('pageshow', () => {
+    resetTransientLighting();
+    floorReflection?.clear?.();
+    glassCaptureReady = false;
+    runtime?.request(FRAME_RENDER | FRAME_REFLECTION | FRAME_CAPTURE);
   });
   window.addEventListener('resize', () => {
     resizePending = true;
@@ -441,11 +475,14 @@ async function init() {
     const dustGeom = new T.BufferGeometry(); dustGeom.setAttribute('position', new T.BufferAttribute(dustPos, 3)); dustGeom.setAttribute('aSeed', new T.BufferAttribute(dustSeed, 1));
     const dustMat = new T.ShaderMaterial({ uniforms: { uOpacity: { value: 0 }, uTime: { value: 0 }, uColor: { value: new T.Color(0xf1f8fd) } }, vertexShader: `attribute float aSeed;uniform float uTime;varying float vSeed;void main(){vSeed=aSeed;vec3 p=position;p.y+=sin(uTime*.55+aSeed*18.)*.009;vec4 mv=modelViewMatrix*vec4(p,1.);gl_PointSize=(1.0+aSeed*1.7)*(20./max(1.,-mv.z));gl_Position=projectionMatrix*mv;}`, fragmentShader: `uniform float uOpacity;uniform vec3 uColor;varying float vSeed;void main(){float d=length(gl_PointCoord-.5);float soft=1.-smoothstep(.12,.5,d);float twinkle=.55+.45*sin(vSeed*31.);gl_FragColor=vec4(uColor,uOpacity*soft*twinkle);}`, transparent: true, depthWrite: false, depthTest: true, blending: T.AdditiveBlending });
     beamParticles = new T.Points(dustGeom, dustMat); beamParticles.renderOrder = 3; scene.add(beamParticles);
+    flashlight.visible = false; beamHalo.visible = false; beamParticles.visible = false;
 
     floorReflection = createFloorReflection(renderer, scene, ground);
+    floorReflection.setTransientObjects([flashlight, beamHalo, beamParticles]);
+    floorReflection.clear();
     runtime = createFrameRuntime(drawFrame);
     runtime.add(updateScene);
-    liquidHeader = createLiquidHeader({ renderer, camera, floorReflection, runtime });
+    liquidHeader = createLiquidHeader({ renderer, camera, floorReflection, runtime, getBounds: getHomeHeaderScreenBounds });
     liquidPanels = createLiquidPanels({ renderer, runtime });
 
     const [linenColor, linenRough, paperColor, steelRough] = await Promise.all([loadTexture(loader, 'linen-color.png', 3), loadTexture(loader, 'linen-rough.png', 3), loadTexture(loader, 'paper-color.png', 2), loadTexture(loader, 'steel-rough.png')]);
@@ -458,6 +495,7 @@ async function init() {
       if (i === 0 && m.userData.writingController) { writingController = m.userData.writingController; applyWritingMaterialReveal(writingController, 0); }
       models[i] = root; home.push({ x: f[0], z: f[1], r: f[4] }); scene.add(root);
     });
+    homeHeaderBoxes = models.map(m => new T.Box3().setFromObject(m).clone());
     // Unseen-style perceptual LOD: keep the acrylic/glass appearance on the HOME maquette without
     // paying Three.js's full transmission prepass on every pointer frame. The true transmission
     // materials are restored for the Architecture preview, where the optical detail is visible.
@@ -481,6 +519,10 @@ async function init() {
 
     bindUI(); bindSceneInput(); layout(false); readHash(false);
 
+    // First settled frame: explicitly reset all transient beam state and clear reflection history
+    // before any planar/glass capture. This prevents stale first-load or bfcache beam ghosts.
+    resetTransientLighting();
+    floorReflection.clear();
     // Trionn-style warm-up: compile shaders and upload resources before the first settled interaction.
     renderer.compile(scene, camera);
     markStaticShadowsDirty();

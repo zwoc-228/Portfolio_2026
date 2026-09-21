@@ -17,8 +17,6 @@
 nav{justify-self:end;display:flex;align-items:center;gap:34px;font-size:13px;white-space:nowrap;color:var(--ui-white-2)}
 nav button{transition:color .2s ease,opacity .2s ease,transform .25s var(--ease-out)}
 nav button:hover{color:#fff;transform:translateY(-1px)}
-.home-orb{width:25px;height:25px;border-radius:50%;margin-left:1px}
-.home-orb span{width:5px;height:5px;border-radius:50%;background:rgba(84,94,99,.88);box-shadow:0 0 0 1px rgba(43,50,54,.12)}
 
 .home-labels{position:fixed;inset:0;z-index:3;pointer-events:none}
 .object-label{position:absolute;min-width:170px;min-height:82px;pointer-events:auto;color:rgba(232,238,241,.84);text-shadow:0 1px 14px rgba(4,8,11,.15);transition:color .2s ease,transform .35s var(--ease-out),opacity .2s ease}

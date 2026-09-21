@@ -1,8 +1,11 @@
 @font-face{font-family:ReferenceSerif;src:url('../assets/reference-serif.otf') format('opentype');font-style:normal;font-display:swap}
 @font-face{font-family:ReferenceSerif;src:url('../assets/reference-serif-italic.otf') format('opentype');font-style:italic;font-display:swap}
+@font-face{font-family:InstrumentSerif;src:url('../assets/instrument-serif.ttf') format('truetype');font-style:normal;font-display:swap}
 
 :root{
   --font-serif:ReferenceSerif,"Times New Roman",serif;
+  --font-display:InstrumentSerif,ReferenceSerif,"Times New Roman",serif;
+  --font-ui:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;
   --ink:#3f4649;
   --ink-soft:#667176;
   --paper:#f5f4f0;
