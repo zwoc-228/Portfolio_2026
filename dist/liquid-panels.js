@@ -1,5 +1,5 @@
 import * as T from './assets/three.module.js';
-import { FRAME_ACTIVE, FRAME_RENDER } from './frame-runtime.js';
+import { FRAME_ACTIVE, FRAME_RENDER, FRAME_CAPTURE } from './frame-runtime.js';
 
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const clamp01 = (v) => Math.max(0, Math.min(1, v));
@@ -166,8 +166,8 @@ export function createLiquidPanels({renderer,runtime}){
     cssW=innerWidth;cssH=innerHeight;
     overlayCamera.left=-cssW/2;overlayCamera.right=cssW/2;overlayCamera.top=cssH/2;overlayCamera.bottom=-cssH/2;overlayCamera.updateProjectionMatrix();
   }
-  function sync(){syncCamera();panels.forEach(p=>p.syncRect(cssW,cssH));dirty=false;runtime?.request(FRAME_RENDER);}
-  function markDirty(){dirty=true;panels.forEach(p=>p.markDirty());runtime?.request(FRAME_RENDER);}
+  function sync(){syncCamera();panels.forEach(p=>p.syncRect(cssW,cssH));dirty=false;runtime?.request(FRAME_RENDER|FRAME_CAPTURE);}
+  function markDirty(){dirty=true;panels.forEach(p=>p.markDirty());runtime?.request(FRAME_RENDER|FRAME_CAPTURE);}
 
   function update(dt){
     if(dirty){syncCamera();panels.forEach(p=>p.syncRect(cssW,cssH));dirty=false;}

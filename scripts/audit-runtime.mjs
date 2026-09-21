@@ -9,6 +9,21 @@ for(const file of files){
 }
 const customRaf=rows.reduce((n,r)=>n+r.raf,0);
 const nonRuntimeRaf=rows.filter(r=>!r.file.endsWith('frame-runtime.js')).reduce((n,r)=>n+r.raf,0);
-const result={customModules:rows,customRaf,nonRuntimeRaf,checks:{singleFrameDriver:nonRuntimeRaf===0,gsapHook:fs.readFileSync('dist/index.html','utf8').includes('gsap@3.15.0'),screenSpaceGlass:fs.readFileSync('dist/liquid-panels.js','utf8').includes('FramebufferTexture'),fullEffectFloorRT:fs.readFileSync('dist/floor-reflection.js','utf8').includes('1024,576')}};
+const floor=fs.readFileSync('dist/floor-reflection.js','utf8');
+const app=fs.readFileSync('dist/app.js','utf8');
+const result={
+  customModules:rows,customRaf,nonRuntimeRaf,
+  checks:{
+    singleFrameDriver:nonRuntimeRaf===0,
+    gsapHook:fs.readFileSync('dist/index.html','utf8').includes('gsap@3.15.0'),
+    screenSpaceGlass:fs.readFileSync('dist/liquid-panels.js','utf8').includes('FramebufferTexture'),
+    fullEffectFloorRT:/const W=1024,H=576/.test(floor),
+    reflectionPreblur:/blurA/.test(floor)&&/blurB/.test(floor)&&!floor.includes('for(int ix=-2;ix<=2;ix++)'),
+    eventDrivenGlassCapture:app.includes('FRAME_CAPTURE')&&app.includes('glassCaptureReady'),
+    homeTransmissionLOD:app.includes('HOME optical proxy'),
+    coarseHitTesting:app.includes('intersectBox')&&!app.includes('intersectObjects(models, true)'),
+    staggeredShadowRefresh:app.includes('markKeyShadowDirty')&&app.includes('markCompanionShadowDirty')
+  }
+};
 console.log(JSON.stringify(result,null,2));
-if(!result.checks.singleFrameDriver)process.exitCode=1;
+if(Object.values(result.checks).some(v=>!v))process.exitCode=1;

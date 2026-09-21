@@ -8,7 +8,7 @@ import { applyViewState, syncFilterButtons, renderIndex, showInfo } from './ui-v
 import { createLiquidHeader } from './liquid-header.js';
 import { createLiquidPanels } from './liquid-panels.js';
 import { initUIMotion } from './ui-motion.js';
-import { createFrameRuntime, FRAME_ACTIVE, FRAME_RENDER, FRAME_REFLECTION } from './frame-runtime.js';
+import { createFrameRuntime, FRAME_ACTIVE, FRAME_RENDER, FRAME_REFLECTION, FRAME_CAPTURE } from './frame-runtime.js';
 
 const $ = (s) => document.querySelector(s);
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -20,7 +20,7 @@ let selected = 0;
 let filter = 'All';
 let renderer, scene, camera, floorReflection, runtime;
 let liquidHeader, liquidPanels;
-let models = [], home = [], hoverProfiles = [], writingController = null;
+let models = [], home = [], hoverProfiles = [], homeHitBoxes = [], architectureGlassPairs = [], architectureGlassDetailed = false, writingController = null;
 let keyLight, keyCompanionLight;
 let flashlight, flashlightTarget, beamHalo, beamParticles;
 let transition = null, transitionFrame = 0;
@@ -30,6 +30,7 @@ const raycaster = new T.Raycaster();
 const pointer = new T.Vector2();
 const floorPlane = new T.Plane(new T.Vector3(0, 1, 0), .016);
 const glowHit = new T.Vector3();
+const hitPoint = new T.Vector3();
 const glowCurrent = new T.Vector3();
 const glowTarget = new T.Vector3();
 const beamDir = new T.Vector3();
@@ -41,22 +42,26 @@ let glowCurrentStrength = 0, glowTargetStrength = 0, hoveredModel = -1;
 let spotAngleCurrent = T.MathUtils.degToRad(2.0), spotAngleTarget = T.MathUtils.degToRad(2.0), spotIntensityTarget = 0;
 let particleTime = 0;
 
-function drawFrame({ reflection = false } = {}) {
+let glassCaptureReady = false;
+function drawFrame({ reflection = false, capture = false } = {}) {
   if (!renderer || !scene || !camera) return;
   if (reflection) floorReflection?.update(camera);
   renderer.setRenderTarget(null);
   renderer.render(scene, camera);
-  // Capture the same background for all glass surfaces before any glass overlay is drawn.
-  liquidHeader?.captureBackground?.();
-  liquidPanels?.captureBackground?.();
+  // Unseen-style rule: expensive screen capture is event-driven, not coupled to every visual tick.
+  // Dust/twinkle can keep animating without copying the scene behind every glass surface again.
+  if (capture || !glassCaptureReady) {
+    liquidHeader?.captureBackground?.();
+    liquidPanels?.captureBackground?.();
+    glassCaptureReady = true;
+  }
   liquidHeader?.renderOverlay?.();
   liquidPanels?.renderOverlay?.();
 }
 
-function markStaticShadowsDirty() {
-  if (keyLight) keyLight.shadow.needsUpdate = true;
-  if (keyCompanionLight) keyCompanionLight.shadow.needsUpdate = true;
-}
+function markKeyShadowDirty() { if (keyLight) keyLight.shadow.needsUpdate = true; }
+function markCompanionShadowDirty() { if (keyCompanionLight) keyCompanionLight.shadow.needsUpdate = true; }
+function markStaticShadowsDirty() { markKeyShadowDirty(); markCompanionShadowDirty(); }
 
 function applyWritingMaterialReveal(ctrl, reveal) {
   if (!ctrl) return;
@@ -81,6 +86,13 @@ function applyWritingMaterialReveal(ctrl, reveal) {
 
 function writingRevealTarget() {
   return state === 'preview' && selected === 0 ? 1 : 0;
+}
+
+function setArchitectureGlassDetail(detailed) {
+  if (!architectureGlassPairs.length || architectureGlassDetailed === detailed) return;
+  architectureGlassDetailed = detailed;
+  for (const pair of architectureGlassPairs) pair.mesh.material = detailed ? pair.detail : pair.home;
+  glassCaptureReady = false;
 }
 
 function updateWritingReveal(dt) {
@@ -135,14 +147,23 @@ function resolvePointer() {
   pointerDirty = false;
   pointer.set(pointerClientX / innerWidth * 2 - 1, -pointerClientY / innerHeight * 2 + 1);
   raycaster.setFromCamera(pointer, camera);
-  const objectHit = raycaster.intersectObjects(models, true)[0];
-  renderer.domElement.style.cursor = objectHit ? 'pointer' : 'default';
-  if (objectHit) {
-    let root = objectHit.object;
-    while (root.parent && !models.includes(root)) root = root.parent;
-    const i = models.indexOf(root), profile = hoverProfiles[i];
-    if (i >= 0 && profile) {
-      setGlowTarget(profile.x, profile.y + .05, profile.z, 1, i, profile.angle, 3.1);
+
+  // Use three coarse interaction volumes instead of triangle raycasts through every visible mesh.
+  // The visual scene stays identical; only hit testing is simplified.
+  let bestIndex = -1, bestDistance = Infinity;
+  for (let i = 0; i < homeHitBoxes.length; i++) {
+    const box = homeHitBoxes[i];
+    if (!box) continue;
+    const hit = raycaster.ray.intersectBox(box, hitPoint);
+    if (!hit) continue;
+    const d = raycaster.ray.origin.distanceToSquared(hitPoint);
+    if (d < bestDistance) { bestDistance = d; bestIndex = i; }
+  }
+  renderer.domElement.style.cursor = bestIndex >= 0 ? 'pointer' : 'default';
+  if (bestIndex >= 0) {
+    const profile = hoverProfiles[bestIndex];
+    if (profile) {
+      setGlowTarget(profile.x, profile.y + .05, profile.z, 1, bestIndex, profile.angle, 3.1);
       return;
     }
   }
@@ -150,14 +171,13 @@ function resolvePointer() {
     setGlowTarget(glowHit.x, glowHit.y, glowHit.z, 1, -1, T.MathUtils.degToRad(1.95), 5.0);
   }
 }
-
 function setGlowTarget(x, y, z, strength, hoverIndex = -1, angle = T.MathUtils.degToRad(1.95), intensity = 5.0) {
   glowTarget.set(x, y, z);
   glowTargetStrength = strength;
   hoveredModel = hoverIndex;
   spotAngleTarget = angle;
   spotIntensityTarget = intensity;
-  runtime?.request(FRAME_RENDER | FRAME_ACTIVE);
+  runtime?.request(FRAME_RENDER | FRAME_ACTIVE | FRAME_CAPTURE);
 }
 
 function getTargets() {
@@ -200,16 +220,19 @@ function updateTransition(dt) {
     applyWritingMaterialReveal(writingController, T.MathUtils.lerp(transition.writing.revealFrom, transition.writing.revealTo, k));
   }
   const finalFrame = t >= 1;
-  const shadowFrame = finalFrame || transitionFrame % 5 === 0;
-  const reflectionFrame = finalFrame || transitionFrame % 3 === 0;
-  if (shadowFrame) markStaticShadowsDirty();
+  // Keep both full-quality shadow maps, but stagger their refresh so two VSM updates never spike in the same frame.
+  if (finalFrame) markStaticShadowsDirty();
+  else if (transitionFrame % 6 === 0) markKeyShadowDirty();
+  else if (transitionFrame % 6 === 3) markCompanionShadowDirty();
+  // Keep the same ~20fps reflection cadence, shifted away from shadow refresh frames.
+  const reflectionFrame = finalFrame || transitionFrame % 3 === 1;
   if (finalFrame) {
     transition = null;
     transitionFrame = 0;
     document.documentElement.dataset.sceneReady = 'true';
     document.body.classList.remove('is-transitioning');
   }
-  return FRAME_RENDER | (reflectionFrame ? FRAME_REFLECTION : 0) | (!finalFrame ? FRAME_ACTIVE : 0);
+  return FRAME_RENDER | FRAME_CAPTURE | (reflectionFrame ? FRAME_REFLECTION : 0) | (!finalFrame ? FRAME_ACTIVE : 0);
 }
 
 function updateScene(dt, now) {
@@ -219,7 +242,8 @@ function updateScene(dt, now) {
       resizePending = false;
       layout(false);
       if (state !== 'home') startTransition();
-      flags |= FRAME_RENDER | FRAME_REFLECTION;
+      glassCaptureReady = false;
+      flags |= FRAME_RENDER | FRAME_REFLECTION | FRAME_CAPTURE;
     } else {
       flags |= FRAME_ACTIVE;
     }
@@ -240,11 +264,12 @@ function updateScene(dt, now) {
   }
 
   updateBeam();
-  if (updateWritingReveal(dt)) flags |= FRAME_RENDER;
+  if (updateWritingReveal(dt)) flags |= FRAME_RENDER | FRAME_CAPTURE;
   flags |= updateTransition(dt);
 
   const glowUnsettled = pointerDirty || glowCurrent.distanceToSquared(glowTarget) > .00002 || Math.abs(glowCurrentStrength - glowTargetStrength) > .004 || Math.abs(spotAngleCurrent - spotAngleTarget) > .00025 || models.some((m, i) => state === 'home' && !transition && Math.abs(m.position.y - (i === hoveredModel ? .085 * glowCurrentStrength : 0)) > .002);
-  if (glowUnsettled || glowCurrentStrength > .015) flags |= FRAME_RENDER | FRAME_ACTIVE;
+  if (glowUnsettled) flags |= FRAME_RENDER | FRAME_ACTIVE | FRAME_CAPTURE;
+  else if (glowCurrentStrength > .015) flags |= FRAME_RENDER | FRAME_ACTIVE;
   return flags;
 }
 
@@ -282,6 +307,7 @@ function handleFilter(nextFilter) {
 }
 function navigate(s, i = selected, push = true) {
   state = s; selected = i; filter = 'All';
+  setArchitectureGlassDetail(s === 'preview' && i === 1);
   if (s !== 'home') {
     hoveredModel = -1;
     setGlowTarget(glowTarget.x, glowTarget.y, glowTarget.z, 0, -1, spotAngleTarget, 0);
@@ -332,12 +358,14 @@ function bindSceneInput() {
     if (state !== 'home') return;
     pointer.set(e.clientX / innerWidth * 2 - 1, -e.clientY / innerHeight * 2 + 1);
     raycaster.setFromCamera(pointer, camera);
-    const hit = raycaster.intersectObjects(models, true)[0];
-    if (!hit) return;
-    let root = hit.object;
-    while (root.parent && !models.includes(root)) root = root.parent;
-    const i = models.indexOf(root);
-    if (i >= 0) navigate('preview', i);
+    let bestIndex = -1, bestDistance = Infinity;
+    for (let i = 0; i < homeHitBoxes.length; i++) {
+      const hit = raycaster.ray.intersectBox(homeHitBoxes[i], hitPoint);
+      if (!hit) continue;
+      const d = raycaster.ray.origin.distanceToSquared(hitPoint);
+      if (d < bestDistance) { bestDistance = d; bestIndex = i; }
+    }
+    if (bestIndex >= 0) navigate('preview', bestIndex);
   });
   renderer.domElement.addEventListener('webglcontextlost', e => { e.preventDefault(); $('#failure').hidden = false; });
   document.addEventListener('visibilitychange', () => {
@@ -430,7 +458,26 @@ async function init() {
       if (i === 0 && m.userData.writingController) { writingController = m.userData.writingController; applyWritingMaterialReveal(writingController, 0); }
       models[i] = root; home.push({ x: f[0], z: f[1], r: f[4] }); scene.add(root);
     });
+    // Unseen-style perceptual LOD: keep the acrylic/glass appearance on the HOME maquette without
+    // paying Three.js's full transmission prepass on every pointer frame. The true transmission
+    // materials are restored for the Architecture preview, where the optical detail is visible.
+    models[1].traverse(obj => {
+      if (!obj.isMesh || !obj.material || !(obj.material.transmission > 0)) return;
+      const detail = obj.material;
+      const homeMat = detail.clone();
+      homeMat.name = detail.name + ' · HOME optical proxy';
+      homeMat.transmission = 0;
+      homeMat.transparent = true;
+      homeMat.depthWrite = false;
+      if (/clear/i.test(detail.name)) homeMat.opacity = .22;
+      else if (/smoked/i.test(detail.name)) homeMat.opacity = .50;
+      else homeMat.opacity = .58;
+      obj.material = homeMat;
+      architectureGlassPairs.push({ mesh: obj, detail, home: homeMat });
+    });
+    architectureGlassDetailed = false;
     hoverProfiles = models.map(m => { const box = new T.Box3().setFromObject(m), center = new T.Vector3(), size = new T.Vector3(); box.getCenter(center); box.getSize(size); const horizontal = Math.max(size.x, size.z) * .54 + .18, approxDist = Math.max(4.7, 9.8 - center.y); return { x: center.x, y: center.y, z: center.z, angle: T.MathUtils.clamp(Math.atan(horizontal / approxDist) * 1.02, T.MathUtils.degToRad(4.9), T.MathUtils.degToRad(9.4)) }; });
+    homeHitBoxes = models.map(m => new T.Box3().setFromObject(m).expandByScalar(.08));
 
     bindUI(); bindSceneInput(); layout(false); readHash(false);
 
@@ -441,9 +488,16 @@ async function init() {
     drawFrame({ reflection: false });
     runtime.renderWithReflection();
 
-    document.fonts.ready.then(() => { liquidHeader?.syncLayout(); liquidPanels?.syncLayout(); runtime.renderWithReflection(); });
+    document.fonts.ready.then(() => { liquidHeader?.syncLayout(); liquidPanels?.syncLayout(); glassCaptureReady = false; runtime.request(FRAME_RENDER | FRAME_REFLECTION | FRAME_CAPTURE); });
     const idle = globalThis.requestIdleCallback || ((fn) => setTimeout(fn, 50));
-    idle(() => { renderer.compile(scene, camera); runtime.render(); }, { timeout: 400 });
+    idle(() => {
+      // Warm the expensive detailed Architecture transmission shaders off the critical interaction path.
+      const shouldBeDetailed = state === 'preview' && selected === 1;
+      if (!shouldBeDetailed) setArchitectureGlassDetail(true);
+      renderer.compile(scene, camera);
+      if (!shouldBeDetailed) setArchitectureGlassDetail(false);
+      runtime.request(FRAME_RENDER | FRAME_CAPTURE);
+    }, { timeout: 600 });
   } catch (e) {
     console.error(e);
     $('#failure').hidden = false;

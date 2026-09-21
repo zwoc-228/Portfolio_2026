@@ -1,6 +1,7 @@
 export const FRAME_RENDER = 1;
 export const FRAME_REFLECTION = 2;
 export const FRAME_ACTIVE = 4;
+export const FRAME_CAPTURE = 8;
 
 export function createFrameRuntime(draw) {
   const clients = new Set();
@@ -47,7 +48,7 @@ export function createFrameRuntime(draw) {
     }
 
     if (flags & (FRAME_RENDER | FRAME_REFLECTION)) {
-      draw({ reflection: !!(flags & FRAME_REFLECTION), now, dt });
+      draw({ reflection: !!(flags & FRAME_REFLECTION), capture: !!(flags & FRAME_CAPTURE), now, dt });
     }
 
     const keepAlive = !!(flags & FRAME_ACTIVE) || pending !== 0;
