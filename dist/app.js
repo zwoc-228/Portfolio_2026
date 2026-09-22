@@ -3,11 +3,12 @@ import { createStudioEnvironment } from './studio-environment.js';
 import { createModels } from './models.js';
 import { HOME_TRANSFORMS } from './scene-layout.js';
 import { createFloorReflection } from './floor-reflection.js';
-import { names, cats, titles, subs } from './content-data.js';
+import { names, cats, titles, subs, statements } from './content-data.js';
 import { applyViewState, syncFilterButtons, renderIndex, showInfo } from './ui-view.js';
 import { createLiquidHeader } from './liquid-header.js';
 import { createLiquidPanels } from './liquid-panels.js';
 import { initUIMotion } from './ui-motion.js';
+import { initSurfaceLightInteraction } from './ui-surface.js';
 import { createFrameRuntime, FRAME_ACTIVE, FRAME_RENDER, FRAME_REFLECTION, FRAME_CAPTURE } from './frame-runtime.js';
 
 const $ = (s) => document.querySelector(s);
@@ -371,7 +372,7 @@ function navigate(s, i = selected, push = true) {
     hoveredModel = -1;
     setGlowTarget(glowTarget.x, glowTarget.y, glowTarget.z, 0, -1, spotAngleTarget, 0);
   }
-  applyViewState({ state, selected, names, cats, filter, onFilter: handleFilter });
+  applyViewState({ state, selected, names, cats, statements, filter, onFilter: handleFilter });
   drawIndex();
   if (push) history.pushState({ state, selected }, '', state === 'home' ? '#home' : '#' + names[i].toLowerCase() + '/' + state);
   startTransition();
@@ -454,6 +455,7 @@ async function loadTexture(loader, name, repeat = 1) {
 async function init() {
   try {
     initUIMotion();
+    initSurfaceLightInteraction();
     renderer = new T.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
     renderer.setPixelRatio(Math.min(devicePixelRatio, lowPower ? 1.0 : 1.28));
     renderer.shadowMap.enabled = true;

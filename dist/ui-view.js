@@ -1,4 +1,4 @@
-export function applyViewState({ state, selected, names, cats, filter, onFilter }) {
+export function applyViewState({ state, selected, names, cats, statements = [], filter, onFilter }) {
   document.body.className = state;
 
   const homeLabels = document.querySelector('#home-labels');
@@ -7,12 +7,14 @@ export function applyViewState({ state, selected, names, cats, filter, onFilter 
   const number = document.querySelector('#number');
   const title = document.querySelector('#category-title');
   const filters = document.querySelector('#filters');
+  const statement = document.querySelector('#category-statement');
 
   if (homeLabels) homeLabels.inert = state !== 'home';
   if (footer) footer.inert = state !== 'home';
   if (category) category.hidden = state === 'home';
   if (number) number.textContent = `0${selected + 1}`;
   if (title) title.textContent = names[selected];
+  if (statement) statement.textContent = statements[selected] || '';
 
   // Keep the expanded header typography in sync with the active portfolio mode.
   // HTML order is Architect / Researcher / Writer; content order is Writing / Architecture / Research.

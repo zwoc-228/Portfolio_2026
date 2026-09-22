@@ -22,3 +22,9 @@ export const subs = [
   ['Academic Project', 'Built Idea', 'Experiential Work', 'Academic Project'],
   ['Research Project', 'Speculative Research']
 ];
+
+export const statements = [
+  'Notes, essays, and observations on architecture, media, and the built environment.',
+  'Spatial studies moving between research, representation, and architectural intervention.',
+  'Research on cities, systems, and the narratives that shape the built environment.'
+];
