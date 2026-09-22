@@ -13,6 +13,14 @@ export function applyViewState({ state, selected, names, cats, filter, onFilter 
   if (category) category.hidden = state === 'home';
   if (number) number.textContent = `0${selected + 1}`;
   if (title) title.textContent = names[selected];
+
+  // Keep the expanded header typography in sync with the active portfolio mode.
+  // HTML order is Architect / Researcher / Writer; content order is Writing / Architecture / Research.
+  const roleMap = [2, 0, 1];
+  document.querySelectorAll('.profession [data-role-index]').forEach((node) => {
+    node.classList.toggle('active', state !== 'home' && Number(node.dataset.roleIndex) === roleMap[selected]);
+  });
+
   if (!filters) return;
 
   filters.replaceChildren();
@@ -80,6 +88,11 @@ export function renderIndex({ state, selected, filter, cats, titles, subs, onOpe
       year.className = 'item-meta';
       year.textContent = i === 0 ? '2024' : i === 3 ? '2022' : '2023';
       content.append(year);
+      const arrow = document.createElement('span');
+      arrow.className = 'item-arrow';
+      arrow.setAttribute('aria-hidden', 'true');
+      arrow.textContent = '↗';
+      button.append(arrow);
     }
 
     button.addEventListener('click', () => onOpen(title));

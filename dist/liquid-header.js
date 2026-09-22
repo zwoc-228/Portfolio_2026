@@ -46,7 +46,7 @@ void main(){
   float shortSide = max(2.0,min(uSize.x,uSize.y));
   float sphereRadius = shortSide * 0.5 - 1.1;
   vec2 halfSize = max(uSize * 0.5 - vec2(1.15), vec2(1.0));
-  float capsuleRadius = min(26.0, uSize.y * 0.5 - 1.1);
+  float capsuleRadius = min(14.0, uSize.y * 0.5 - 1.1);
   float radius = mix(sphereRadius, capsuleRadius, progress);
   float d = sdRoundBox(p, halfSize, radius);
   float alpha = 1.0 - smoothstep(-1.15, 1.25, d);
@@ -60,17 +60,17 @@ void main(){
   float sphereThickness = sphereZ;
 
   // Expanded state: rounded capsule with a curved optical edge profile.
-  float bevel = mix(13.5,10.5,progress);
+  float bevel = mix(13.5,7.5,progress);
   float h = glassHeight(p,halfSize,radius,bevel);
   float hx = glassHeight(p + vec2(1.0,0.0),halfSize,radius,bevel) - glassHeight(p - vec2(1.0,0.0),halfSize,radius,bevel);
   float hy = glassHeight(p + vec2(0.0,1.0),halfSize,radius,bevel) - glassHeight(p - vec2(0.0,1.0),halfSize,radius,bevel);
-  vec3 capsuleNormal = normalize(vec3(-hx*7.2,-hy*7.2,1.0));
+  vec3 capsuleNormal = normalize(vec3(-hx*8.6,-hy*8.6,1.0));
   vec3 normal = normalize(mix(sphereNormal,capsuleNormal,progress));
   float opticalThickness = mix(sphereThickness, h, progress);
 
   float motion = clamp(abs(uVelocity)*2.2,0.0,1.0);
   float ripple = sin((vUv.x*2.0 + uTime*.085)*6.2831853) * motion * 0.0028;
-  vec2 refractOffset = normal.xy * mix(0.046,0.014,progress) * (0.34 + opticalThickness*.66) + vec2(ripple,0.0);
+  vec2 refractOffset = normal.xy * mix(0.046,0.010,progress) * (0.34 + opticalThickness*.66) + vec2(ripple,0.0);
 
   vec2 uv = sceneUv(vUv);
   vec2 refractPx = refractOffset * uCaptureScale;
@@ -78,6 +78,16 @@ void main(){
   refracted.r = texture2D(uScene, uv + refractPx * 1.16).r;
   refracted.g = texture2D(uScene, uv + refractPx).g;
   refracted.b = texture2D(uScene, uv + refractPx * 0.84).b;
+
+  // Expanded state is frosted rather than crystal-clear. The blur is local to the
+  // small header capture, so the visual gain is high without touching the main scene.
+  vec2 blurStep = uCaptureScale / max(uSize, vec2(1.0));
+  vec3 frosted = refracted * .36;
+  frosted += texture2D(uScene, uv + refractPx + vec2( blurStep.x*2.2, 0.0)).rgb * .16;
+  frosted += texture2D(uScene, uv + refractPx + vec2(-blurStep.x*2.2, 0.0)).rgb * .16;
+  frosted += texture2D(uScene, uv + refractPx + vec2(0.0,  blurStep.y*2.2)).rgb * .16;
+  frosted += texture2D(uScene, uv + refractPx + vec2(0.0, -blurStep.y*2.2)).rgb * .16;
+  refracted = mix(refracted, frosted, progress*.68);
 
   float edge = 1.0 - h;
   float fresnel = pow(clamp(1.0-normal.z,0.0,1.0),3.2);
@@ -89,7 +99,7 @@ void main(){
   vec3 viewDir = vec3(0.0,0.0,1.0);
   float specA = pow(max(dot(reflect(-lightA,normal),viewDir),0.0),82.0);
   float specB = pow(max(dot(reflect(-lightB,normal),viewDir),0.0),34.0) * .36;
-  float topRim = smoothstep(.30,1.0,normal.y) * .11;
+  float topRim = smoothstep(.30,1.0,normal.y) * mix(.11,.075,progress);
   float lowerShade = smoothstep(.15,.95,-normal.y) * .045;
 
   // Inner lens/body tone: subtle center clarity + edge density.
@@ -97,14 +107,15 @@ void main(){
   float innerLift = smoothstep(.18,.92,lens) * mix(.055,.022,progress);
   float innerShade = (1.0-lens) * mix(.080,.035,progress);
 
-  vec3 tint = mix(vec3(1.0),uTint,0.075);
+  vec3 tint = mix(vec3(1.0),uTint,mix(.075,.12,progress));
   vec3 color = refracted * tint;
-  color += vec3(1.0) * (specA*.46 + specB*.30 + fresnel*.20 + rim*.18 + topRim + innerLift);
+  color = mix(color, vec3(.91,.945,.965), progress*.095);
+  color += vec3(1.0) * (specA*mix(.46,.32,progress) + specB*mix(.30,.20,progress) + fresnel*mix(.20,.13,progress) + rim*mix(.18,.12,progress) + topRim + innerLift);
   color -= vec3(.055,.065,.075) * (lowerShade + innerShade);
   color += vec3(.91,.97,1.0) * motion * edge * .045;
 
-  float bodyAlpha = mix(.63,.36,progress);
-  float outAlpha = alpha * (bodyAlpha + rim*.17 + fresnel*.10 + specA*.08);
+  float bodyAlpha = mix(.63,.46,progress);
+  float outAlpha = alpha * (bodyAlpha + rim*mix(.17,.12,progress) + fresnel*mix(.10,.075,progress) + specA*mix(.08,.055,progress));
   gl_FragColor = vec4(color,outAlpha);
 }`;
 
@@ -179,7 +190,7 @@ export function createLiquidHeader({ renderer, camera, floorReflection, runtime,
     const bounds=resolveExpandedBounds();
     const wantedCssW=Math.max(96,bounds.width+56);
     const wantedW=Math.max(64,Math.min(Math.ceil(wantedCssW*dpr),Math.floor(drawSize.x),2304));
-    const wantedH=Math.max(64,Math.min(Math.floor(132*dpr),Math.floor(drawSize.y)));
+    const wantedH=Math.max(64,Math.min(Math.floor(148*dpr),Math.floor(drawSize.y)));
     if(capture.image.width!==wantedW || capture.image.height!==wantedH){
       const old=capture;
       capture=configureCaptureTexture(new T.FramebufferTexture(wantedW,wantedH));
@@ -206,7 +217,7 @@ export function createLiquidHeader({ renderer, camera, floorReflection, runtime,
 
   function updateDeskFeedback(progress){
     if(!floorReflection?.setUICaustic)return;
-    const top=22;
+    const top=20;
     const y=top+currentHeight+7;
     const half=currentWidth*.49;
     const cx=currentCenterX;
@@ -216,12 +227,12 @@ export function createLiquidHeader({ renderer, camera, floorReflection, runtime,
     if(!l||!r||!c){floorReflection.setUICaustic(0,0,1,0,0,1,0,progress);return;}
     const dx=r.x-l.x,dz=r.z-l.z,len=Math.max(.05,Math.hypot(dx,dz));
     const ax=dx/len,az=dz/len;
-    floorReflection.setUICaustic(c.x,c.z,ax,az,len*.50,Math.max(.11,.15+.075*progress),.20+.15*progress,progress);
+    floorReflection.setUICaustic(c.x,c.z,ax,az,len*.50,Math.max(.11,.14+.055*progress),.16+.11*progress,progress);
   }
 
   function updateCaptureMapping(){
     const dpr=renderer.getPixelRatio();
-    const top=22;
+    const top=20;
     const barBottomPx=drawSize.y-(top+currentHeight)*dpr;
     uniforms.uCaptureOffset.value.set(
       (currentLeft*dpr-captureX)/captureW,
@@ -237,12 +248,12 @@ export function createLiquidHeader({ renderer, camera, floorReflection, runtime,
     const p=smooth(progress);
     const bounds=resolveExpandedBounds();
     currentWidth=T.MathUtils.lerp(44,bounds.width,p);
-    currentHeight=T.MathUtils.lerp(44,56,p);
+    currentHeight=T.MathUtils.lerp(44,60,p);
     currentCenterX=T.MathUtils.lerp(cssW*.5,bounds.center,p);
     currentLeft=currentCenterX-currentWidth*.5;
 
     mesh.scale.set(currentWidth,currentHeight,1);
-    mesh.position.set(currentCenterX-cssW*.5,cssH/2-22-currentHeight/2,0);
+    mesh.position.set(currentCenterX-cssW*.5,cssH/2-20-currentHeight/2,0);
     uniforms.uSize.value.set(currentWidth,currentHeight);
     uniforms.uProgress.value=p;
     uniforms.uVelocity.value=motion;
@@ -252,7 +263,7 @@ export function createLiquidHeader({ renderer, camera, floorReflection, runtime,
     headerEl.style.width=`${currentWidth}px`;
     headerEl.style.height=`${currentHeight}px`;
     headerEl.style.left=`${currentCenterX}px`;
-    headerEl.style.top='22px';
+    headerEl.style.top='20px';
     headerEl.style.setProperty('--reveal',p.toFixed(4));
     headerEl.dataset.mode=p>.52?'expanded':'collapsed';
 

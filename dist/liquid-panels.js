@@ -154,9 +154,10 @@ function createPanel(renderer,overlayScene,spec){
 export function createLiquidPanels({renderer,runtime}){
   const overlayScene=new T.Scene();
   const overlayCamera=new T.OrthographicCamera(-1,1,1,-1,-10,10);overlayCamera.position.z=2;
+  // Round 32: secondary-page navigation and content cards are rendered as
+  // luminous physical panels in the DOM. Keep the framebuffer-glass overlay
+  // only for modal dialog surfaces so the index view stays bright and precise.
   const specs=[
-    {selector:'.category-panel',tone:1,axis:'x',direction:-1,slidePx:18,order:0},
-    {selector:'.index-content',tone:0,axis:'y',direction:-1,slidePx:16,order:1},
     {selector:'#info',tone:2,axis:'y',direction:-1,slidePx:14,order:2},
   ];
   const panels=specs.map(spec=>createPanel(renderer,overlayScene,spec));
@@ -185,7 +186,7 @@ export function createLiquidPanels({renderer,runtime}){
   const dialogObserver=dialog?new MutationObserver(markDirty):null;
   dialogObserver?.observe(dialog,{attributes:true,attributeFilter:['open']});
   const ro=new ResizeObserver(markDirty);
-  document.querySelectorAll('.category-panel,.index-content,#info').forEach(el=>ro.observe(el));
+  document.querySelectorAll('#info').forEach(el=>ro.observe(el));
   sync();
 
   return {
