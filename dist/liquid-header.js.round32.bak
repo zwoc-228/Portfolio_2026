@@ -60,11 +60,11 @@ void main(){
   float sphereThickness = sphereZ;
 
   // Expanded state: rounded capsule with a curved optical edge profile.
-  float bevel = mix(13.5,5.5,progress);
+  float bevel = mix(13.5,7.5,progress);
   float h = glassHeight(p,halfSize,radius,bevel);
   float hx = glassHeight(p + vec2(1.0,0.0),halfSize,radius,bevel) - glassHeight(p - vec2(1.0,0.0),halfSize,radius,bevel);
   float hy = glassHeight(p + vec2(0.0,1.0),halfSize,radius,bevel) - glassHeight(p - vec2(0.0,1.0),halfSize,radius,bevel);
-  vec3 capsuleNormal = normalize(vec3(-hx*5.8,-hy*5.8,1.0));
+  vec3 capsuleNormal = normalize(vec3(-hx*8.6,-hy*8.6,1.0));
   vec3 normal = normalize(mix(sphereNormal,capsuleNormal,progress));
   float opticalThickness = mix(sphereThickness, h, progress);
 
@@ -87,7 +87,7 @@ void main(){
   frosted += texture2D(uScene, uv + refractPx + vec2(-blurStep.x*2.2, 0.0)).rgb * .16;
   frosted += texture2D(uScene, uv + refractPx + vec2(0.0,  blurStep.y*2.2)).rgb * .16;
   frosted += texture2D(uScene, uv + refractPx + vec2(0.0, -blurStep.y*2.2)).rgb * .16;
-  refracted = mix(refracted, frosted, progress*.82);
+  refracted = mix(refracted, frosted, progress*.68);
 
   float edge = 1.0 - h;
   float fresnel = pow(clamp(1.0-normal.z,0.0,1.0),3.2);
@@ -109,13 +109,13 @@ void main(){
 
   vec3 tint = mix(vec3(1.0),uTint,mix(.075,.12,progress));
   vec3 color = refracted * tint;
-  color = mix(color, vec3(.94,.958,.969), progress*.18);
-  color += vec3(1.0) * (specA*mix(.46,.17,progress) + specB*mix(.30,.11,progress) + fresnel*mix(.20,.075,progress) + rim*mix(.18,.055,progress) + topRim*.72 + innerLift*.72);
+  color = mix(color, vec3(.91,.945,.965), progress*.095);
+  color += vec3(1.0) * (specA*mix(.46,.32,progress) + specB*mix(.30,.20,progress) + fresnel*mix(.20,.13,progress) + rim*mix(.18,.12,progress) + topRim + innerLift);
   color -= vec3(.055,.065,.075) * (lowerShade + innerShade);
   color += vec3(.91,.97,1.0) * motion * edge * .045;
 
-  float bodyAlpha = mix(.63,.56,progress);
-  float outAlpha = alpha * (bodyAlpha + rim*mix(.17,.055,progress) + fresnel*mix(.10,.055,progress) + specA*mix(.08,.028,progress));
+  float bodyAlpha = mix(.63,.46,progress);
+  float outAlpha = alpha * (bodyAlpha + rim*mix(.17,.12,progress) + fresnel*mix(.10,.075,progress) + specA*mix(.08,.055,progress));
   gl_FragColor = vec4(color,outAlpha);
 }`;
 

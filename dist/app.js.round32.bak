@@ -48,7 +48,6 @@ function drawFrame({ reflection = false, capture = false } = {}) {
   if (reflection) floorReflection?.update(camera);
   renderer.setRenderTarget(null);
   renderer.render(scene, camera);
-  if (state === 'home') syncHomeLabelsToObjects();
   // Unseen-style rule: expensive screen capture is event-driven, not coupled to every visual tick.
   // Dust/twinkle can keep animating without copying the scene behind every glass surface again.
   if (capture || !glassCaptureReady) {
@@ -64,34 +63,6 @@ function markKeyShadowDirty() { if (keyLight) keyLight.shadow.needsUpdate = true
 function markCompanionShadowDirty() { if (keyCompanionLight) keyCompanionLight.shadow.needsUpdate = true; }
 function markStaticShadowsDirty() { markKeyShadowDirty(); markCompanionShadowDirty(); }
 
-
-function getProjectedScreenBox(box) {
-  if (!camera || !box) return null;
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  const v = new T.Vector3();
-  for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) {
-    v.set(x,y,z).project(camera);
-    const sx = (v.x * .5 + .5) * innerWidth;
-    const sy = (1 - (v.y * .5 + .5)) * innerHeight;
-    minX = Math.min(minX,sx); maxX = Math.max(maxX,sx);
-    minY = Math.min(minY,sy); maxY = Math.max(maxY,sy);
-  }
-  if (![minX,minY,maxX,maxY].every(Number.isFinite)) return null;
-  return { minX,minY,maxX,maxY,width:maxX-minX,height:maxY-minY,centerX:(minX+maxX)*.5 };
-}
-
-function syncHomeLabelsToObjects() {
-  if (!camera || homeHeaderBoxes.length < 3) return;
-  const labels = document.querySelectorAll('.object-label');
-  homeHeaderBoxes.forEach((box,i) => {
-    const label = labels[i];
-    const r = getProjectedScreenBox(box);
-    if (!label || !r) return;
-    const gap = Math.max(14, Math.min(24, innerHeight * .022));
-    label.style.left = `${T.MathUtils.clamp(r.centerX, 95, innerWidth - 95)}px`;
-    label.style.top = `${T.MathUtils.clamp(r.maxY + gap, 90, innerHeight - 96)}px`;
-  });
-}
 
 function getHomeHeaderScreenBounds() {
   if (!camera || homeHeaderBoxes.length < 2) return null;
@@ -349,7 +320,6 @@ function layout(request = true) {
   camera.lookAt(0, .35, 0);
   camera.updateProjectionMatrix();
   if (a < 1) { camera.position.multiplyScalar(1.55); camera.lookAt(0, .2, 0); }
-  syncHomeLabelsToObjects();
   liquidHeader?.syncLayout?.();
   liquidPanels?.syncLayout?.();
   if (request) runtime?.renderWithReflection();
