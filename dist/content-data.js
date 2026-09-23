@@ -24,7 +24,7 @@ export const subs = [
 ];
 
 export const statements = [
-  'Notes, essays, and observations on architecture, media, and the built environment.',
-  'Spatial studies moving between research, representation, and architectural intervention.',
-  'Research on cities, systems, and the narratives that shape the built environment.'
+  'Essays and observations on architecture, media, and the built environment.',
+  'Research-led studies across representation, material systems, and spatial intervention.',
+  'Research on cities, systems, and the narratives shaping the built environment.'
 ];
