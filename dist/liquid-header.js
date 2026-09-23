@@ -69,8 +69,7 @@ void main(){
   float opticalThickness = mix(sphereThickness, h, progress);
 
   float motion = clamp(abs(uVelocity)*2.2,0.0,1.0);
-  float ripple = sin((vUv.x*2.0 + uTime*.085)*6.2831853) * motion * 0.0028;
-  vec2 refractOffset = normal.xy * mix(0.013,0.0045,progress) * (0.30 + opticalThickness*.70) + vec2(ripple*.32,0.0);
+  vec2 refractOffset = normal.xy * mix(0.006,0.0028,progress) * (0.30 + opticalThickness*.70);
 
   vec2 uv = sceneUv(vUv);
   vec2 refractPx = refractOffset * uCaptureScale;
@@ -94,23 +93,24 @@ void main(){
   vec3 lightA = normalize(vec3(-0.46,0.72,0.52));
   vec3 lightB = normalize(vec3(0.62,-0.16,0.52));
   vec3 viewDir = vec3(0.0,0.0,1.0);
-  float specA = pow(max(dot(reflect(-lightA,normal),viewDir),0.0),58.0);
-  float specB = pow(max(dot(reflect(-lightB,normal),viewDir),0.0),26.0);
+  float specA = pow(max(dot(reflect(-lightA,normal),viewDir),0.0),22.0);
+  float specB = pow(max(dot(reflect(-lightB,normal),viewDir),0.0),14.0);
   float topLight = smoothstep(.08,.92,normal.y);
   float bottomShade = smoothstep(.02,.95,-normal.y);
   float lens = mix(sphereThickness,h,progress);
 
-  vec3 ceramic = mix(vec3(.935,.946,.951),vec3(.985,.989,.990),clamp(topLight*.55 + lens*.18,0.0,1.0));
-  ceramic -= vec3(.030,.034,.037) * bottomShade;
-  ceramic += vec3(1.0) * (specA*mix(.22,.13,progress) + specB*mix(.075,.045,progress));
-  ceramic += vec3(.91,.94,.955) * (fresnel*mix(.11,.065,progress) + rim*mix(.09,.045,progress));
-  ceramic += vec3(1.0) * motion * rim * .018;
+  // The same warm ivory and broad glints used by the navigation cards.
+  vec3 ceramic = mix(vec3(.865,.883,.889),vec3(.976,.980,.977),clamp(topLight*.58 + lens*.23,0.0,1.0));
+  ceramic -= vec3(.043,.046,.044) * bottomShade;
+  ceramic += vec3(1.0) * (specA*mix(.16,.085,progress) + specB*mix(.055,.035,progress));
+  ceramic += vec3(.91,.94,.94) * (fresnel*mix(.095,.052,progress) + rim*mix(.075,.042,progress));
+  ceramic += vec3(1.0) * motion * rim * .006;
 
-  float sceneMix = mix(.10,.055,progress);
+  float sceneMix = mix(.075,.055,progress);
   vec3 color = mix(ceramic,softScene,sceneMix);
-  color *= mix(vec3(1.0),uTint,.025);
+  color *= mix(vec3(1.0),uTint,.013);
 
-  float bodyAlpha = mix(.94,.91,progress);
+  float bodyAlpha = mix(.985,.96,progress);
   float outAlpha = alpha * (bodyAlpha + rim*.025 + fresnel*.018);
   gl_FragColor = vec4(color,outAlpha);
 }`;

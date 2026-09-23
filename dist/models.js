@@ -18,12 +18,11 @@ function texClone(t,repeat=1){if(!t)return t;const c=t.clone();c.wrapS=c.wrapT=T
 const writingClothColor=texClone(textures.linenColor,1.45);
 const writingClothRough=texClone(textures.linenRough,1.45);
 const writingClothNormal=texClone(textures.linenNormal,1.45);
-const architectureStoneColor=texClone(textures.archMarbleColor,1.08);
-const architectureStoneRough=texClone(textures.archMarbleRough,1.08);
 const architectureStoneNormal=texClone(textures.archMarbleNormal,1.08);
-// Marble021 displacement has already been baked into the optimized normal map offline. Runtime
-// therefore uses 3 samples instead of the former color+roughness+normal+bump 4-sample stack.
-const architectureStone=mat('Marble021 architectural mineral',0xf7f3ed,.78,0,{map:architectureStoneColor,roughnessMap:architectureStoneRough,normalMap:architectureStoneNormal,normalScale:new T.Vector2(.44,.44),clearcoat:.035,clearcoatRoughness:.68});
+// A quiet fired-clay maquette: texture affects micro-relief, never the silhouette or color.
+// The former marble albedo made the architectural mass read as veined stone.
+const architectureStone=mat('Warm porcelain architectural maquette',0xf0ede7,.54,0,{normalMap:architectureStoneNormal,normalScale:new T.Vector2(.085,.085),clearcoat:.23,clearcoatRoughness:.32,envMapIntensity:.92});
+const architectureInset=mat('Unglazed mineral inset',0xdcd9d2,.83,0,{normalMap:architectureStoneNormal,normalScale:new T.Vector2(.13,.13),clearcoat:.035,clearcoatRoughness:.76});
 const architectureMetalColor=texClone(textures.archMetalColor,1.24);
 const architectureMetalRough=texClone(textures.archMetalRough,1.24);
 const architectureMetalNormal=texClone(textures.archMetalNormal,1.24);
@@ -77,7 +76,7 @@ const architecture=new T.Group();architecture.name='Architecture';
 box(architecture,'Mineral plinth',3.24,.22,2.84,0,.11,0,architectureStone,.014);
 box(architecture,'Rear mineral tower',.76,1.34,.76,.08,.89,-.36,architectureStone,.022);
 box(architecture,'Main cantilever slab',1.12,.08,.56,.78,1.02,-.02,architectureStone,.009);
-box(architecture,'Front mineral podium',1.02,.40,.84,-.10,.42,.76,architectureStone,.016);
+box(architecture,'Front mineral podium',1.02,.40,.84,-.10,.42,.76,architectureInset,.016);
 box(architecture,'Low mineral shelf',.88,.075,.60,-.80,.58,.16,architectureStone,.010);
 box(architecture,'Left frosted tower',.64,.98,.68,-.90,.72,-.04,frosted,.016);
 box(architecture,'Left clear volume',.40,.40,.44,-.96,.25,.82,glass,.012);

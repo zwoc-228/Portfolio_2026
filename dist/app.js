@@ -536,7 +536,7 @@ async function init() {
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = T.VSMShadowMap;
     renderer.toneMapping = T.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
+    renderer.toneMappingExposure = 1.02;
     $('#scene').append(renderer.domElement);
 
     scene = new T.Scene();
@@ -545,31 +545,31 @@ async function init() {
 
     const pmrem = new T.PMREMGenerator(renderer);
     scene.environment = pmrem.fromScene(createStudioEnvironment(), .04).texture;
-    scene.environmentIntensity = 1.34;
+    scene.environmentIntensity = 1.05;
     pmrem.dispose();
 
     const loader = new T.TextureLoader();
-    const [deskMetalColor, deskMetalRough, deskMetalNormal, deskMetalMetalness, linen, paper, linenNormal, paperNormal, paperRough, print, writingPaperColor, writingPaperNormal, writingPaperRough, archMarbleColor, archMarbleNormal, archMarbleRough, archMetalColor, archMetalNormal, archMetalRough, archPlasticRough] = await Promise.all([
+    const [deskMetalColor, deskMetalRough, deskMetalNormal, deskMetalMetalness, linen, paper, linenNormal, paperNormal, paperRough, print, writingPaperColor, writingPaperNormal, writingPaperRough, archMarbleNormal, archMetalColor, archMetalNormal, archMetalRough, archPlasticRough] = await Promise.all([
       loadTexture(loader, 'desk-metal-color.png', 18), loadTexture(loader, 'desk-metal-roughness.png', 18), loadTexture(loader, 'desk-metal-normal.png', 18), loadTexture(loader, 'desk-metal-metalness.png', 18),
       loadTexture(loader, 'linen-bump.png', 3), loadTexture(loader, 'paper-bump.png', 2), loadTexture(loader, 'linen-normal.png', 3), loadTexture(loader, 'paper-normal.png', 2), loadTexture(loader, 'paper-rough.png', 2), loadTexture(loader, 'research-print.png'),
       loadTexture(loader, 'writing-paper-color.png'), loadTexture(loader, 'writing-paper-normal.png'), loadTexture(loader, 'writing-paper-roughness.png'),
-      loadTexture(loader, 'arch-marble-color.jpg'), loadTexture(loader, 'arch-marble-normal.jpg'), loadTexture(loader, 'arch-marble-rough.jpg'), loadTexture(loader, 'arch-metal-color.jpg'), loadTexture(loader, 'arch-metal-normal.jpg'), loadTexture(loader, 'arch-metal-rough.jpg'), loadTexture(loader, 'arch-plastic-rough.jpg')
+      loadTexture(loader, 'arch-marble-normal.jpg'), loadTexture(loader, 'arch-metal-color.jpg'), loadTexture(loader, 'arch-metal-normal.jpg'), loadTexture(loader, 'arch-metal-rough.jpg'), loadTexture(loader, 'arch-plastic-rough.jpg')
     ]);
-    deskMetalColor.colorSpace = T.SRGBColorSpace; writingPaperColor.colorSpace = T.SRGBColorSpace; print.colorSpace = T.SRGBColorSpace; archMarbleColor.colorSpace = T.SRGBColorSpace; archMetalColor.colorSpace = T.SRGBColorSpace; print.anisotropy = 8;
+    deskMetalColor.colorSpace = T.SRGBColorSpace; writingPaperColor.colorSpace = T.SRGBColorSpace; print.colorSpace = T.SRGBColorSpace; archMetalColor.colorSpace = T.SRGBColorSpace; print.anisotropy = 8;
     for (const t of [writingPaperColor, writingPaperNormal, writingPaperRough]) { t.repeat.set(1,1); t.offset.set(0,0); t.center.set(.5,.5); t.rotation = 0; t.needsUpdate = true; }
 
     const ground = new T.Mesh(new T.PlaneGeometry(200, 200), new T.MeshPhysicalMaterial({
-      color: 0xe8ecee, map: deskMetalColor, envMap: scene.environment, envMapIntensity: 2.78,
-      metalness: .98, metalnessMap: deskMetalMetalness, roughness: .37, roughnessMap: deskMetalRough,
-      normalMap: deskMetalNormal, normalScale: new T.Vector2(.25, .25), clearcoat: .12, clearcoatRoughness: .25,
+      color: 0xd7dcde, map: deskMetalColor, envMap: scene.environment, envMapIntensity: 1.42,
+      metalness: .94, metalnessMap: deskMetalMetalness, roughness: .47, roughnessMap: deskMetalRough,
+      normalMap: deskMetalNormal, normalScale: new T.Vector2(.18, .18), clearcoat: .045, clearcoatRoughness: .42,
       anisotropy: .92, anisotropyRotation: 0
     }));
     ground.rotation.x = -Math.PI / 2; ground.position.y = -.016; ground.receiveShadow = true; scene.add(ground);
 
-    scene.add(new T.HemisphereLight(0xf8fafb, 0x879197, .15));
-    keyLight = new T.DirectionalLight(0xfffcf7, 1.62); keyLight.position.set(-7.0, 10.8, 5.2); keyLight.castShadow = true; keyLight.shadow.mapSize.set(2048, 2048); Object.assign(keyLight.shadow.camera, { left: -8, right: 8, top: 6, bottom: -4, near: .1, far: 28 }); keyLight.shadow.bias = -.0001; keyLight.shadow.normalBias = .006; keyLight.shadow.radius = 4.2; keyLight.shadow.blurSamples = 8; keyLight.shadow.autoUpdate = false; keyLight.shadow.needsUpdate = true; scene.add(keyLight);
-    keyCompanionLight = new T.DirectionalLight(0xf7fafc, .50); keyCompanionLight.position.set(-2.3, 8.5, 1.8); keyCompanionLight.castShadow = true; keyCompanionLight.shadow.mapSize.set(1024, 1024); Object.assign(keyCompanionLight.shadow.camera, { left: -7, right: 7, top: 5, bottom: -4, near: .1, far: 24 }); keyCompanionLight.shadow.bias = -.0001; keyCompanionLight.shadow.normalBias = .0055; keyCompanionLight.shadow.radius = 3.4; keyCompanionLight.shadow.blurSamples = 6; keyCompanionLight.shadow.autoUpdate = false; keyCompanionLight.shadow.needsUpdate = true; scene.add(keyCompanionLight);
-    const fill = new T.DirectionalLight(0xeaf0f4, .16); fill.position.set(5.8, 7.0, -3.4); scene.add(fill);
+    scene.add(new T.HemisphereLight(0xf8fafb, 0x879197, .34));
+    keyLight = new T.DirectionalLight(0xfffcf7, .82); keyLight.position.set(-7.0, 10.8, 5.2); keyLight.castShadow = true; keyLight.shadow.mapSize.set(2048, 2048); Object.assign(keyLight.shadow.camera, { left: -8, right: 8, top: 6, bottom: -4, near: .1, far: 28 }); keyLight.shadow.bias = -.0001; keyLight.shadow.normalBias = .006; keyLight.shadow.radius = 5.2; keyLight.shadow.blurSamples = 8; keyLight.shadow.autoUpdate = false; keyLight.shadow.needsUpdate = true; scene.add(keyLight);
+    keyCompanionLight = new T.DirectionalLight(0xf7fafc, .28); keyCompanionLight.position.set(-2.3, 8.5, 1.8); keyCompanionLight.castShadow = true; keyCompanionLight.shadow.mapSize.set(1024, 1024); Object.assign(keyCompanionLight.shadow.camera, { left: -7, right: 7, top: 5, bottom: -4, near: .1, far: 24 }); keyCompanionLight.shadow.bias = -.0001; keyCompanionLight.shadow.normalBias = .0055; keyCompanionLight.shadow.radius = 5.0; keyCompanionLight.shadow.blurSamples = 6; keyCompanionLight.shadow.autoUpdate = false; keyCompanionLight.shadow.needsUpdate = true; scene.add(keyCompanionLight);
+    const fill = new T.DirectionalLight(0xeaf0f4, .24); fill.position.set(5.8, 7.0, -3.4); scene.add(fill);
 
     flashlightTarget = new T.Object3D(); scene.add(flashlightTarget);
     flashlight = new T.SpotLight(0xf6fbff, 0, 0, T.MathUtils.degToRad(2.0), .94, 0); flashlight.position.set(0, 9.8, 2.2); flashlight.target = flashlightTarget; flashlight.castShadow = false; scene.add(flashlight);
@@ -595,7 +595,7 @@ async function init() {
     const [linenColor, linenRough, paperColor, steelRough] = await Promise.all([loadTexture(loader, 'linen-color.png', 3), loadTexture(loader, 'linen-rough.png', 3), loadTexture(loader, 'paper-color.png', 2), loadTexture(loader, 'steel-rough.png')]);
     for (const t of [linenColor, paperColor]) { t.colorSpace = T.SRGBColorSpace; t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy()); }
 
-    models = createModels({ linen, paper, print, linenNormal, paperNormal, paperRough, linenColor, linenRough, paperColor, steelRough, writingPaperColor, writingPaperNormal, writingPaperRough, archMarbleColor, archMarbleNormal, archMarbleRough, archMetalColor, archMetalNormal, archMetalRough, archPlasticRough });
+    models = createModels({ linen, paper, print, linenNormal, paperNormal, paperRough, linenColor, linenRough, paperColor, steelRough, writingPaperColor, writingPaperNormal, writingPaperRough, archMarbleNormal, archMetalColor, archMetalNormal, archMetalRough, archPlasticRough });
     models.forEach((m, i) => {
       const f = HOME_TRANSFORMS[i]; m.scale.set(f[2], f[3], f[5]);
       const root = new T.Group(); root.add(m); root.position.set(f[0], 0, f[1]); root.rotation.y = f[4];

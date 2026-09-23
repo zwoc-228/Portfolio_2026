@@ -45,8 +45,7 @@ void main(){
   vec3 normal=normalize(vec3(-hx*4.9,-hy*4.9,1.0));
 
   float speed=clamp(abs(uVelocity)*2.2,0.0,1.0);
-  float wobble=sin((vUv.x*1.8+vUv.y*.65+uTime*.08)*6.2831853)*speed*.0028;
-  vec2 offset=normal.xy*(.015+.006*uTone)+vec2(wobble,0.0);
+  vec2 offset=normal.xy*(.004+.002*uTone);
   vec3 refracted;
   refracted.r=texture2D(uScene,vUv+offset*1.14).r;
   refracted.g=texture2D(uScene,vUv+offset).g;
@@ -56,12 +55,11 @@ void main(){
   float rim=smoothstep(.60,1.0,edge);
   float fresnel=pow(clamp(1.0-normal.z,0.0,1.0),2.6);
   float top=smoothstep(.18,1.0,1.0-vUv.y)*(.08+.04*uTone);
-  vec3 tint=mix(vec3(.965,.985,1.0),vec3(.90,.955,.985),uTone*.32);
-  vec3 color=refracted*tint;
-  color+=vec3(1.0)*(rim*(.18+.04*uTone)+fresnel*.13+top);
-  color+=vec3(.93,.98,1.0)*speed*edge*.05;
-  float body=.28+.07*uTone;
-  gl_FragColor=vec4(color,alpha*(body+rim*.19+fresnel*.05));
+  vec3 ceramic=mix(vec3(.865,.883,.889),vec3(.976,.980,.977),clamp(top*.70+.42,0.0,1.0));
+  vec3 color=mix(ceramic,refracted,.055);
+  color+=vec3(1.0)*(rim*(.058+.02*uTone)+fresnel*.055);
+  color+=vec3(.93,.95,.95)*speed*edge*.008;
+  gl_FragColor=vec4(color,alpha*(.78+rim*.09+fresnel*.03));
 }`;
 
 function visibleElement(el){

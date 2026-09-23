@@ -1,3 +1,7 @@
+let detailExitTimer = 0;
+let detailEnterTimer = 0;
+let categoryEnterTimer = 0;
+
 export function applyViewState({ state, selected, names, cats, statements = [], filter, onFilter }) {
   document.body.className = state;
 
@@ -14,17 +18,20 @@ export function applyViewState({ state, selected, names, cats, statements = [], 
   if (footer) footer.inert = state !== 'home';
 
   if (category) {
+    clearTimeout(categoryEnterTimer);
     if (state === 'home') {
       category.hidden = true;
       category.dataset.phase = 'idle';
     } else {
       category.dataset.phase = 'enter';
       category.hidden = false;
-      setTimeout(() => { if (!category.hidden) category.dataset.phase = 'ready'; }, 16);
+      categoryEnterTimer = setTimeout(() => { if (!category.hidden) category.dataset.phase = 'ready'; }, 16);
     }
   }
 
   if (detail && state !== 'index') {
+    clearTimeout(detailExitTimer);
+    clearTimeout(detailEnterTimer);
     detail.hidden = true;
     document.body.classList.remove('detail-open');
   }
@@ -119,7 +126,7 @@ export function renderIndex({ state, selected, filter, cats, titles, subs, onOpe
   });
 
   el.append(wrap);
-  setTimeout(() => { wrap.dataset.phase = 'ready'; }, 16);
+  setTimeout(() => { if (wrap.isConnected) wrap.dataset.phase = 'ready'; }, 16);
 }
 
 export function showProjectDetail({ title, image, category, year, selected = 0 }) {
@@ -132,6 +139,8 @@ export function showProjectDetail({ title, image, category, year, selected = 0 }
   const yearNode = document.querySelector('#detail-year');
   if (!card || !img || !heading || !text || !kicker || !categoryNode || !yearNode) return;
 
+  clearTimeout(detailExitTimer);
+  clearTimeout(detailEnterTimer);
   card.dataset.phase = 'enter';
   card.hidden = false;
   document.body.classList.add('detail-open');
@@ -143,15 +152,17 @@ export function showProjectDetail({ title, image, category, year, selected = 0 }
   yearNode.textContent = year;
   text.textContent = 'A focused study of material, atmosphere, representation, and spatial relationships. The project develops through drawings, models, images, and written observations, allowing the work to be read at a slower scale than the surrounding index. Extended documentation can continue here as the project grows.';
 
-  setTimeout(() => { if (!card.hidden) card.dataset.phase = 'ready'; }, 16);
+  detailEnterTimer = setTimeout(() => { if (!card.hidden) card.dataset.phase = 'ready'; }, 16);
 }
 
 export function hideProjectDetail() {
   const card = document.querySelector('#detail-card');
   if (!card || card.hidden) return;
+  clearTimeout(detailEnterTimer);
+  clearTimeout(detailExitTimer);
   card.dataset.phase = 'exit';
   document.body.classList.remove('detail-open');
-  setTimeout(() => { card.hidden = true; card.dataset.phase = 'idle'; }, 170);
+  detailExitTimer = setTimeout(() => { card.hidden = true; card.dataset.phase = 'idle'; }, 170);
 }
 
 export function showInfo(title, text) {
