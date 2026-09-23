@@ -1,3 +1,11 @@
+# Round 39 override — read first
+
+- Fix Architecture transition ghosts by keeping shadows/reflection spatially synchronized. Do not restore the old 6-frame shadow / 3-frame reflection stagger.
+- Keep Architecture glass/acrylic HOME proxies during motion; switch detailed transmission only after the Architecture preview settles.
+- Preserve `bakeAssemblyAO()` vertex-color cavity shading and the soft contact-shadow footprints.
+- Preserve the matte clay/plastic HOME sphere and its one-time restrained desk bounce.
+- Keep desk texture subtle; do not reintroduce marble veining or high clearcoat on the maquette.
+
 # Agent handoff — Round 29
 
 ## Current architectural rule

@@ -21,7 +21,7 @@ let selected = 0;
 let filter = 'All';
 let renderer, scene, camera, floorReflection, runtime;
 let liquidHeader, liquidPanels;
-let models = [], home = [], hoverProfiles = [], homeHitBoxes = [], homeHeaderBoxes = [], architectureGlassPairs = [], architectureGlassDetailed = false, writingController = null;
+let models = [], home = [], hoverProfiles = [], homeHitBoxes = [], homeHeaderBoxes = [], architectureGlassPairs = [], architectureGlassDetailed = false, writingController = null, contactShadows = [], contactShadowTexture = null;
 let keyLight, keyCompanionLight;
 let flashlight, flashlightTarget, beamHalo, beamParticles;
 let transition = null, transitionFrame = 0;
@@ -206,6 +206,27 @@ function setArchitectureGlassDetail(detailed) {
   glassCaptureReady = false;
 }
 
+function createContactShadowTexture(size=128) {
+  const data=new Uint8Array(size*size*4);
+  for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+    const u=(x+.5)/size*2-1,v=(y+.5)/size*2-1;
+    const r2=u*u+v*v; const broad=Math.exp(-r2*2.15), core=Math.exp(-r2*8.5);
+    const a=Math.max(0,Math.min(1,broad*.58+core*.42)); const q=Math.round(a*255); const i=(y*size+x)*4;
+    data[i]=q;data[i+1]=q;data[i+2]=q;data[i+3]=255;
+  }
+  const tex=new T.DataTexture(data,size,size,T.RGBAFormat,T.UnsignedByteType);tex.needsUpdate=true;tex.minFilter=T.LinearFilter;tex.magFilter=T.LinearFilter;tex.generateMipmaps=false;return tex;
+}
+function createContactShadow(root,index) {
+  const box=new T.Box3().setFromObject(root),size=new T.Vector3();box.getSize(size);
+  if(!contactShadowTexture)contactShadowTexture=createContactShadowTexture();
+  const material=new T.MeshBasicMaterial({color:0x4d555a,alphaMap:contactShadowTexture,transparent:true,opacity:index===1?.115:.085,depthWrite:false,depthTest:true,toneMapped:false});
+  const mesh=new T.Mesh(new T.PlaneGeometry(1,1),material);mesh.rotation.x=-Math.PI/2;mesh.position.y=-.0115;mesh.renderOrder=2;
+  mesh.userData={root,baseX:Math.max(.62,size.x*1.06),baseZ:Math.max(.62,size.z*1.06),baseOpacity:index===1?.115:.085,index};scene.add(mesh);contactShadows.push(mesh);return mesh;
+}
+function syncContactShadows() {
+  for(const shadow of contactShadows){const root=shadow.userData.root;if(!root)continue;const lift=Math.max(0,root.position.y);shadow.position.x=root.position.x;shadow.position.z=root.position.z;const spread=1+Math.min(.16,lift*.95);shadow.scale.set(shadow.userData.baseX*spread,shadow.userData.baseZ*spread,1);shadow.material.opacity=shadow.userData.baseOpacity*Math.max(.34,1-lift*4.2);}
+}
+
 function updateWritingReveal(dt) {
   if (!writingController || transition) return false;
   const target = writingRevealTarget();
@@ -303,6 +324,9 @@ function getTargets() {
 function startTransition() {
   if (!models.length) return;
   transitionFrame = 0;
+  // Remove stale planar content before the first moved frame. Together with per-frame reflection
+  // updates below, this prevents the old HOME architecture silhouette from hanging on the desk.
+  floorReflection?.clear?.();
   document.documentElement.dataset.sceneReady = 'false';
   document.body.classList.add('is-transitioning');
   transition = {
@@ -330,14 +354,17 @@ function updateTransition(dt) {
   if (writingController && transition.writing) {
     applyWritingMaterialReveal(writingController, T.MathUtils.lerp(transition.writing.revealFrom, transition.writing.revealTo, k));
   }
+  syncContactShadows();
   const finalFrame = t >= 1;
-  // Keep both full-quality shadow maps, but stagger their refresh so two VSM updates never spike in the same frame.
-  if (finalFrame) markStaticShadowsDirty();
-  else if (transitionFrame % 6 === 0) markKeyShadowDirty();
-  else if (transitionFrame % 6 === 3) markCompanionShadowDirty();
-  // Keep the same ~20fps reflection cadence, shifted away from shadow refresh frames.
-  const reflectionFrame = finalFrame || transitionFrame % 3 === 1;
+  // Spatial transitions must never reuse old shadow/reflection positions. The previous ~20fps
+  // cadence was the visible 'afterimage' when Architecture left HOME. The key shadow follows every
+  // moved frame; the softer companion and planar reflection run at an even 30fps cadence after the
+  // first two frames, which stays visually locked without doubling the full render cost on older GPUs.
+  markKeyShadowDirty();
+  if (finalFrame || transitionFrame % 2 === 0) markCompanionShadowDirty();
+  const reflectionFrame = finalFrame || transitionFrame <= 2 || transitionFrame % 2 === 0;
   if (finalFrame) {
+    if (state === 'preview' && selected === 1) setArchitectureGlassDetail(true);
     transition = null;
     transitionFrame = 0;
     document.documentElement.dataset.sceneReady = 'true';
@@ -376,6 +403,7 @@ function updateScene(dt, now) {
       if (Math.abs(m.position.y - before) > .00008 || Math.abs(m.position.y - targetY) > .0015) liftMoving = true;
     });
   }
+  syncContactShadows();
   if (liftMoving) {
     hoverShadowTick++;
     if (hoverShadowTick % 2) markKeyShadowDirty(); else markCompanionShadowDirty();
@@ -434,7 +462,9 @@ function handleFilter(nextFilter) {
 function navigate(s, i = selected, push = true) {
   hideProjectDetail();
   state = s; selected = i; filter = 'All';
-  setArchitectureGlassDetail(s === 'preview' && i === 1);
+  // Keep the lightweight HOME acrylic proxy while the Architecture model is moving. Switching to
+  // transmission before motion caused a second optical silhouette during the transition.
+  if (!(s === 'preview' && i === 1)) setArchitectureGlassDetail(false);
   if (s !== 'home') {
     hoveredModel = -1;
     setGlowTarget(glowTarget.x, glowTarget.y, glowTarget.z, 0, -1, spotAngleTarget, 0);
@@ -553,23 +583,23 @@ async function init() {
       loadTexture(loader, 'desk-metal-color.png', 18), loadTexture(loader, 'desk-metal-roughness.png', 18), loadTexture(loader, 'desk-metal-normal.png', 18), loadTexture(loader, 'desk-metal-metalness.png', 18),
       loadTexture(loader, 'linen-bump.png', 3), loadTexture(loader, 'paper-bump.png', 2), loadTexture(loader, 'linen-normal.png', 3), loadTexture(loader, 'paper-normal.png', 2), loadTexture(loader, 'paper-rough.png', 2), loadTexture(loader, 'research-print.png'),
       loadTexture(loader, 'writing-paper-color.png'), loadTexture(loader, 'writing-paper-normal.png'), loadTexture(loader, 'writing-paper-roughness.png'),
-      loadTexture(loader, 'arch-marble-normal.jpg'), loadTexture(loader, 'arch-metal-color.jpg'), loadTexture(loader, 'arch-metal-normal.jpg'), loadTexture(loader, 'arch-metal-rough.jpg'), loadTexture(loader, 'arch-plastic-rough.jpg')
+      loadTexture(loader, 'arch-mineral-normal.png'), loadTexture(loader, 'arch-metal-color.jpg'), loadTexture(loader, 'arch-metal-normal.jpg'), loadTexture(loader, 'arch-metal-rough.jpg'), loadTexture(loader, 'arch-plastic-rough.jpg')
     ]);
     deskMetalColor.colorSpace = T.SRGBColorSpace; writingPaperColor.colorSpace = T.SRGBColorSpace; print.colorSpace = T.SRGBColorSpace; archMetalColor.colorSpace = T.SRGBColorSpace; print.anisotropy = 8;
     for (const t of [writingPaperColor, writingPaperNormal, writingPaperRough]) { t.repeat.set(1,1); t.offset.set(0,0); t.center.set(.5,.5); t.rotation = 0; t.needsUpdate = true; }
 
     const ground = new T.Mesh(new T.PlaneGeometry(200, 200), new T.MeshPhysicalMaterial({
-      color: 0xd7dcde, map: deskMetalColor, envMap: scene.environment, envMapIntensity: 1.42,
-      metalness: .94, metalnessMap: deskMetalMetalness, roughness: .47, roughnessMap: deskMetalRough,
-      normalMap: deskMetalNormal, normalScale: new T.Vector2(.18, .18), clearcoat: .045, clearcoatRoughness: .42,
+      color: 0xd9dddf, map: deskMetalColor, envMap: scene.environment, envMapIntensity: 1.28,
+      metalness: .92, metalnessMap: deskMetalMetalness, roughness: .52, roughnessMap: deskMetalRough,
+      normalMap: deskMetalNormal, normalScale: new T.Vector2(.075, .075), clearcoat: .022, clearcoatRoughness: .64,
       anisotropy: .92, anisotropyRotation: 0
     }));
     ground.rotation.x = -Math.PI / 2; ground.position.y = -.016; ground.receiveShadow = true; scene.add(ground);
 
-    scene.add(new T.HemisphereLight(0xf8fafb, 0x879197, .34));
-    keyLight = new T.DirectionalLight(0xfffcf7, .82); keyLight.position.set(-7.0, 10.8, 5.2); keyLight.castShadow = true; keyLight.shadow.mapSize.set(2048, 2048); Object.assign(keyLight.shadow.camera, { left: -8, right: 8, top: 6, bottom: -4, near: .1, far: 28 }); keyLight.shadow.bias = -.0001; keyLight.shadow.normalBias = .006; keyLight.shadow.radius = 5.2; keyLight.shadow.blurSamples = 8; keyLight.shadow.autoUpdate = false; keyLight.shadow.needsUpdate = true; scene.add(keyLight);
-    keyCompanionLight = new T.DirectionalLight(0xf7fafc, .28); keyCompanionLight.position.set(-2.3, 8.5, 1.8); keyCompanionLight.castShadow = true; keyCompanionLight.shadow.mapSize.set(1024, 1024); Object.assign(keyCompanionLight.shadow.camera, { left: -7, right: 7, top: 5, bottom: -4, near: .1, far: 24 }); keyCompanionLight.shadow.bias = -.0001; keyCompanionLight.shadow.normalBias = .0055; keyCompanionLight.shadow.radius = 5.0; keyCompanionLight.shadow.blurSamples = 6; keyCompanionLight.shadow.autoUpdate = false; keyCompanionLight.shadow.needsUpdate = true; scene.add(keyCompanionLight);
-    const fill = new T.DirectionalLight(0xeaf0f4, .24); fill.position.set(5.8, 7.0, -3.4); scene.add(fill);
+    scene.add(new T.HemisphereLight(0xf9faf9, 0x8d969b, .29));
+    keyLight = new T.DirectionalLight(0xfffdf8, .74); keyLight.position.set(-6.7, 10.2, 5.6); keyLight.castShadow = true; keyLight.shadow.mapSize.set(2048, 2048); Object.assign(keyLight.shadow.camera, { left: -8, right: 8, top: 6, bottom: -4, near: .1, far: 28 }); keyLight.shadow.bias = -.00008; keyLight.shadow.normalBias = .0048; keyLight.shadow.radius = 6.2; keyLight.shadow.blurSamples = 10; keyLight.shadow.autoUpdate = false; keyLight.shadow.needsUpdate = true; scene.add(keyLight);
+    keyCompanionLight = new T.DirectionalLight(0xf6f8f9, .22); keyCompanionLight.position.set(3.8, 7.6, 1.6); keyCompanionLight.castShadow = true; keyCompanionLight.shadow.mapSize.set(1024, 1024); Object.assign(keyCompanionLight.shadow.camera, { left: -7, right: 7, top: 5, bottom: -4, near: .1, far: 24 }); keyCompanionLight.shadow.bias = -.00008; keyCompanionLight.shadow.normalBias = .0046; keyCompanionLight.shadow.radius = 6.0; keyCompanionLight.shadow.blurSamples = 8; keyCompanionLight.shadow.autoUpdate = false; keyCompanionLight.shadow.needsUpdate = true; scene.add(keyCompanionLight);
+    const fill = new T.DirectionalLight(0xeaf0f2, .18); fill.position.set(6.4, 6.4, -4.4); scene.add(fill);
 
     flashlightTarget = new T.Object3D(); scene.add(flashlightTarget);
     flashlight = new T.SpotLight(0xf6fbff, 0, 0, T.MathUtils.degToRad(2.0), .94, 0); flashlight.position.set(0, 9.8, 2.2); flashlight.target = flashlightTarget; flashlight.castShadow = false; scene.add(flashlight);
@@ -602,6 +632,9 @@ async function init() {
       if (i === 0 && m.userData.writingController) { writingController = m.userData.writingController; applyWritingMaterialReveal(writingController, 0); }
       models[i] = root; home.push({ x: f[0], z: f[1], r: f[4] }); scene.add(root);
     });
+    models.forEach((root,i)=>createContactShadow(root,i));
+    syncContactShadows();
+    floorReflection.setTransientObjects([flashlight, beamHalo, beamParticles, ...contactShadows]);
     homeHeaderBoxes = models.map(m => new T.Box3().setFromObject(m).clone());
     // Unseen-style perceptual LOD: keep the acrylic/glass appearance on the HOME maquette without
     // paying Three.js's full transmission prepass on every pointer frame. The true transmission

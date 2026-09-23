@@ -18,7 +18,7 @@ export function createFloorReflection(renderer,scene,ground){
   floorReflection:{value:blurB.texture},floorProjection:{value:matrix},
   glowWorldXZ:{value:new T.Vector2(0,0)},glowStrength:{value:0},glowRadius:{value:.36},
   uiCenter:{value:new T.Vector2(0,0)},uiAxis:{value:new T.Vector2(1,0)},uiHalfLength:{value:0},
-  uiWidth:{value:.18},uiStrength:{value:0},uiProgress:{value:0},
+  uiWidth:{value:.18},uiStrength:{value:0},uiProgress:{value:0},uiContact:{value:1},
  };
  // Three UI reflection slots: sidebar, project-card field, project-detail card.
  for(let i=0;i<3;i++){
@@ -42,7 +42,7 @@ export function createFloorReflection(renderer,scene,ground){
   shader.vertexShader=shader.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\nvec4 floorWorld = modelMatrix * vec4(transformed,1.0);\nvFloorWorldPosition = floorWorld.xyz;\nvFloorProjection = floorProjection * floorWorld;');
   shader.fragmentShader=`uniform sampler2D floorReflection;
 uniform vec2 glowWorldXZ; uniform float glowStrength; uniform float glowRadius;
-uniform vec2 uiCenter; uniform vec2 uiAxis; uniform float uiHalfLength; uniform float uiWidth; uniform float uiStrength; uniform float uiProgress;
+uniform vec2 uiCenter; uniform vec2 uiAxis; uniform float uiHalfLength; uniform float uiWidth; uniform float uiStrength; uniform float uiProgress; uniform float uiContact;
 uniform vec2 panel0Center; uniform vec2 panel0Axis; uniform vec2 panel0Normal; uniform float panel0HalfLength; uniform float panel0Depth; uniform float panel0Strength; uniform float panel0Hover;
 uniform vec2 panel1Center; uniform vec2 panel1Axis; uniform vec2 panel1Normal; uniform float panel1HalfLength; uniform float panel1Depth; uniform float panel1Strength; uniform float panel1Hover;
 uniform vec2 panel2Center; uniform vec2 panel2Axis; uniform vec2 panel2Normal; uniform float panel2HalfLength; uniform float panel2Depth; uniform float panel2Strength; uniform float panel2Hover;
@@ -60,6 +60,7 @@ vec3 uiGlassReflection(){
  return vec3(shape,edge,center)*uiStrength;
 }
 float uiGlassMask(){return clamp(uiGlassReflection().x,0.0,1.0);}
+float uiContactShadow(){vec2 d=vFloorWorldPosition.xz-uiCenter;float w=max(uiWidth,.035);float q=dot(d,d)/(w*w);return exp(-q*2.35)*(1.0-uiProgress)*uiContact;}
 
 vec3 boardReflection(vec2 center, vec2 axis, vec2 normalDir, float halfLength, float depth, float strength, float hover){
  vec2 d=vFloorWorldPosition.xz-center;
@@ -96,6 +97,8 @@ float panelBoardMask(){return clamp(panelBoardReflection().x,0.0,1.0);}
   float pointerGlow=clamp(floorGlowMask(),0.0,1.0);
   outgoingLight += vec3(.022,.026,.031)*pointerGlow;
   vec3 uiRef=uiGlassReflection(); float uiGlow=clamp(uiRef.x,0.0,1.0);
+  float uiShadow=clamp(uiContactShadow(),0.0,1.0);
+  outgoingLight*=1.0-uiShadow*.115;
   outgoingLight=mix(outgoingLight,outgoingLight*vec3(.945,.952,.956),clamp(uiRef.z*.16,0.0,.13));
   outgoingLight += vec3(.044,.048,.052)*uiGlow + vec3(.088,.094,.098)*uiRef.y;
   vec3 panelRef=panelBoardReflection();
@@ -127,7 +130,7 @@ float panelBoardMask(){return clamp(panelBoardReflection().x,0.0,1.0);}
  }
  return {
   setGlow(x,z,strength=1){uniforms.glowWorldXZ.value.set(x,z);uniforms.glowStrength.value=strength;},
-  setUICaustic(x,z,ax,az,halfLength,width,strength,progress=1){uniforms.uiCenter.value.set(x,z);uniforms.uiAxis.value.set(ax,az);uniforms.uiHalfLength.value=halfLength;uniforms.uiWidth.value=width;uniforms.uiStrength.value=strength;uniforms.uiProgress.value=progress;},
+  setUICaustic(x,z,ax,az,halfLength,width,strength,progress=1,contact=1){uniforms.uiCenter.value.set(x,z);uniforms.uiAxis.value.set(ax,az);uniforms.uiHalfLength.value=halfLength;uniforms.uiWidth.value=width;uniforms.uiStrength.value=strength;uniforms.uiProgress.value=progress;uniforms.uiContact.value=contact;},
   setPanelReflection:setPanel,
   clearPanelReflections(){for(let i=0;i<3;i++)setPanel(i,0,0,1,0,0,1,0,.5,0,0);},
   setTransientObjects(objects=[]){transientObjects=objects.filter(Boolean);},

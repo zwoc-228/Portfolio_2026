@@ -100,13 +100,13 @@ void main(){
   float lens = mix(sphereThickness,h,progress);
 
   // The same warm ivory and broad glints used by the navigation cards.
-  vec3 ceramic = mix(vec3(.865,.883,.889),vec3(.976,.980,.977),clamp(topLight*.58 + lens*.23,0.0,1.0));
+  vec3 ceramic = mix(vec3(.842,.850,.845),vec3(.972,.969,.955),clamp(topLight*.56 + lens*.22,0.0,1.0));
   ceramic -= vec3(.043,.046,.044) * bottomShade;
-  ceramic += vec3(1.0) * (specA*mix(.16,.085,progress) + specB*mix(.055,.035,progress));
-  ceramic += vec3(.91,.94,.94) * (fresnel*mix(.095,.052,progress) + rim*mix(.075,.042,progress));
+  ceramic += vec3(1.0) * (specA*mix(.072,.048,progress) + specB*mix(.024,.020,progress));
+  ceramic += vec3(.91,.94,.94) * (fresnel*mix(.040,.030,progress) + rim*mix(.030,.024,progress));
   ceramic += vec3(1.0) * motion * rim * .006;
 
-  float sceneMix = mix(.075,.055,progress);
+  float sceneMix = mix(.030,.038,progress);
   vec3 color = mix(ceramic,softScene,sceneMix);
   color *= mix(vec3(1.0),uTint,.013);
 
@@ -153,7 +153,7 @@ export function createLiquidHeader({ renderer, camera, floorReflection, runtime,
   mesh.renderOrder = 1000;
   overlayScene.add(mesh);
 
-  let current=0, target=0, velocity=0, wobble=0, time=0;
+  let current=0, target=0, velocity=0, wobble=0, time=0, introTime=0, introDone=reducedMotion;
   let hovering=false, focusWithin=false, collapseTimer=0;
   let cssW=innerWidth, cssH=innerHeight, currentWidth=44, currentHeight=44;
   let currentCenterX=cssW*.5, currentLeft=currentCenterX-22;
@@ -211,7 +211,7 @@ export function createLiquidHeader({ renderer, camera, floorReflection, runtime,
     return raycaster.ray.intersectPlane(floorPlane,out);
   }
 
-  function updateDeskFeedback(progress){
+  function updateDeskFeedback(progress,introLift=0,impact=0){
     if(!floorReflection?.setUICaustic)return;
     const top=20;
     const y=top+currentHeight+7;
@@ -223,7 +223,11 @@ export function createLiquidHeader({ renderer, camera, floorReflection, runtime,
     if(!l||!r||!c){floorReflection.setUICaustic(0,0,1,0,0,1,0,progress);return;}
     const dx=r.x-l.x,dz=r.z-l.z,len=Math.max(.05,Math.hypot(dx,dz));
     const ax=dx/len,az=dz/len;
-    floorReflection.setUICaustic(c.x,c.z,ax,az,len*.50,Math.max(.11,.14+.055*progress),.16+.11*progress,progress);
+    const contact=Math.exp(-Math.max(0,introLift)/10.5);
+    const width=Math.max(.11,.135+.050*progress+Math.max(0,introLift)*.0024);
+    const strength=(.105+.070*progress)*(.62+.38*contact);
+    const shadowContact=clamp01(contact*(1-progress)*(.90+.16*impact));
+    floorReflection.setUICaustic(c.x,c.z,ax,az,len*.50,width,strength,progress,shadowContact);
   }
 
   function updateCaptureMapping(){
@@ -240,7 +244,27 @@ export function createLiquidHeader({ renderer, camera, floorReflection, runtime,
     );
   }
 
-  function apply(progress,motion){
+  function sampleIntroBounce(){
+    if(introDone)return {lift:0,sx:1,sy:1,impact:0};
+    const t=Math.min(1,introTime/1.02);
+    const keys=[
+      [0.00,18.0,.985,1.018,0.00],
+      [0.30,0.0,1.070,.925,1.00],
+      [0.50,7.0,.992,1.012,0.00],
+      [0.66,0.0,1.032,.972,.56],
+      [0.79,2.7,.997,1.006,0.00],
+      [0.91,0.0,1.012,.990,.24],
+      [1.00,0.0,1.000,1.000,0.00]
+    ];
+    let a=keys[0],b=keys[keys.length-1];
+    for(let i=0;i<keys.length-1;i++)if(t>=keys[i][0]&&t<=keys[i+1][0]){a=keys[i];b=keys[i+1];break;}
+    const q=smooth(clamp01((t-a[0])/Math.max(.001,b[0]-a[0])));
+    const lerp=(x,y)=>T.MathUtils.lerp(x,y,q);
+    if(t>=1)introDone=true;
+    return {lift:lerp(a[1],b[1]),sx:lerp(a[2],b[2]),sy:lerp(a[3],b[3]),impact:lerp(a[4],b[4])};
+  }
+
+  function apply(progress,motion,bounce=sampleIntroBounce()){
     const p=smooth(progress);
     const bounds=resolveExpandedBounds();
     currentWidth=T.MathUtils.lerp(44,bounds.width,p);
@@ -248,8 +272,10 @@ export function createLiquidHeader({ renderer, camera, floorReflection, runtime,
     currentCenterX=T.MathUtils.lerp(cssW*.5,bounds.center,p);
     currentLeft=currentCenterX-currentWidth*.5;
 
-    mesh.scale.set(currentWidth,currentHeight,1);
-    mesh.position.set(currentCenterX-cssW*.5,cssH/2-20-currentHeight/2,0);
+    const bounceMix=1-p; const lift=bounce.lift*bounceMix;
+    const sx=1+(bounce.sx-1)*bounceMix, sy=1+(bounce.sy-1)*bounceMix;
+    mesh.scale.set(currentWidth*sx,currentHeight*sy,1);
+    mesh.position.set(currentCenterX-cssW*.5,cssH/2-20-currentHeight/2+lift,0);
     uniforms.uSize.value.set(currentWidth,currentHeight);
     uniforms.uProgress.value=p;
     uniforms.uVelocity.value=motion;
@@ -259,7 +285,7 @@ export function createLiquidHeader({ renderer, camera, floorReflection, runtime,
     headerEl.style.width=`${currentWidth}px`;
     headerEl.style.height=`${currentHeight}px`;
     headerEl.style.left=`${currentCenterX}px`;
-    headerEl.style.top='20px';
+    headerEl.style.top=`${20-lift}px`;
     headerEl.style.setProperty('--reveal',p.toFixed(4));
     headerEl.dataset.mode=p>.52?'expanded':'collapsed';
 
@@ -269,12 +295,12 @@ export function createLiquidHeader({ renderer, camera, floorReflection, runtime,
       node.style.transform=`translateY(${((1-contentReveal)*(index?4:6)).toFixed(2)}px)`;
       node.style.pointerEvents=contentReveal>.78?'auto':'none';
     });
-    updateDeskFeedback(p);
+    updateDeskFeedback(p,lift,bounce.impact);
   }
 
   function update(dt){
-    time+=dt;
-    if(reducedMotion){current=target;velocity=0;wobble=0;}else{
+    time+=dt; if(!introDone)introTime+=dt;
+    if(reducedMotion){current=target;velocity=0;wobble=0;introDone=true;}else{
       const stiffness=44,damping=12.5;
       velocity+=(target-current)*stiffness*dt;
       velocity*=Math.exp(-damping*dt);
@@ -283,8 +309,8 @@ export function createLiquidHeader({ renderer, camera, floorReflection, runtime,
       wobble=T.MathUtils.lerp(wobble,Math.min(1,Math.abs(velocity)*1.8),1-Math.pow(.18,dt*60));
       if(Math.abs(target-current)<.0007&&Math.abs(velocity)<.0007){current=target;velocity=0;wobble*=.65;}
     }
-    apply(clamp01(current),wobble);
-    const active=Math.abs(target-current)>.0007||Math.abs(velocity)>.0007||wobble>.002;
+    const bounce=sampleIntroBounce(); apply(clamp01(current),wobble,bounce);
+    const active=!introDone||Math.abs(target-current)>.0007||Math.abs(velocity)>.0007||wobble>.002;
     return FRAME_RENDER | (active?FRAME_ACTIVE:0);
   }
 
