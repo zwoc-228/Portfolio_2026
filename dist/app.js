@@ -4,7 +4,7 @@ import { createModels } from './models.js';
 import { HOME_TRANSFORMS } from './scene-layout.js';
 import { createFloorReflection } from './floor-reflection.js';
 import { names, cats, titles, subs, statements } from './content-data.js';
-import { applyViewState, syncFilterButtons, renderIndex, showInfo } from './ui-view.js';
+import { applyViewState, syncFilterButtons, renderIndex, showProjectDetail, hideProjectDetail, showInfo } from './ui-view.js';
 import { createLiquidHeader } from './liquid-header.js';
 import { createLiquidPanels } from './liquid-panels.js';
 import { initUIMotion } from './ui-motion.js';
@@ -29,6 +29,8 @@ let resizePending = false, resizeDeadline = 0;
 
 const raycaster = new T.Raycaster();
 const pointer = new T.Vector2();
+const uiPanelRaycaster = new T.Raycaster();
+const uiPanelNDC = new T.Vector2();
 const floorPlane = new T.Plane(new T.Vector3(0, 1, 0), .016);
 const glowHit = new T.Vector3();
 const hitPoint = new T.Vector3();
@@ -42,6 +44,7 @@ let pointerDirty = false, pointerClientX = 0, pointerClientY = 0;
 let glowCurrentStrength = 0, glowTargetStrength = 0, hoveredModel = -1;
 let spotAngleCurrent = T.MathUtils.degToRad(2.0), spotAngleTarget = T.MathUtils.degToRad(2.0), spotIntensityTarget = 0;
 let particleTime = 0;
+let panelReflectionHover = 0, hoverShadowTick = 0, wasLiftMoving = false;
 
 let glassCaptureReady = false;
 function drawFrame({ reflection = false, capture = false } = {}) {
@@ -110,6 +113,30 @@ function getHomeHeaderScreenBounds() {
   if (!Number.isFinite(minX) || !Number.isFinite(maxX)) return null;
   const pad = Math.max(8, innerWidth * .006);
   return { left: minX - pad, right: maxX + pad };
+}
+
+function screenPointToFloor(x, y, out) {
+  uiPanelNDC.set(x / innerWidth * 2 - 1, 1 - y / innerHeight * 2);
+  uiPanelRaycaster.setFromCamera(uiPanelNDC, camera);
+  return uiPanelRaycaster.ray.intersectPlane(floorPlane, out);
+}
+
+const panelHitL = new T.Vector3(), panelHitR = new T.Vector3(), panelHitC = new T.Vector3();
+function syncPanelFloorReflection() {
+  if (!floorReflection?.setPanelReflection || !camera) return;
+  const panel = document.querySelector('.category-panel');
+  if (!panel || panel.hidden || state === 'home' || !panel.getClientRects().length) {
+    floorReflection.setPanelReflection(0,0,1,0,0,.2,0,0);
+    return;
+  }
+  const r = panel.getBoundingClientRect();
+  const y = Math.min(innerHeight - 2, r.bottom + 8);
+  const l = screenPointToFloor(r.left + 12, y, panelHitL);
+  const rr = screenPointToFloor(r.right - 12, y, panelHitR);
+  const c = screenPointToFloor((r.left + r.right) * .5, y, panelHitC);
+  if (!l || !rr || !c) { floorReflection.setPanelReflection(0,0,1,0,0,.2,0,0); return; }
+  const dx = rr.x - l.x, dz = rr.z - l.z, len = Math.max(.05, Math.hypot(dx,dz));
+  floorReflection.setPanelReflection(c.x, c.z, dx/len, dz/len, len*.49, .22, state === 'preview' ? .24 : .15, panelReflectionHover);
 }
 
 function resetTransientLighting() {
@@ -195,7 +222,7 @@ function updateBeam() {
     beamParticles.position.copy(beamMid);
     beamParticles.quaternion.copy(beamHalo.quaternion);
     beamParticles.scale.set(radius * .82, dist, radius * .82);
-    beamParticles.material.uniforms.uOpacity.value = T.MathUtils.lerp(beamParticles.material.uniforms.uOpacity.value, glowCurrentStrength * (hover ? .13 : .10), .12);
+    beamParticles.material.uniforms.uOpacity.value = T.MathUtils.lerp(beamParticles.material.uniforms.uOpacity.value, glowCurrentStrength * (hover ? .18 : .14), .12);
     beamParticles.material.uniforms.uTime.value = particleTime;
     beamParticles.visible = glowCurrentStrength > .02;
   }
@@ -315,12 +342,24 @@ function updateScene(dt, now) {
   glowCurrentStrength = T.MathUtils.lerp(glowCurrentStrength, glowTargetStrength, reduced ? 1 : 1 - Math.pow(.86, dt * 60));
   floorReflection?.setGlow(glowCurrent.x, glowCurrent.z, glowCurrentStrength * (hoveredModel >= 0 ? .12 : .22));
 
+  let liftMoving = false;
   if (state === 'home' && !transition) {
     models.forEach((m, i) => {
       const targetY = i === hoveredModel ? .085 * glowCurrentStrength : 0;
+      const before = m.position.y;
       m.position.y = T.MathUtils.lerp(m.position.y, targetY, reduced ? 1 : 1 - Math.pow(.86, dt * 60));
+      if (Math.abs(m.position.y - before) > .00008 || Math.abs(m.position.y - targetY) > .0015) liftMoving = true;
     });
   }
+  if (liftMoving) {
+    hoverShadowTick++;
+    if (hoverShadowTick % 2) markKeyShadowDirty(); else markCompanionShadowDirty();
+    flags |= FRAME_RENDER | FRAME_REFLECTION | FRAME_ACTIVE;
+  } else if (wasLiftMoving) {
+    markStaticShadowsDirty();
+    flags |= FRAME_RENDER | FRAME_REFLECTION;
+  }
+  wasLiftMoving = liftMoving;
 
   updateBeam();
   if (updateWritingReveal(dt)) flags |= FRAME_RENDER | FRAME_CAPTURE;
@@ -353,19 +392,22 @@ function layout(request = true) {
   syncHomeLabelsToObjects();
   liquidHeader?.syncLayout?.();
   liquidPanels?.syncLayout?.();
+  setTimeout(syncPanelFloorReflection, 16);
   if (request) runtime?.renderWithReflection();
 }
 
 function drawIndex() {
-  renderIndex({ state, selected, filter, cats, titles, subs, onOpen: (title) => showInfo(title, 'This title and image reproduce the supplied visual reference. The original project text has not been supplied.') });
+  renderIndex({ state, selected, filter, cats, titles, subs, onOpen: (item) => { showProjectDetail(item); syncPanelFloorReflection(); runtime?.request(FRAME_RENDER | FRAME_CAPTURE); } });
 }
 function handleFilter(nextFilter) {
+  hideProjectDetail();
   if (state === 'preview') { navigate('index', selected); filter = nextFilter; }
   else filter = nextFilter;
   drawIndex();
   syncFilterButtons(filter);
 }
 function navigate(s, i = selected, push = true) {
+  hideProjectDetail();
   state = s; selected = i; filter = 'All';
   setArchitectureGlassDetail(s === 'preview' && i === 1);
   if (s !== 'home') {
@@ -374,6 +416,7 @@ function navigate(s, i = selected, push = true) {
   }
   applyViewState({ state, selected, names, cats, statements, filter, onFilter: handleFilter });
   drawIndex();
+  setTimeout(syncPanelFloorReflection, 16);
   if (push) history.pushState({ state, selected }, '', state === 'home' ? '#home' : '#' + names[i].toLowerCase() + '/' + state);
   startTransition();
 }
@@ -390,10 +433,16 @@ function bindUI() {
   $('#back').onclick = () => navigate(state === 'index' ? 'preview' : 'home');
   document.querySelectorAll('[data-category]').forEach(b => b.onclick = () => navigate('preview', +b.dataset.category));
   $('.close').onclick = () => $('#info').close();
+  $('#detail-close').onclick = () => { hideProjectDetail(); runtime?.request(FRAME_RENDER | FRAME_CAPTURE); };
   $('#info').addEventListener('click', e => { if (e.target === $('#info')) $('#info').close(); });
   document.querySelectorAll('[data-dialog]').forEach(b => b.onclick = () => showInfo(b.dataset.dialog === 'about' ? 'Yuanlong Zhu' : 'Contact', b.dataset.dialog === 'about' ? 'Thinking through Architecture and the World.' : 'Contact details will appear here when provided.'));
-  window.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#info').open) navigate(state === 'index' ? 'preview' : 'home'); });
+  window.addEventListener('keydown', e => {
+    if (e.key !== 'Escape' || $('#info').open) return;
+    if (document.body.classList.contains('detail-open')) { hideProjectDetail(); runtime?.request(FRAME_RENDER | FRAME_CAPTURE); return; }
+    navigate(state === 'index' ? 'preview' : 'home');
+  });
   window.addEventListener('popstate', () => readHash(false));
+  window.addEventListener('ui-panel-light', (e) => { panelReflectionHover = e.detail?.active ? 1 : 0; syncPanelFloorReflection(); runtime?.request(FRAME_RENDER); });
   let wheelTime = 0;
   window.addEventListener('wheel', e => {
     if (state === 'home' && Math.abs(e.deltaY) > 25 && performance.now() - wheelTime > 1000) {
@@ -435,6 +484,7 @@ function bindSceneInput() {
     resetTransientLighting();
     floorReflection?.clear?.();
     glassCaptureReady = false;
+    syncPanelFloorReflection();
     runtime?.request(FRAME_RENDER | FRAME_REFLECTION | FRAME_CAPTURE);
   });
   window.addEventListener('resize', () => {
@@ -502,10 +552,10 @@ async function init() {
     const beamFrag = `uniform vec3 uColor;uniform float uOpacity;varying vec3 vPos;varying vec3 vNormalV;void main(){float h=clamp(.5-vPos.y,0.,1.);float vertical=smoothstep(.015,.18,h)*(1.-smoothstep(.80,.995,h));float facing=.46+.54*(1.-abs(vNormalV.z));float alpha=uOpacity*vertical*facing;gl_FragColor=vec4(uColor,alpha);}`;
     const beamMaterial = (color) => new T.ShaderMaterial({ uniforms: { uColor: { value: new T.Color(color) }, uOpacity: { value: 0 } }, vertexShader: beamVert, fragmentShader: beamFrag, transparent: true, depthWrite: false, depthTest: true, blending: T.AdditiveBlending, side: T.DoubleSide });
     beamHalo = new T.Mesh(new T.ConeGeometry(1, 1, 24, 1, true), beamMaterial(0xe9f3fb)); beamHalo.renderOrder = 1; scene.add(beamHalo);
-    const dustCount = 22, dustPos = new Float32Array(dustCount * 3), dustSeed = new Float32Array(dustCount);
+    const dustCount = 36, dustPos = new Float32Array(dustCount * 3), dustSeed = new Float32Array(dustCount);
     for (let i = 0; i < dustCount; i++) { const h = Math.random(), a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * h * .92; dustPos[i*3] = Math.cos(a) * r; dustPos[i*3+1] = .5 - h; dustPos[i*3+2] = Math.sin(a) * r; dustSeed[i] = Math.random(); }
     const dustGeom = new T.BufferGeometry(); dustGeom.setAttribute('position', new T.BufferAttribute(dustPos, 3)); dustGeom.setAttribute('aSeed', new T.BufferAttribute(dustSeed, 1));
-    const dustMat = new T.ShaderMaterial({ uniforms: { uOpacity: { value: 0 }, uTime: { value: 0 }, uColor: { value: new T.Color(0xf1f8fd) } }, vertexShader: `attribute float aSeed;uniform float uTime;varying float vSeed;void main(){vSeed=aSeed;vec3 p=position;p.y+=sin(uTime*.55+aSeed*18.)*.009;vec4 mv=modelViewMatrix*vec4(p,1.);gl_PointSize=(1.0+aSeed*1.7)*(20./max(1.,-mv.z));gl_Position=projectionMatrix*mv;}`, fragmentShader: `uniform float uOpacity;uniform vec3 uColor;varying float vSeed;void main(){float d=length(gl_PointCoord-.5);float soft=1.-smoothstep(.12,.5,d);float twinkle=.55+.45*sin(vSeed*31.);gl_FragColor=vec4(uColor,uOpacity*soft*twinkle);}`, transparent: true, depthWrite: false, depthTest: true, blending: T.AdditiveBlending });
+    const dustMat = new T.ShaderMaterial({ uniforms: { uOpacity: { value: 0 }, uTime: { value: 0 }, uColor: { value: new T.Color(0xf1f8fd) } }, vertexShader: `attribute float aSeed;uniform float uTime;varying float vSeed;void main(){vSeed=aSeed;vec3 p=position;p.y+=sin(uTime*.55+aSeed*18.)*.009;vec4 mv=modelViewMatrix*vec4(p,1.);gl_PointSize=(1.25+aSeed*2.35)*(26./max(1.,-mv.z));gl_Position=projectionMatrix*mv;}`, fragmentShader: `uniform float uOpacity;uniform vec3 uColor;varying float vSeed;void main(){float d=length(gl_PointCoord-.5);float soft=1.-smoothstep(.12,.5,d);float twinkle=.55+.45*sin(vSeed*31.);gl_FragColor=vec4(uColor,uOpacity*soft*twinkle);}`, transparent: true, depthWrite: false, depthTest: true, blending: T.AdditiveBlending });
     beamParticles = new T.Points(dustGeom, dustMat); beamParticles.renderOrder = 3; scene.add(beamParticles);
     flashlight.visible = false; beamHalo.visible = false; beamParticles.visible = false;
 

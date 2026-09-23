@@ -70,7 +70,7 @@ void main(){
 
   float motion = clamp(abs(uVelocity)*2.2,0.0,1.0);
   float ripple = sin((vUv.x*2.0 + uTime*.085)*6.2831853) * motion * 0.0028;
-  vec2 refractOffset = normal.xy * mix(0.046,0.010,progress) * (0.34 + opticalThickness*.66) + vec2(ripple,0.0);
+  vec2 refractOffset = normal.xy * mix(0.013,0.0045,progress) * (0.30 + opticalThickness*.70) + vec2(ripple*.32,0.0);
 
   vec2 uv = sceneUv(vUv);
   vec2 refractPx = refractOffset * uCaptureScale;
@@ -79,43 +79,39 @@ void main(){
   refracted.g = texture2D(uScene, uv + refractPx).g;
   refracted.b = texture2D(uScene, uv + refractPx * 0.84).b;
 
-  // Expanded state is frosted rather than crystal-clear. The blur is local to the
-  // small header capture, so the visual gain is high without touching the main scene.
+  // Round 36: ceramic / satin surface. The captured scene only contributes a
+  // faint subsurface/reflection cue; the body remains materially solid and quiet.
   vec2 blurStep = uCaptureScale / max(uSize, vec2(1.0));
-  vec3 frosted = refracted * .36;
-  frosted += texture2D(uScene, uv + refractPx + vec2( blurStep.x*2.2, 0.0)).rgb * .16;
-  frosted += texture2D(uScene, uv + refractPx + vec2(-blurStep.x*2.2, 0.0)).rgb * .16;
-  frosted += texture2D(uScene, uv + refractPx + vec2(0.0,  blurStep.y*2.2)).rgb * .16;
-  frosted += texture2D(uScene, uv + refractPx + vec2(0.0, -blurStep.y*2.2)).rgb * .16;
-  refracted = mix(refracted, frosted, progress*.82);
+  vec3 softScene = refracted * .45;
+  softScene += texture2D(uScene, uv + refractPx + vec2( blurStep.x*1.6, 0.0)).rgb * .1375;
+  softScene += texture2D(uScene, uv + refractPx + vec2(-blurStep.x*1.6, 0.0)).rgb * .1375;
+  softScene += texture2D(uScene, uv + refractPx + vec2(0.0, blurStep.y*1.6)).rgb * .1375;
+  softScene += texture2D(uScene, uv + refractPx + vec2(0.0,-blurStep.y*1.6)).rgb * .1375;
 
   float edge = 1.0 - h;
-  float fresnel = pow(clamp(1.0-normal.z,0.0,1.0),3.2);
-  float rim = smoothstep(0.57,1.0,edge);
-
-  // Two directional highlights create readable spherical/capsule volume.
-  vec3 lightA = normalize(vec3(-0.48,0.72,0.50));
-  vec3 lightB = normalize(vec3(0.72,-0.18,0.42));
+  float fresnel = pow(clamp(1.0-normal.z,0.0,1.0),3.0);
+  float rim = smoothstep(0.62,1.0,edge);
+  vec3 lightA = normalize(vec3(-0.46,0.72,0.52));
+  vec3 lightB = normalize(vec3(0.62,-0.16,0.52));
   vec3 viewDir = vec3(0.0,0.0,1.0);
-  float specA = pow(max(dot(reflect(-lightA,normal),viewDir),0.0),82.0);
-  float specB = pow(max(dot(reflect(-lightB,normal),viewDir),0.0),34.0) * .36;
-  float topRim = smoothstep(.30,1.0,normal.y) * mix(.11,.075,progress);
-  float lowerShade = smoothstep(.15,.95,-normal.y) * .045;
+  float specA = pow(max(dot(reflect(-lightA,normal),viewDir),0.0),58.0);
+  float specB = pow(max(dot(reflect(-lightB,normal),viewDir),0.0),26.0);
+  float topLight = smoothstep(.08,.92,normal.y);
+  float bottomShade = smoothstep(.02,.95,-normal.y);
+  float lens = mix(sphereThickness,h,progress);
 
-  // Inner lens/body tone: subtle center clarity + edge density.
-  float lens = mix(sphereThickness, h, progress);
-  float innerLift = smoothstep(.18,.92,lens) * mix(.055,.022,progress);
-  float innerShade = (1.0-lens) * mix(.080,.035,progress);
+  vec3 ceramic = mix(vec3(.935,.946,.951),vec3(.985,.989,.990),clamp(topLight*.55 + lens*.18,0.0,1.0));
+  ceramic -= vec3(.030,.034,.037) * bottomShade;
+  ceramic += vec3(1.0) * (specA*mix(.22,.13,progress) + specB*mix(.075,.045,progress));
+  ceramic += vec3(.91,.94,.955) * (fresnel*mix(.11,.065,progress) + rim*mix(.09,.045,progress));
+  ceramic += vec3(1.0) * motion * rim * .018;
 
-  vec3 tint = mix(vec3(1.0),uTint,mix(.075,.12,progress));
-  vec3 color = refracted * tint;
-  color = mix(color, vec3(.94,.958,.969), progress*.18);
-  color += vec3(1.0) * (specA*mix(.46,.17,progress) + specB*mix(.30,.11,progress) + fresnel*mix(.20,.075,progress) + rim*mix(.18,.055,progress) + topRim*.72 + innerLift*.72);
-  color -= vec3(.055,.065,.075) * (lowerShade + innerShade);
-  color += vec3(.91,.97,1.0) * motion * edge * .045;
+  float sceneMix = mix(.10,.055,progress);
+  vec3 color = mix(ceramic,softScene,sceneMix);
+  color *= mix(vec3(1.0),uTint,.025);
 
-  float bodyAlpha = mix(.63,.56,progress);
-  float outAlpha = alpha * (bodyAlpha + rim*mix(.17,.055,progress) + fresnel*mix(.10,.055,progress) + specA*mix(.08,.028,progress));
+  float bodyAlpha = mix(.94,.91,progress);
+  float outAlpha = alpha * (bodyAlpha + rim*.025 + fresnel*.018);
   gl_FragColor = vec4(color,outAlpha);
 }`;
 

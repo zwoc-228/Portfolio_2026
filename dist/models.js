@@ -109,7 +109,10 @@ pg.computeVertexNormals();const top=new T.Mesh(pg,paper);top.name='Top research 
 const curl=(x,z)=>.0050*Math.pow(Math.abs(x)/1.3825,4)+.0030*Math.pow(Math.abs(z)/1.6825,5)+.0012*Math.sin(z*1.8)*(x/1.3825);
 const cp=[];const cy=.194;for(let i=0;i<=12;i++){let a=Math.PI+i/12*Math.PI;cp.push([1.065+Math.cos(a)*.094,cy,-1.545+Math.sin(a)*.094]);}cp.push([1.159,cy,-1.07]);for(let i=0;i<=12;i++){let a=i/12*Math.PI;cp.push([1.081+Math.cos(a)*.078,cy,-1.07+Math.sin(a)*.078]);}cp.push([1.003,cy,-1.49]);for(let i=0;i<=12;i++){let a=Math.PI+i/12*Math.PI;cp.push([1.063+Math.cos(a)*.060,cy+.004,-1.49+Math.sin(a)*.060]);}cp.push([1.123,cy+.004,-1.16]);
 for(const [i,p] of cp.entries()){
- p[0]=1.065+(p[0]-1.065)*.67;p[2]=-1.30+(p[2]+1.30)*.67;
+ // Round 36: move the clip to the actual upper-right paper edge instead of the page interior.
+ // Keep the whole wire just inside the leaf boundary so it still reads as physically clipped-on.
+ p[0]=1.185+(p[0]-1.065)*.72;
+ p[2]=-1.430+(p[2]+1.30)*.72;
  p[1]=.170+curl(p[0],p[2])+.0065+.0016*Math.sin(i/(cp.length-1)*Math.PI);
 }
 tube(research,'Bent steel paperclip',cp,.0050,steel);

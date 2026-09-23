@@ -18,7 +18,9 @@ export function createFloorReflection(renderer,scene,ground){
   floorReflection:{value:blurB.texture},floorProjection:{value:matrix},
   glowWorldXZ:{value:new T.Vector2(0,0)},glowStrength:{value:0},glowRadius:{value:.36},
   uiCenter:{value:new T.Vector2(0,0)},uiAxis:{value:new T.Vector2(1,0)},uiHalfLength:{value:0},
-  uiWidth:{value:.18},uiStrength:{value:0},uiProgress:{value:0}
+  uiWidth:{value:.18},uiStrength:{value:0},uiProgress:{value:0},
+  panelCenter:{value:new T.Vector2(0,0)},panelAxis:{value:new T.Vector2(1,0)},panelHalfLength:{value:0},
+  panelWidth:{value:.18},panelStrength:{value:0},panelHover:{value:0}
  };
  let transientObjects=[];
 
@@ -33,6 +35,7 @@ export function createFloorReflection(renderer,scene,ground){
   shader.fragmentShader=`uniform sampler2D floorReflection;
 uniform vec2 glowWorldXZ; uniform float glowStrength; uniform float glowRadius;
 uniform vec2 uiCenter; uniform vec2 uiAxis; uniform float uiHalfLength; uniform float uiWidth; uniform float uiStrength; uniform float uiProgress;
+uniform vec2 panelCenter; uniform vec2 panelAxis; uniform float panelHalfLength; uniform float panelWidth; uniform float panelStrength; uniform float panelHover;
 varying vec4 vFloorProjection; varying vec3 vFloorWorldPosition;
 float floorGlowMask(){vec2 gd=vFloorWorldPosition.xz-glowWorldXZ; return exp(-dot(gd,gd)/(2.0*glowRadius*glowRadius))*glowStrength;}
 vec3 uiGlassReflection(){
@@ -47,8 +50,20 @@ vec3 uiGlassReflection(){
  return vec3(shape,edge,center)*uiStrength;
 }
 float uiGlassMask(){return clamp(uiGlassReflection().x,0.0,1.0);}
+
+vec3 panelBoardReflection(){
+ vec2 d=vFloorWorldPosition.xz-panelCenter; vec2 a=normalize(panelAxis+vec2(1e-5)); vec2 n=vec2(-a.y,a.x);
+ float along=dot(d,a); float across=dot(d,n); float l=max(panelHalfLength,.03); float w=max(panelWidth,.03);
+ float capAlong=max(abs(along)-l,0.0);
+ float base=exp(-.5*(capAlong*capAlong/(w*w*.70)+across*across/(w*w*.36)));
+ float contact=exp(-.5*(capAlong*capAlong/(w*w*.92)+(across-w*.10)*(across-w*.10)/(w*w*.055)));
+ float sheen=exp(-.5*(capAlong*capAlong/(w*w*1.20)+(across+w*.14)*(across+w*.14)/(w*w*.11)));
+ float pulse=1.0+panelHover*.18;
+ return vec3(base,contact,sheen)*panelStrength*pulse;
+}
+float panelBoardMask(){return clamp(panelBoardReflection().x,0.0,1.0);}
 `+shader.fragmentShader;
-  shader.fragmentShader=shader.fragmentShader.replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\nroughnessFactor *= mix(1.0,0.82,clamp(floorGlowMask(),0.0,1.0)); roughnessFactor *= mix(1.0,.84,uiGlassMask());');
+  shader.fragmentShader=shader.fragmentShader.replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\nroughnessFactor *= mix(1.0,0.82,clamp(floorGlowMask(),0.0,1.0)); roughnessFactor *= mix(1.0,.84,uiGlassMask()); roughnessFactor *= mix(1.0,.88,panelBoardMask());');
   shader.fragmentShader=shader.fragmentShader.replace('#include <opaque_fragment>',`
   vec2 reflectionUV=vFloorProjection.xy/vFloorProjection.w;
   vec4 reflected=texture2D(floorReflection,reflectionUV);
@@ -59,11 +74,14 @@ float uiGlassMask(){return clamp(uiGlassReflection().x,0.0,1.0);}
   float pointerGlow=clamp(floorGlowMask(),0.0,1.0);
   outgoingLight += vec3(.024,.028,.034)*pointerGlow;
   vec3 uiRef=uiGlassReflection(); float uiGlow=clamp(uiRef.x,0.0,1.0);
-  outgoingLight=mix(outgoingLight,outgoingLight*vec3(.92,.95,.97),clamp(uiRef.z*.22,0.0,.18));
-  outgoingLight += vec3(.050,.067,.080)*uiGlow + vec3(.115,.145,.165)*uiRef.y;
+  outgoingLight=mix(outgoingLight,outgoingLight*vec3(.945,.952,.956),clamp(uiRef.z*.18,0.0,.15));
+  outgoingLight += vec3(.050,.054,.058)*uiGlow + vec3(.098,.104,.108)*uiRef.y;
+  vec3 panelRef=panelBoardReflection();
+  outgoingLight=mix(outgoingLight,outgoingLight*vec3(.94,.955,.965),clamp(panelRef.x*.16,0.0,.13));
+  outgoingLight += vec3(.060,.070,.078)*panelRef.x + vec3(.145,.155,.160)*panelRef.y + vec3(.075,.085,.092)*panelRef.z;
   #include <opaque_fragment>`);
  };
- ground.material.customProgramCacheKey=()=> 'reference-floor-v10-ui-reflection';
+ ground.material.customProgramCacheKey=()=> 'reference-floor-v11-ceramic-panel-reflection';
  const color=new T.Color(),look=new T.Vector3();
  function blur(){
   blurMat.uniforms.uMap.value=raw.texture;blurMat.uniforms.uDirection.value.set(1,0);renderer.setRenderTarget(blurA);renderer.clear();renderer.render(blurScene,blurCamera);
@@ -78,6 +96,7 @@ float uiGlassMask(){return clamp(uiGlassReflection().x,0.0,1.0);}
  return {
   setGlow(x,z,strength=1){uniforms.glowWorldXZ.value.set(x,z);uniforms.glowStrength.value=strength;},
   setUICaustic(x,z,ax,az,halfLength,width,strength,progress=1){uniforms.uiCenter.value.set(x,z);uniforms.uiAxis.value.set(ax,az);uniforms.uiHalfLength.value=halfLength;uniforms.uiWidth.value=width;uniforms.uiStrength.value=strength;uniforms.uiProgress.value=progress;},
+  setPanelReflection(x,z,ax,az,halfLength,width,strength,hover=0){uniforms.panelCenter.value.set(x,z);uniforms.panelAxis.value.set(ax,az);uniforms.panelHalfLength.value=halfLength;uniforms.panelWidth.value=width;uniforms.panelStrength.value=strength;uniforms.panelHover.value=hover;},
   setTransientObjects(objects=[]){transientObjects=objects.filter(Boolean);},
   clear,
   update(camera){

@@ -1,52 +1,35 @@
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const gsap = globalThis.gsap;
 
-function animateNodes(nodes, { y = 14, duration = 620, stagger = 45, scale = 1 } = {}) {
-  if (!nodes.length || reduced) return;
-  if (gsap) {
-    gsap.killTweensOf(nodes);
-    gsap.fromTo(nodes,
-      { autoAlpha: 0, y, scale, filter: 'blur(3px)' },
-      { autoAlpha: 1, y: 0, scale: 1, filter: 'blur(0px)', duration: duration / 1000, stagger: stagger / 1000, ease: 'power3.out', clearProps: 'willChange' }
-    );
-    return;
-  }
-  nodes.forEach((node, i) => {
-    node.animate([
-      { opacity: 0, transform: `translate3d(0,${y}px,0) scale(${scale})`, filter: 'blur(3px)' },
-      { opacity: 1, transform: 'translate3d(0,0,0) scale(1)', filter: 'blur(0px)' }
-    ], { duration, delay: i * stagger, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'both' });
+function fadeNodes(nodes, { y = 8, duration = 420, stagger = 36 } = {}) {
+  if (!nodes.length || reduced || !gsap) return;
+  gsap.killTweensOf(nodes);
+  gsap.set(nodes, { autoAlpha: 0, y });
+  gsap.to(nodes, {
+    autoAlpha: 1,
+    y: 0,
+    duration: duration / 1000,
+    stagger: stagger / 1000,
+    ease: 'power2.out',
+    clearProps: 'transform,opacity,visibility'
   });
 }
 
 function animateHomeLabels() {
-  animateNodes([...document.querySelectorAll('.object-label')], { y: 10, duration: 700, stagger: 70, scale: .985 });
+  fadeNodes([...document.querySelectorAll('.object-label')], { y: 7, duration: 460, stagger: 45 });
 }
-function animatePreview() {
-  const panel = document.querySelector('.category-panel');
-  if (panel) animateNodes([...panel.children], { y: 16, duration: 650, stagger: 42, scale: .992 });
-}
-function animateIndex() {
-  const content = document.querySelector('.index-content');
-  if (!content) return;
-  animateNodes([...content.querySelectorAll('.writing-row,.gallery button')], { y: 22, duration: 720, stagger: 55, scale: .985 });
-}
+
 function animateDialog() {
   const body = document.querySelector('#info-body');
-  if (body) animateNodes([...body.children], { y: 12, duration: 520, stagger: 70, scale: .99 });
+  if (body) fadeNodes([...body.children], { y: 6, duration: 320, stagger: 38 });
 }
 
 export function initUIMotion() {
-  let previous = document.body.className;
+  let wasHome = document.body.classList.contains('home');
   const bodyObserver = new MutationObserver(() => {
-    const next = document.body.className;
-    if (next === previous) return;
-    previous = next;
-    queueMicrotask(() => {
-      if (document.body.classList.contains('home')) animateHomeLabels();
-      else if (document.body.classList.contains('preview')) animatePreview();
-      else if (document.body.classList.contains('index')) animateIndex();
-    });
+    const isHome = document.body.classList.contains('home');
+    if (isHome && !wasHome) queueMicrotask(animateHomeLabels);
+    wasHome = isHome;
   });
   bodyObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
 
