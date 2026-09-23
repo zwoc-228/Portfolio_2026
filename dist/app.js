@@ -121,22 +121,47 @@ function screenPointToFloor(x, y, out) {
   return uiPanelRaycaster.ray.intersectPlane(floorPlane, out);
 }
 
-const panelHitL = new T.Vector3(), panelHitR = new T.Vector3(), panelHitC = new T.Vector3();
-function syncPanelFloorReflection() {
-  if (!floorReflection?.setPanelReflection || !camera) return;
-  const panel = document.querySelector('.category-panel');
-  if (!panel || panel.hidden || state === 'home' || !panel.getClientRects().length) {
-    floorReflection.setPanelReflection(0,0,1,0,0,.2,0,0);
+const panelHitL = new T.Vector3(), panelHitR = new T.Vector3(), panelHitC = new T.Vector3(), panelHitF = new T.Vector3();
+function rectUnion(elements) {
+  const rs = elements.filter(Boolean).filter(el => !el.hidden && el.getClientRects().length).map(el => el.getBoundingClientRect());
+  if (!rs.length) return null;
+  const left = Math.min(...rs.map(r => r.left)), right = Math.max(...rs.map(r => r.right));
+  const top = Math.min(...rs.map(r => r.top)), bottom = Math.max(...rs.map(r => r.bottom));
+  return { left, right, top, bottom, width:right-left, height:bottom-top };
+}
+function mapUIRectToFloor(slot, r, strength, hover = 0, pullPx = 150) {
+  if (!r || r.width < 2 || r.height < 2 || !floorReflection?.setPanelReflection) {
+    floorReflection?.setPanelReflection?.(slot,0,0,1,0,0,1,0,.5,0,0);
     return;
   }
-  const r = panel.getBoundingClientRect();
-  const y = Math.min(innerHeight - 2, r.bottom + 8);
-  const l = screenPointToFloor(r.left + 12, y, panelHitL);
-  const rr = screenPointToFloor(r.right - 12, y, panelHitR);
-  const c = screenPointToFloor((r.left + r.right) * .5, y, panelHitC);
-  if (!l || !rr || !c) { floorReflection.setPanelReflection(0,0,1,0,0,.2,0,0); return; }
+  const y = Math.min(innerHeight - 3, r.bottom + 3);
+  const lx = r.left + Math.min(14, r.width * .07);
+  const rx = r.right - Math.min(14, r.width * .07);
+  const cx = (r.left + r.right) * .5;
+  const l = screenPointToFloor(lx, y, panelHitL);
+  const rr = screenPointToFloor(rx, y, panelHitR);
+  const c = screenPointToFloor(cx, y, panelHitC);
+  const f = screenPointToFloor(cx, Math.min(innerHeight - 2, y + Math.min(pullPx, Math.max(82, r.height * .32))), panelHitF);
+  if (!l || !rr || !c || !f) {
+    floorReflection.setPanelReflection(slot,0,0,1,0,0,1,0,.5,0,0);
+    return;
+  }
   const dx = rr.x - l.x, dz = rr.z - l.z, len = Math.max(.05, Math.hypot(dx,dz));
-  floorReflection.setPanelReflection(c.x, c.z, dx/len, dz/len, len*.49, .22, state === 'preview' ? .24 : .15, panelReflectionHover);
+  let nx = f.x - c.x, nz = f.z - c.z, depth = Math.max(.10, Math.hypot(nx,nz));
+  nx /= depth; nz /= depth;
+  floorReflection.setPanelReflection(slot,c.x,c.z,dx/len,dz/len,nx,nz,len*.50,depth,strength,hover);
+}
+function syncPanelFloorReflection() {
+  if (!floorReflection?.setPanelReflection || !camera) return;
+  if (state === 'home') { floorReflection.clearPanelReflections?.(); return; }
+  const category = document.querySelector('.category-panel');
+  mapUIRectToFloor(0, category && !category.hidden ? category.getBoundingClientRect() : null, state === 'preview' ? .22 : .16, panelReflectionHover, 150);
+
+  const cards = [...document.querySelectorAll('.project-card')].filter(el => el.getClientRects().length).slice(0, 4);
+  mapUIRectToFloor(1, rectUnion(cards), state === 'index' && cards.length ? .085 : 0, 0, 125);
+
+  const detail = document.querySelector('#detail-card');
+  mapUIRectToFloor(2, detail && !detail.hidden ? detail.getBoundingClientRect() : null, detail && !detail.hidden ? .13 : 0, 0, 165);
 }
 
 function resetTransientLighting() {
@@ -397,7 +422,7 @@ function layout(request = true) {
 }
 
 function drawIndex() {
-  renderIndex({ state, selected, filter, cats, titles, subs, onOpen: (item) => { showProjectDetail(item); syncPanelFloorReflection(); runtime?.request(FRAME_RENDER | FRAME_CAPTURE); } });
+  renderIndex({ state, selected, filter, cats, titles, subs, onOpen: (item) => { showProjectDetail(item); setTimeout(syncPanelFloorReflection, 20); runtime?.request(FRAME_RENDER | FRAME_CAPTURE); } });
 }
 function handleFilter(nextFilter) {
   hideProjectDetail();
@@ -433,12 +458,12 @@ function bindUI() {
   $('#back').onclick = () => navigate(state === 'index' ? 'preview' : 'home');
   document.querySelectorAll('[data-category]').forEach(b => b.onclick = () => navigate('preview', +b.dataset.category));
   $('.close').onclick = () => $('#info').close();
-  $('#detail-close').onclick = () => { hideProjectDetail(); runtime?.request(FRAME_RENDER | FRAME_CAPTURE); };
+  $('#detail-close').onclick = () => { hideProjectDetail(); setTimeout(syncPanelFloorReflection, 190); runtime?.request(FRAME_RENDER | FRAME_CAPTURE); };
   $('#info').addEventListener('click', e => { if (e.target === $('#info')) $('#info').close(); });
   document.querySelectorAll('[data-dialog]').forEach(b => b.onclick = () => showInfo(b.dataset.dialog === 'about' ? 'Yuanlong Zhu' : 'Contact', b.dataset.dialog === 'about' ? 'Thinking through Architecture and the World.' : 'Contact details will appear here when provided.'));
   window.addEventListener('keydown', e => {
     if (e.key !== 'Escape' || $('#info').open) return;
-    if (document.body.classList.contains('detail-open')) { hideProjectDetail(); runtime?.request(FRAME_RENDER | FRAME_CAPTURE); return; }
+    if (document.body.classList.contains('detail-open')) { hideProjectDetail(); setTimeout(syncPanelFloorReflection, 190); runtime?.request(FRAME_RENDER | FRAME_CAPTURE); return; }
     navigate(state === 'index' ? 'preview' : 'home');
   });
   window.addEventListener('popstate', () => readHash(false));
@@ -511,16 +536,16 @@ async function init() {
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = T.VSMShadowMap;
     renderer.toneMapping = T.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.20;
+    renderer.toneMappingExposure = 1.15;
     $('#scene').append(renderer.domElement);
 
     scene = new T.Scene();
-    scene.background = new T.Color(0xe3e6e8);
+    scene.background = new T.Color(0xd8dde0);
     camera = new T.PerspectiveCamera(27, 1, .1, 200);
 
     const pmrem = new T.PMREMGenerator(renderer);
     scene.environment = pmrem.fromScene(createStudioEnvironment(), .04).texture;
-    scene.environmentIntensity = 1.42;
+    scene.environmentIntensity = 1.34;
     pmrem.dispose();
 
     const loader = new T.TextureLoader();
@@ -534,17 +559,17 @@ async function init() {
     for (const t of [writingPaperColor, writingPaperNormal, writingPaperRough]) { t.repeat.set(1,1); t.offset.set(0,0); t.center.set(.5,.5); t.rotation = 0; t.needsUpdate = true; }
 
     const ground = new T.Mesh(new T.PlaneGeometry(200, 200), new T.MeshPhysicalMaterial({
-      color: 0xf4f6f7, map: deskMetalColor, envMap: scene.environment, envMapIntensity: 3.10,
-      metalness: .97, metalnessMap: deskMetalMetalness, roughness: .43, roughnessMap: deskMetalRough,
-      normalMap: deskMetalNormal, normalScale: new T.Vector2(.20, .20), clearcoat: .18, clearcoatRoughness: .30,
-      anisotropy: .78, anisotropyRotation: 0
+      color: 0xe8ecee, map: deskMetalColor, envMap: scene.environment, envMapIntensity: 2.78,
+      metalness: .98, metalnessMap: deskMetalMetalness, roughness: .37, roughnessMap: deskMetalRough,
+      normalMap: deskMetalNormal, normalScale: new T.Vector2(.25, .25), clearcoat: .12, clearcoatRoughness: .25,
+      anisotropy: .92, anisotropyRotation: 0
     }));
     ground.rotation.x = -Math.PI / 2; ground.position.y = -.016; ground.receiveShadow = true; scene.add(ground);
 
-    scene.add(new T.HemisphereLight(0xf8fafb, 0x97a0a5, .22));
-    keyLight = new T.DirectionalLight(0xfffcf7, 1.82); keyLight.position.set(-7.0, 10.8, 5.2); keyLight.castShadow = true; keyLight.shadow.mapSize.set(2048, 2048); Object.assign(keyLight.shadow.camera, { left: -8, right: 8, top: 6, bottom: -4, near: .1, far: 28 }); keyLight.shadow.bias = -.0001; keyLight.shadow.normalBias = .006; keyLight.shadow.radius = 4.2; keyLight.shadow.blurSamples = 8; keyLight.shadow.autoUpdate = false; keyLight.shadow.needsUpdate = true; scene.add(keyLight);
-    keyCompanionLight = new T.DirectionalLight(0xf7fafc, .66); keyCompanionLight.position.set(-2.3, 8.5, 1.8); keyCompanionLight.castShadow = true; keyCompanionLight.shadow.mapSize.set(1024, 1024); Object.assign(keyCompanionLight.shadow.camera, { left: -7, right: 7, top: 5, bottom: -4, near: .1, far: 24 }); keyCompanionLight.shadow.bias = -.0001; keyCompanionLight.shadow.normalBias = .0055; keyCompanionLight.shadow.radius = 3.4; keyCompanionLight.shadow.blurSamples = 6; keyCompanionLight.shadow.autoUpdate = false; keyCompanionLight.shadow.needsUpdate = true; scene.add(keyCompanionLight);
-    const fill = new T.DirectionalLight(0xeaf0f4, .22); fill.position.set(5.8, 7.0, -3.4); scene.add(fill);
+    scene.add(new T.HemisphereLight(0xf8fafb, 0x879197, .15));
+    keyLight = new T.DirectionalLight(0xfffcf7, 1.62); keyLight.position.set(-7.0, 10.8, 5.2); keyLight.castShadow = true; keyLight.shadow.mapSize.set(2048, 2048); Object.assign(keyLight.shadow.camera, { left: -8, right: 8, top: 6, bottom: -4, near: .1, far: 28 }); keyLight.shadow.bias = -.0001; keyLight.shadow.normalBias = .006; keyLight.shadow.radius = 4.2; keyLight.shadow.blurSamples = 8; keyLight.shadow.autoUpdate = false; keyLight.shadow.needsUpdate = true; scene.add(keyLight);
+    keyCompanionLight = new T.DirectionalLight(0xf7fafc, .50); keyCompanionLight.position.set(-2.3, 8.5, 1.8); keyCompanionLight.castShadow = true; keyCompanionLight.shadow.mapSize.set(1024, 1024); Object.assign(keyCompanionLight.shadow.camera, { left: -7, right: 7, top: 5, bottom: -4, near: .1, far: 24 }); keyCompanionLight.shadow.bias = -.0001; keyCompanionLight.shadow.normalBias = .0055; keyCompanionLight.shadow.radius = 3.4; keyCompanionLight.shadow.blurSamples = 6; keyCompanionLight.shadow.autoUpdate = false; keyCompanionLight.shadow.needsUpdate = true; scene.add(keyCompanionLight);
+    const fill = new T.DirectionalLight(0xeaf0f4, .16); fill.position.set(5.8, 7.0, -3.4); scene.add(fill);
 
     flashlightTarget = new T.Object3D(); scene.add(flashlightTarget);
     flashlight = new T.SpotLight(0xf6fbff, 0, 0, T.MathUtils.degToRad(2.0), .94, 0); flashlight.position.set(0, 9.8, 2.2); flashlight.target = flashlightTarget; flashlight.castShadow = false; scene.add(flashlight);

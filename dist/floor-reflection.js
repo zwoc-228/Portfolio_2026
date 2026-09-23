@@ -1,8 +1,8 @@
 import * as T from './assets/three.module.js';
 
-// High-quality planar reflection with separable blur.
-// Round 31 keeps the Round 30 visual budget, but excludes transient beam meshes/lights
-// from the planar reflection capture to prevent first-load/stale beam ghosts.
+// High-quality planar reflection with separable blur plus screen-UI contact reflections.
+// Round 37 keeps the 1024x576 HalfFloat reflection budget, but makes UI reflections
+// directional and elongated across the metal desk instead of symmetric glow blobs.
 export function createFloorReflection(renderer,scene,ground){
  const W=1024,H=576;
  const raw=new T.WebGLRenderTarget(W,H,{type:T.HalfFloatType,depthBuffer:true});
@@ -19,9 +19,17 @@ export function createFloorReflection(renderer,scene,ground){
   glowWorldXZ:{value:new T.Vector2(0,0)},glowStrength:{value:0},glowRadius:{value:.36},
   uiCenter:{value:new T.Vector2(0,0)},uiAxis:{value:new T.Vector2(1,0)},uiHalfLength:{value:0},
   uiWidth:{value:.18},uiStrength:{value:0},uiProgress:{value:0},
-  panelCenter:{value:new T.Vector2(0,0)},panelAxis:{value:new T.Vector2(1,0)},panelHalfLength:{value:0},
-  panelWidth:{value:.18},panelStrength:{value:0},panelHover:{value:0}
  };
+ // Three UI reflection slots: sidebar, project-card field, project-detail card.
+ for(let i=0;i<3;i++){
+  uniforms[`panel${i}Center`]={value:new T.Vector2(0,0)};
+  uniforms[`panel${i}Axis`]={value:new T.Vector2(1,0)};
+  uniforms[`panel${i}Normal`]={value:new T.Vector2(0,1)};
+  uniforms[`panel${i}HalfLength`]={value:0};
+  uniforms[`panel${i}Depth`]={value:.5};
+  uniforms[`panel${i}Strength`]={value:0};
+  uniforms[`panel${i}Hover`]={value:0};
+ }
  let transientObjects=[];
 
  const blurScene=new T.Scene();const blurCamera=new T.OrthographicCamera(-1,1,1,-1,0,1);
@@ -35,7 +43,9 @@ export function createFloorReflection(renderer,scene,ground){
   shader.fragmentShader=`uniform sampler2D floorReflection;
 uniform vec2 glowWorldXZ; uniform float glowStrength; uniform float glowRadius;
 uniform vec2 uiCenter; uniform vec2 uiAxis; uniform float uiHalfLength; uniform float uiWidth; uniform float uiStrength; uniform float uiProgress;
-uniform vec2 panelCenter; uniform vec2 panelAxis; uniform float panelHalfLength; uniform float panelWidth; uniform float panelStrength; uniform float panelHover;
+uniform vec2 panel0Center; uniform vec2 panel0Axis; uniform vec2 panel0Normal; uniform float panel0HalfLength; uniform float panel0Depth; uniform float panel0Strength; uniform float panel0Hover;
+uniform vec2 panel1Center; uniform vec2 panel1Axis; uniform vec2 panel1Normal; uniform float panel1HalfLength; uniform float panel1Depth; uniform float panel1Strength; uniform float panel1Hover;
+uniform vec2 panel2Center; uniform vec2 panel2Axis; uniform vec2 panel2Normal; uniform float panel2HalfLength; uniform float panel2Depth; uniform float panel2Strength; uniform float panel2Hover;
 varying vec4 vFloorProjection; varying vec3 vFloorWorldPosition;
 float floorGlowMask(){vec2 gd=vFloorWorldPosition.xz-glowWorldXZ; return exp(-dot(gd,gd)/(2.0*glowRadius*glowRadius))*glowStrength;}
 vec3 uiGlassReflection(){
@@ -51,37 +61,49 @@ vec3 uiGlassReflection(){
 }
 float uiGlassMask(){return clamp(uiGlassReflection().x,0.0,1.0);}
 
+vec3 boardReflection(vec2 center, vec2 axis, vec2 normalDir, float halfLength, float depth, float strength, float hover){
+ vec2 d=vFloorWorldPosition.xz-center;
+ vec2 a=normalize(axis+vec2(1e-5));
+ vec2 n=normalize(normalDir+vec2(1e-5));
+ float along=dot(d,a);
+ float outward=dot(d,n);
+ float l=max(halfLength,.04); float dep=max(depth,.05);
+ float cap=max(abs(along)-l,0.0);
+ float lateral=exp(-.5*cap*cap/max(.018,l*l*.055));
+ float front=max(outward,0.0); float back=max(-outward,0.0);
+ // Long low-energy reflection pulled away from the panel into the desk.
+ float longBody=exp(-pow(front/max(dep*.78,.02),1.34))*exp(-back*back/max(.018,dep*dep*.025));
+ float contact=exp(-front*front/max(.010,dep*dep*.020))*exp(-back*back/max(.008,dep*dep*.012));
+ float edgeRidge=exp(-pow(front/max(dep*.34,.02),1.55))*exp(-back*back/max(.008,dep*dep*.012));
+ float pulse=1.0+hover*.14;
+ return vec3(lateral*longBody,lateral*contact,lateral*edgeRidge)*strength*pulse;
+}
 vec3 panelBoardReflection(){
- vec2 d=vFloorWorldPosition.xz-panelCenter; vec2 a=normalize(panelAxis+vec2(1e-5)); vec2 n=vec2(-a.y,a.x);
- float along=dot(d,a); float across=dot(d,n); float l=max(panelHalfLength,.03); float w=max(panelWidth,.03);
- float capAlong=max(abs(along)-l,0.0);
- float base=exp(-.5*(capAlong*capAlong/(w*w*.70)+across*across/(w*w*.36)));
- float contact=exp(-.5*(capAlong*capAlong/(w*w*.92)+(across-w*.10)*(across-w*.10)/(w*w*.055)));
- float sheen=exp(-.5*(capAlong*capAlong/(w*w*1.20)+(across+w*.14)*(across+w*.14)/(w*w*.11)));
- float pulse=1.0+panelHover*.18;
- return vec3(base,contact,sheen)*panelStrength*pulse;
+ return boardReflection(panel0Center,panel0Axis,panel0Normal,panel0HalfLength,panel0Depth,panel0Strength,panel0Hover)
+      + boardReflection(panel1Center,panel1Axis,panel1Normal,panel1HalfLength,panel1Depth,panel1Strength,panel1Hover)
+      + boardReflection(panel2Center,panel2Axis,panel2Normal,panel2HalfLength,panel2Depth,panel2Strength,panel2Hover);
 }
 float panelBoardMask(){return clamp(panelBoardReflection().x,0.0,1.0);}
 `+shader.fragmentShader;
-  shader.fragmentShader=shader.fragmentShader.replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\nroughnessFactor *= mix(1.0,0.82,clamp(floorGlowMask(),0.0,1.0)); roughnessFactor *= mix(1.0,.84,uiGlassMask()); roughnessFactor *= mix(1.0,.88,panelBoardMask());');
+  shader.fragmentShader=shader.fragmentShader.replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\nroughnessFactor *= mix(1.0,0.82,clamp(floorGlowMask(),0.0,1.0)); roughnessFactor *= mix(1.0,.86,uiGlassMask()); roughnessFactor *= mix(1.0,.90,panelBoardMask());');
   shader.fragmentShader=shader.fragmentShader.replace('#include <opaque_fragment>',`
   vec2 reflectionUV=vFloorProjection.xy/vFloorProjection.w;
   vec4 reflected=texture2D(floorReflection,reflectionUV);
   float inside=step(0.0,reflectionUV.x)*step(reflectionUV.x,1.0)*step(0.0,reflectionUV.y)*step(reflectionUV.y,1.0)*step(0.0,vFloorProjection.w);
   float reflectedAlpha=clamp(reflected.a,0.0,1.0)*inside;
   vec3 reflectedColor=reflected.rgb/max(reflected.a,.001);
-  outgoingLight=mix(outgoingLight,reflectedColor,.44*reflectedAlpha);
+  outgoingLight=mix(outgoingLight,reflectedColor,.43*reflectedAlpha);
   float pointerGlow=clamp(floorGlowMask(),0.0,1.0);
-  outgoingLight += vec3(.024,.028,.034)*pointerGlow;
+  outgoingLight += vec3(.022,.026,.031)*pointerGlow;
   vec3 uiRef=uiGlassReflection(); float uiGlow=clamp(uiRef.x,0.0,1.0);
-  outgoingLight=mix(outgoingLight,outgoingLight*vec3(.945,.952,.956),clamp(uiRef.z*.18,0.0,.15));
-  outgoingLight += vec3(.050,.054,.058)*uiGlow + vec3(.098,.104,.108)*uiRef.y;
+  outgoingLight=mix(outgoingLight,outgoingLight*vec3(.945,.952,.956),clamp(uiRef.z*.16,0.0,.13));
+  outgoingLight += vec3(.044,.048,.052)*uiGlow + vec3(.088,.094,.098)*uiRef.y;
   vec3 panelRef=panelBoardReflection();
-  outgoingLight=mix(outgoingLight,outgoingLight*vec3(.94,.955,.965),clamp(panelRef.x*.16,0.0,.13));
-  outgoingLight += vec3(.060,.070,.078)*panelRef.x + vec3(.145,.155,.160)*panelRef.y + vec3(.075,.085,.092)*panelRef.z;
+  outgoingLight=mix(outgoingLight,outgoingLight*vec3(.925,.94,.95),clamp(panelRef.x*.18,0.0,.16));
+  outgoingLight += vec3(.048,.058,.066)*panelRef.x + vec3(.125,.138,.148)*panelRef.y + vec3(.068,.080,.090)*panelRef.z;
   #include <opaque_fragment>`);
  };
- ground.material.customProgramCacheKey=()=> 'reference-floor-v11-ceramic-panel-reflection';
+ ground.material.customProgramCacheKey=()=> 'reference-floor-v12-long-ui-reflections';
  const color=new T.Color(),look=new T.Vector3();
  function blur(){
   blurMat.uniforms.uMap.value=raw.texture;blurMat.uniforms.uDirection.value.set(1,0);renderer.setRenderTarget(blurA);renderer.clear();renderer.render(blurScene,blurCamera);
@@ -93,10 +115,21 @@ float panelBoardMask(){return clamp(panelBoardReflection().x,0.0,1.0);}
   for(const rt of [raw,blurA,blurB]){renderer.setRenderTarget(rt);renderer.clear(true,true,true);}
   renderer.setRenderTarget(old);renderer.setClearColor(cc,ca);
  }
+ function setPanel(slot,x,z,ax,az,nx,nz,halfLength,depth,strength,hover=0){
+  const i=Math.max(0,Math.min(2,slot|0));
+  uniforms[`panel${i}Center`].value.set(x,z);
+  uniforms[`panel${i}Axis`].value.set(ax,az);
+  uniforms[`panel${i}Normal`].value.set(nx,nz);
+  uniforms[`panel${i}HalfLength`].value=halfLength;
+  uniforms[`panel${i}Depth`].value=depth;
+  uniforms[`panel${i}Strength`].value=strength;
+  uniforms[`panel${i}Hover`].value=hover;
+ }
  return {
   setGlow(x,z,strength=1){uniforms.glowWorldXZ.value.set(x,z);uniforms.glowStrength.value=strength;},
   setUICaustic(x,z,ax,az,halfLength,width,strength,progress=1){uniforms.uiCenter.value.set(x,z);uniforms.uiAxis.value.set(ax,az);uniforms.uiHalfLength.value=halfLength;uniforms.uiWidth.value=width;uniforms.uiStrength.value=strength;uniforms.uiProgress.value=progress;},
-  setPanelReflection(x,z,ax,az,halfLength,width,strength,hover=0){uniforms.panelCenter.value.set(x,z);uniforms.panelAxis.value.set(ax,az);uniforms.panelHalfLength.value=halfLength;uniforms.panelWidth.value=width;uniforms.panelStrength.value=strength;uniforms.panelHover.value=hover;},
+  setPanelReflection:setPanel,
+  clearPanelReflections(){for(let i=0;i<3;i++)setPanel(i,0,0,1,0,0,1,0,.5,0,0);},
   setTransientObjects(objects=[]){transientObjects=objects.filter(Boolean);},
   clear,
   update(camera){

@@ -1,28 +1,44 @@
 import * as T from './assets/three.module.js';
-// Reflection-only studio tuned toward a bright silver tabletop shot.
-// Keep the room itself dark so the luminous cards, not the room shell,
-// define the specular language. This preserves material separation.
+
+// Reflection-only studio for the brushed-metal tabletop.
+// Round 37 adds controlled bright strips + dark flags so the metal reads as metal:
+// broad gradients, directional streaks, and darker intervals instead of a flat white wash.
 export function createStudioEnvironment(){
  const scene=new T.Scene();
- const room=new T.Mesh(new T.BoxGeometry(30,18,30),new T.MeshBasicMaterial({color:0x3f474c,side:T.BackSide}));
+ const room=new T.Mesh(
+  new T.BoxGeometry(32,20,32),
+  new T.MeshBasicMaterial({color:0x30383d,side:T.BackSide})
+ );
  scene.add(room);
+
  function card(w,h,pos,target,intensity,tint=0xffffff){
   const m=new T.Mesh(
    new T.PlaneGeometry(w,h),
    new T.MeshBasicMaterial({color:new T.Color(tint).multiplyScalar(intensity),side:T.DoubleSide})
   );
-  m.position.set(...pos);m.lookAt(...target);scene.add(m);
+  m.position.set(...pos);m.lookAt(...target);scene.add(m);return m;
  }
- // Large left key panel: broad silver highlight across the table.
- card(14.4,13.8,[-11.8,6.8,4.1],[0,0.42,0],5.15,0xfffcf7);
- // Overhead/front lift so the scene stays bright without flattening the shadows.
- card(11.8,6.4,[-0.8,10.0,1.1],[0,0.32,0],3.35,0xf6f8fb);
- // Soft frontal lift centered slightly to the left.
- card(7.4,5.1,[-1.7,4.8,9.0],[0,0.34,0],1.48,0xf2f5f7);
- // Narrow right kicker so acrylic edges read but don't wash out.
- card(2.8,8.0,[8.8,3.8,-4.1],[0,0.42,0],1.10,0xeaf1f4);
- // Dark flag on the right to reintroduce contrast into transparent and metallic forms.
- const flag=new T.Mesh(new T.PlaneGeometry(8.5,11.5),new T.MeshBasicMaterial({color:0x0c1014,side:T.DoubleSide}));
- flag.position.set(10.8,1.1,3.5);flag.lookAt(0,0,0);scene.add(flag);
+ function flag(w,h,pos,target,color=0x11171b){
+  const m=new T.Mesh(new T.PlaneGeometry(w,h),new T.MeshBasicMaterial({color,side:T.DoubleSide}));
+  m.position.set(...pos);m.lookAt(...target);scene.add(m);return m;
+ }
+
+ // Broad key gradient: gives the silver plane its overall lift.
+ card(13.8,11.8,[-11.4,7.0,4.0],[0,.30,0],4.15,0xfffcf8);
+ // Long overhead strip: produces the main brushed-metal specular sweep.
+ card(18.5,2.0,[-.8,11.4,-1.2],[0,.18,-.5],5.35,0xf8fbfd);
+ // Narrow rear strip creates a second, quieter highlight band across the table.
+ card(16.2,1.05,[1.0,5.3,-10.8],[0,.1,0],2.65,0xeef5f8);
+ // Soft frontal card keeps the white models from becoming silhouettes.
+ card(7.0,4.6,[-2.6,5.0,8.8],[0,.36,0],1.34,0xf2f5f7);
+ // Thin right kicker for acrylic/ceramic edges.
+ card(2.25,8.8,[9.1,4.4,-3.6],[0,.38,0],1.06,0xe7eff3);
+ // A small cool strip behind the camera adds a fine horizontal sheen.
+ card(9.0,.72,[3.8,3.2,11.6],[0,.0,0],1.15,0xe9f0f4);
+
+ // Flags are as important as lights on metal: they restore dark intervals and depth.
+ flag(8.0,12.0,[10.7,1.3,3.8],[0,.1,0],0x0b1013);
+ flag(5.4,10.2,[-8.4,1.0,-7.2],[0,.0,0],0x171d21);
+ flag(14.0,2.4,[.8,9.0,7.5],[0,.1,0],0x252d32);
  return scene;
 }

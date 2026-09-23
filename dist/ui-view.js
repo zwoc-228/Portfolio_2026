@@ -141,7 +141,7 @@ export function showProjectDetail({ title, image, category, year, selected = 0 }
   kicker.textContent = `0${selected + 1} · Selected work`;
   categoryNode.textContent = category;
   yearNode.textContent = year;
-  text.textContent = 'A focused study of material, atmosphere, representation, and spatial relationships. Project documentation and extended text can continue here without interrupting the surrounding index.';
+  text.textContent = 'A focused study of material, atmosphere, representation, and spatial relationships. The project develops through drawings, models, images, and written observations, allowing the work to be read at a slower scale than the surrounding index. Extended documentation can continue here as the project grows.';
 
   setTimeout(() => { if (!card.hidden) card.dataset.phase = 'ready'; }, 16);
 }
