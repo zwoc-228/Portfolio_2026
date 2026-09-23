@@ -19,10 +19,23 @@ export function createBounce(reduced=false) {
 }
 
 export function createClayOrb(scene,camera,{reducedMotion=false}={}) {
- const sphere=new T.Mesh(new T.SphereGeometry(1,48,32),new T.MeshPhysicalMaterial({
-  color:0xe8e8df,roughness:.86,metalness:0,clearcoat:0,ior:1.42,specularIntensity:.24,envMapIntensity:.62,transparent:true
- }));
- sphere.name='Matte clay navigation sphere';sphere.castShadow=false;sphere.receiveShadow=true;scene.add(sphere);
+ const sphereMaterial=new T.MeshPhysicalMaterial({
+  // Glazed porcelain: a warm ceramic body with a tight clear-coat lobe.
+  // Keep this materially distinct from glass: no transmission, only surface glaze.
+  color:0xf0efe8,
+  roughness:.32,
+  metalness:0,
+  clearcoat:.78,
+  clearcoatRoughness:.16,
+  ior:1.51,
+  specularIntensity:.72,
+  specularColor:new T.Color(0xffffff),
+  envMapIntensity:1.16,
+  transparent:true,
+  opacity:1
+ });
+ const sphere=new T.Mesh(new T.SphereGeometry(1,64,48),sphereMaterial);
+ sphere.name='Glazed porcelain navigation sphere';sphere.castShadow=true;sphere.receiveShadow=true;scene.add(sphere);
  const shadow=new T.Mesh(new T.PlaneGeometry(1,1),new T.ShaderMaterial({
   transparent:true,depthWrite:false,toneMapped:false,
   uniforms:{opacity:{value:.4}},vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,

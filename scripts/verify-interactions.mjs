@@ -20,7 +20,7 @@ for(const [w,h] of [[1672,941],[1440,900],[390,844]]){
  const state=orb.update({dt:1/60,width:w,height:h,ready:true});
  const p=orb.sphere.position.clone().project(camera);assert(Math.abs((1-p.y)*h/2-42)<.02);
  assert(Math.abs(orb.sphere.position.y-orb.sphere.scale.y)<1e-8);
- assert.equal(orb.sphere.material.metalness,0);assert(orb.sphere.material.roughness>.8);
+ assert.equal(orb.sphere.material.metalness,0);assert(orb.sphere.material.roughness>.2&&orb.sphere.material.roughness<.5);assert(orb.sphere.material.clearcoat>.5);assert(orb.sphere.material.specularIntensity>.5);
  orb.update({dt:1/60,width:w,height:h,progress:1,ready:true});assert(!orb.sphere.visible&&!orb.shadow.visible);
  orb.dispose();assert.equal(scene.children.length,0);
  results.push({test:'orb screen position, contact and opening',width:w,height:h,passed:true});

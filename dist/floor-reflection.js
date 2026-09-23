@@ -38,6 +38,7 @@ export function createFloorReflection(renderer,scene,ground){
   uniforms[`object${i}Strength`]={value:0};
  }
  let transientObjects=[];
+ let reflectionOnlyObjects=[];
 
  const blurScene=new T.Scene();const blurCamera=new T.OrthographicCamera(-1,1,1,-1,0,1);
  const blurMat=new T.ShaderMaterial({toneMapped:false,depthTest:false,depthWrite:false,uniforms:{uMap:{value:raw.texture},uTexel:{value:new T.Vector2(1/W,1/H)},uDirection:{value:new T.Vector2(1,0)}},vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}`,fragmentShader:`precision highp float;uniform sampler2D uMap;uniform vec2 uTexel;uniform vec2 uDirection;varying vec2 vUv;void main(){vec2 d=uTexel*uDirection*1.05;vec4 c=texture2D(uMap,vUv)*.227027; c+=(texture2D(uMap,vUv+d)+texture2D(uMap,vUv-d))*.194595; c+=(texture2D(uMap,vUv+d*2.)+texture2D(uMap,vUv-d*2.))*.121622; c+=(texture2D(uMap,vUv+d*3.)+texture2D(uMap,vUv-d*3.))*.054054; c+=(texture2D(uMap,vUv+d*4.)+texture2D(uMap,vUv-d*4.))*.016216;gl_FragColor=c;}`});
@@ -115,12 +116,15 @@ float reflectionFootprintMask(){
   vec4 reflected=texture2D(floorReflection,reflectionUV);
   float inside=step(0.0,reflectionUV.x)*step(reflectionUV.x,1.0)*step(0.0,reflectionUV.y)*step(reflectionUV.y,1.0)*step(0.0,vFloorProjection.w);
   float footprint=clamp(reflectionFootprintMask(),0.0,1.0);
-  float reflectedAlpha=clamp(reflected.a,0.0,1.0)*inside*mix(.08,1.0,footprint);
+  // Reflection-only UI proxy meshes are real scene geometry during the mirror pass.
+  // Keep a visible low-energy base response everywhere instead of suppressing them
+  // through the object-footprint mask; model footprints still receive extra energy.
+  float reflectedAlpha=clamp(reflected.a,0.0,1.0)*inside;
   vec3 reflectedColor=reflected.rgb/max(reflected.a,.001);
   float reflectedLuma=dot(reflectedColor,vec3(.2126,.7152,.0722));
   reflectedColor=mix(vec3(reflectedLuma),reflectedColor,.22);
   reflectedColor*=vec3(.90,.93,.96);
-  outgoingLight=mix(outgoingLight,reflectedColor,(.18+.10*footprint)*reflectedAlpha);
+  outgoingLight=mix(outgoingLight,reflectedColor,(.105+.155*footprint)*reflectedAlpha);
   float pointerGlow=clamp(floorGlowMask(),0.0,1.0);
   outgoingLight += vec3(.022,.026,.031)*pointerGlow;
   vec3 uiRef=uiGlassReflection(); float uiGlow=clamp(uiRef.x,0.0,1.0);
@@ -133,7 +137,7 @@ float reflectionFootprintMask(){
   outgoingLight += vec3(.048,.058,.066)*panelRef.x + vec3(.125,.138,.148)*panelRef.y + vec3(.068,.080,.090)*panelRef.z;
   #include <opaque_fragment>`);
  };
- ground.material.customProgramCacheKey=()=> 'reference-floor-v14-contiguous-blur';
+ ground.material.customProgramCacheKey=()=> 'reference-floor-v15-physical-ui-proxies';
  const color=new T.Color(),look=new T.Vector3();
  function blur(){
   blurMat.uniforms.uMap.value=raw.texture;blurMat.uniforms.uDirection.value.set(1,0);renderer.setRenderTarget(blurA);renderer.clear();renderer.render(blurScene,blurCamera);
@@ -169,6 +173,7 @@ float reflectionFootprintMask(){
   setObjectFootprint:setObject,
   clearObjectFootprints(){for(let i=0;i<4;i++)setObject(i,0,0,.55,.38,0);},
   setTransientObjects(objects=[]){transientObjects=objects.filter(Boolean);},
+  setReflectionOnlyObjects(objects=[]){reflectionOnlyObjects=objects.filter(Boolean);},
   clear,
   update(camera){
    mirror.copy(camera);mirror.position.y=2*ground.position.y-camera.position.y;
@@ -177,14 +182,17 @@ float reflectionFootprintMask(){
    matrix.copy(bias).multiply(mirror.projectionMatrix).multiply(mirror.matrixWorldInverse);
    const old=renderer.getRenderTarget(),background=scene.background;renderer.getClearColor(color);const alpha=renderer.getClearAlpha();
    const transientState=transientObjects.map(obj=>({obj,visible:obj.visible,intensity:typeof obj.intensity==='number'?obj.intensity:null}));
+   const reflectionOnlyState=reflectionOnlyObjects.map(obj=>({obj,visible:obj.visible}));
    const groundVisible=ground.visible;
    try {
     for(const item of transientState){item.obj.visible=false;if(item.intensity!==null)item.obj.intensity=0;}
+    for(const item of reflectionOnlyState)item.obj.visible=true;
     ground.visible=false;scene.background=null;renderer.setClearColor(0x000000,0);renderer.setRenderTarget(raw);renderer.clear(true,true,true);renderer.render(scene,mirror);
     blur();
    } finally {
     renderer.setRenderTarget(old);renderer.setClearColor(color,alpha);scene.background=background;ground.visible=groundVisible;
     for(const item of transientState){item.obj.visible=item.visible;if(item.intensity!==null)item.obj.intensity=item.intensity;}
+    for(const item of reflectionOnlyState)item.obj.visible=item.visible;
    }
   },
   dispose(){raw.dispose();blurA.dispose();blurB.dispose();blurQuad.geometry.dispose();blurMat.dispose();}

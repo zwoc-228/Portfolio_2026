@@ -103,8 +103,8 @@ void main(){
   // The same warm ivory and broad glints used by the navigation cards.
   vec3 ceramic = mix(vec3(.865,.883,.889),vec3(.976,.980,.977),clamp(topLight*.56 + lens*.22,0.0,1.0));
   ceramic -= vec3(.043,.046,.044) * bottomShade;
-  ceramic += vec3(1.0) * (specA*.025 + specB*.010);
-  ceramic += vec3(.91,.94,.94) * (fresnel*.015 + rim*.018);
+  ceramic += vec3(1.0) * (specA*.060 + specB*.026);
+  ceramic += vec3(.91,.94,.94) * (fresnel*.032 + rim*.026);
   ceramic += vec3(1.0) * motion * rim * .006;
 
   float sceneMix = mix(.012,.012,progress);
@@ -169,12 +169,18 @@ export function createLiquidHeader({ renderer, scene, camera, floorReflection, r
 
   function resolveExpandedBounds(){
     const b=getBounds?.();
+    const viewportMax=Math.max(520,cssW-64);
+    // The old bar simply stretched from the left object to the right object, which made
+    // the navigation read like a browser toolbar.  Keep the object-derived center, but
+    // cap the width to the same calm, card-like proportion used by levels 2–4.
+    const designMax=Math.min(viewportMax,1220,cssW*.78);
     if(b && Number.isFinite(b.left) && Number.isFinite(b.right) && b.right-b.left>240){
-      const left=clamp(b.left,18,cssW-260);
-      const right=clamp(b.right,260,cssW-18);
-      return {left,right,width:right-left,center:(left+right)*.5};
+      const rawCenter=(b.left+b.right)*.5;
+      const width=clamp(b.right-b.left,Math.min(760,viewportMax),designMax);
+      const center=clamp(rawCenter,width*.5+24,cssW-width*.5-24);
+      return {left:center-width*.5,right:center+width*.5,width,center};
     }
-    const width=Math.min(cssW-64,1680);
+    const width=designMax;
     return {left:(cssW-width)*.5,right:(cssW+width)*.5,width,center:cssW*.5};
   }
 
@@ -250,7 +256,7 @@ export function createLiquidHeader({ renderer, scene, camera, floorReflection, r
     const p=smooth(progress);
     const bounds=resolveExpandedBounds();
     currentWidth=T.MathUtils.lerp(44,bounds.width,p);
-    currentHeight=T.MathUtils.lerp(44,60,p);
+    currentHeight=T.MathUtils.lerp(44,56,p);
     currentCenterX=T.MathUtils.lerp(cssW*.5,bounds.center,p);
     currentLeft=currentCenterX-currentWidth*.5;
 

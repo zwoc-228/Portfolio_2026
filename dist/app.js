@@ -4,6 +4,7 @@ import { createContactShadows } from './contact-shadows.js';
 import { createModels } from './models.js';
 import { HOME_TRANSFORMS } from './scene-layout.js';
 import { createFloorReflection } from './floor-reflection.js';
+import { createUIReflectionProxies } from './ui-reflection-proxies.js';
 import { names, cats, titles, subs, statements } from './content-data.js';
 import { applyViewState, syncFilterButtons, renderIndex, showProjectDetail, hideProjectDetail, showInfo } from './ui-view.js';
 import { createLiquidHeader } from './liquid-header.js';
@@ -20,7 +21,7 @@ const easeInOutExpo = (t) => t <= 0 ? 0 : t >= 1 ? 1 : t < .5 ? Math.pow(2, 20 *
 let state = 'home';
 let selected = 0;
 let filter = 'All';
-let renderer, scene, camera, floorReflection, runtime;
+let renderer, scene, camera, floorReflection, runtime, uiReflectionProxies;
 let liquidHeader, liquidPanels;
 let models = [], home = [], hoverProfiles = [], homeHitBoxes = [], homeHeaderBoxes = [], writingController = null, contactShadows = null;
 let keyLight, keyCompanionLight;
@@ -154,16 +155,31 @@ function mapUIRectToFloor(slot, r, strength, hover = 0, pullPx = 150) {
   floorReflection.setPanelReflection(slot,c.x,c.z,dx/len,dz/len,nx,nz,len*.50,depth,strength,hover);
 }
 function syncPanelFloorReflection() {
-  if (!floorReflection?.setPanelReflection || !camera) return;
-  if (state === 'home') { floorReflection.clearPanelReflections?.(); return; }
-  const category = document.querySelector('.category-panel');
-  mapUIRectToFloor(0, category && !category.hidden ? category.getBoundingClientRect() : null, state === 'preview' ? .22 : .16, panelReflectionHover, 150);
+  if (!camera || !floorReflection) return;
+  // DOM cards now receive reflection through real 3D proxy geometry in the mirror pass.
+  // This removes the previous screen-space smear whose direction/length could not obey
+  // the floor plane, camera perspective or card height.
+  const categoryEl = document.querySelector('.category-panel');
+  const categoryRect = state !== 'home' && categoryEl && !categoryEl.hidden && categoryEl.getClientRects().length
+    ? categoryEl.getBoundingClientRect() : null;
+  const cardRects = state === 'index'
+    ? [...document.querySelectorAll('.project-card')]
+        .filter(el => el.getClientRects().length)
+        .slice(0,4)
+        .map(el => el.getBoundingClientRect())
+    : [];
+  const detailEl = document.querySelector('#detail-card');
+  const detailRect = detailEl && !detailEl.hidden && detailEl.getClientRects().length
+    ? detailEl.getBoundingClientRect() : null;
 
-  const cards = [...document.querySelectorAll('.project-card')].filter(el => el.getClientRects().length).slice(0, 4);
-  mapUIRectToFloor(1, rectUnion(cards), state === 'index' && cards.length ? .085 : 0, 0, 125);
-
-  const detail = document.querySelector('#detail-card');
-  mapUIRectToFloor(2, detail && !detail.hidden ? detail.getBoundingClientRect() : null, detail && !detail.hidden ? .13 : 0, 0, 165);
+  uiReflectionProxies?.sync({
+    category: categoryRect,
+    cards: cardRects,
+    detail: detailRect,
+    hover: panelReflectionHover
+  });
+  if (state === 'home') floorReflection.clearPanelReflections?.();
+  runtime?.request(FRAME_RENDER | FRAME_REFLECTION);
 }
 
 function resetTransientLighting() {
@@ -461,7 +477,7 @@ function bindUI() {
     navigate(state === 'index' ? 'preview' : 'home');
   });
   window.addEventListener('popstate', () => readHash(false));
-  window.addEventListener('ui-panel-light', (e) => { panelReflectionHover = e.detail?.active ? 1 : 0; syncPanelFloorReflection(); runtime?.request(FRAME_RENDER); });
+  window.addEventListener('ui-panel-light', (e) => { panelReflectionHover = e.detail?.active ? 1 : 0; syncPanelFloorReflection(); runtime?.request(FRAME_RENDER | FRAME_REFLECTION); });
   let wheelTime = 0;
   window.addEventListener('wheel', e => {
     if (state === 'home' && Math.abs(e.deltaY) > 25 && performance.now() - wheelTime > 1000) {
@@ -586,6 +602,7 @@ async function init() {
     floorReflection.setTransientObjects([flashlight, beamHalo, beamParticles]);
     floorReflection.clear();
     runtime = createFrameRuntime(drawFrame);
+    uiReflectionProxies = createUIReflectionProxies({ scene, camera, floorReflection });
     runtime.add(updateScene);
     liquidHeader = createLiquidHeader({ renderer, scene, camera, floorReflection, runtime, onMotion: markStaticShadowsDirty, getBounds: getHomeHeaderScreenBounds });
     liquidPanels = createLiquidPanels({ renderer, runtime });

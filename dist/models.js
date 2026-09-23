@@ -2,9 +2,9 @@ import * as T from './assets/three.module.js';
 import {RoundedBoxGeometry} from './assets/RoundedBoxGeometry.js';
 export function createModels(textures={}){
 const mat=(name,color,roughness=0.7,metalness=0,extra={})=>{let m=new T.MeshPhysicalMaterial({color,roughness,metalness,...Object.fromEntries(Object.entries(extra).filter(([k,v])=>v!==undefined))});m.name=name;return m;};
-const linen=mat('Linen',0xf1eee7,.76,0,{map:textures.linenColor,roughnessMap:textures.linenRough,normalMap:textures.linenNormal,bumpMap:textures.linen,bumpScale:.0012,normalScale:new T.Vector2(.22,.22),sheen:.22,sheenColor:new T.Color(0xf1ede6),sheenRoughness:.82,clearcoat:.012,clearcoatRoughness:.88});
-const paper=mat('Paper',0xf5f2eb,.90,0,{map:textures.paperColor,roughnessMap:textures.paperRough,normalMap:textures.paperNormal,bumpMap:textures.paper,bumpScale:.00030,normalScale:new T.Vector2(.12,.12)});
-const edge=mat('Page edges',0xe8e2d7,.88,0,{map:textures.paperColor,roughnessMap:textures.paperRough,normalMap:textures.paperNormal,bumpMap:textures.paper,bumpScale:.00014,normalScale:new T.Vector2(.07,.07)});
+const linen=mat('Linen',0xeeeae2,.78,0,{map:textures.linenColor,roughnessMap:textures.linenRough,normalMap:textures.linenNormal,bumpMap:textures.linen,bumpScale:.0010,normalScale:new T.Vector2(.16,.16),sheen:.12,sheenColor:new T.Color(0xf0ece4),sheenRoughness:.86,clearcoat:.010,clearcoatRoughness:.92,specularIntensity:.26});
+const paper=mat('Paper',0xf0ede5,.82,0,{map:textures.paperColor,roughnessMap:textures.paperRough,normalMap:textures.paperNormal,bumpMap:textures.paper,bumpScale:.00024,normalScale:new T.Vector2(.10,.10),ior:1.38,specularIntensity:.25,sheen:.025,sheenColor:new T.Color(0xf7f4ed),sheenRoughness:.92});
+const edge=mat('Page edges',0xe0dbd1,.86,0,{map:textures.paperColor,roughnessMap:textures.paperRough,normalMap:textures.paperNormal,bumpMap:textures.paper,bumpScale:.00013,normalScale:new T.Vector2(.065,.065),ior:1.37,specularIntensity:.22});
 // Opaque cast resin retains volume on both views without a transmission material swap.
 const glass=mat('Pale cast resin',0xcbd9d7,.40,0,{ior:1.42,specularIntensity:.32,clearcoat:.01});
 const frosted=mat('Chalk resin',0xe0e4df,.70,0,{specularIntensity:.25});
@@ -30,21 +30,21 @@ function revealableMaterial(name,opts,closed,opened){
  m.onBeforeCompile=shader=>{
   shader.uniforms.uReveal={value:0};m.userData.revealUniform=shader.uniforms.uReveal;
   shader.fragmentShader='uniform float uReveal;\n'+shader.fragmentShader;
-  shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>','#include <map_fragment>\ndiffuseColor.rgb=mix(vec3(0.975,0.975,0.968),diffuseColor.rgb,uReveal);');
+  shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>','#include <map_fragment>\ndiffuseColor.rgb=mix(diffuseColor.rgb*vec3(0.985,0.980,0.970),diffuseColor.rgb,uReveal);');
  };
  m.customProgramCacheKey=()=>name+'-reveal-v2';
  return m;
 }
 const writingCover=revealableMaterial('Writing cover cloth',{
- color:0xffffff,map:writingClothColor,roughness:.79,roughnessMap:writingClothRough,metalness:0,normalMap:writingClothNormal,normalScale:new T.Vector2(.010,.010),sheen:.07,sheenColor:new T.Color(0xe4e8ea),sheenRoughness:.70,clearcoat:.014,clearcoatRoughness:.88
- },{color:0xf9f7f1,roughness:.86,normalScale:[.008,.008],sheen:.03,clearcoat:.01},{color:0xebe7df,roughness:.77,normalScale:[.14,.14],sheen:.16,clearcoat:.014});
+ color:0xf2efe8,map:writingClothColor,roughness:.78,roughnessMap:writingClothRough,metalness:0,normalMap:writingClothNormal,normalScale:new T.Vector2(.042,.042),sheen:.11,sheenColor:new T.Color(0xf2eee7),sheenRoughness:.78,clearcoat:.012,clearcoatRoughness:.90,specularIntensity:.25
+ },{color:0xf0ede6,roughness:.82,normalScale:[.034,.034],sheen:.075,clearcoat:.01},{color:0xe9e5dd,roughness:.77,normalScale:[.12,.12],sheen:.14,clearcoat:.014});
 const writingPaper=revealableMaterial('Writing paper',{
- color:0xffffff,map:textures.writingPaperColor,roughness:.91,roughnessMap:textures.writingPaperRough,metalness:0,normalMap:textures.writingPaperNormal,normalScale:new T.Vector2(.012,.012)
- },{color:0xfbfbf8,roughness:.94,normalScale:[.005,.005]},{color:0xf2eee5,roughness:.88,normalScale:[.16,.16]});
+ color:0xf4f1ea,map:textures.writingPaperColor,roughness:.86,roughnessMap:textures.writingPaperRough,metalness:0,normalMap:textures.writingPaperNormal,normalScale:new T.Vector2(.035,.035),ior:1.38,specularIntensity:.23
+ },{color:0xf2efe8,roughness:.89,normalScale:[.026,.026]},{color:0xeee9df,roughness:.86,normalScale:[.13,.13]});
 const writingPageEdge=revealableMaterial('Writing page edge',{
- color:0xffffff,map:textures.writingPaperColor,roughness:.93,roughnessMap:textures.writingPaperRough,metalness:0,normalMap:textures.writingPaperNormal,normalScale:new T.Vector2(.008,.008)
- },{color:0xfbfbf8,roughness:.95,normalScale:[.004,.004]},{color:0xebe5da,roughness:.90,normalScale:[.11,.11]});
-const writingElastic=mat('Writing elastic',0xe6e2da,.80,0,{normalMap:textures.writingPaperNormal,normalScale:new T.Vector2(.02,.02)});
+ color:0xe9e4da,map:textures.writingPaperColor,roughness:.90,roughnessMap:textures.writingPaperRough,metalness:0,normalMap:textures.writingPaperNormal,normalScale:new T.Vector2(.026,.026),ior:1.37,specularIntensity:.20
+ },{color:0xe9e4da,roughness:.92,normalScale:[.020,.020]},{color:0xe5dfd4,roughness:.89,normalScale:[.095,.095]});
+const writingElastic=mat('Writing elastic',0xd9d6cf,.77,0,{normalMap:textures.writingPaperNormal,normalScale:new T.Vector2(.018,.018),specularIntensity:.22});
 
 const lowerCover=box(writing,'Lower linen cover',2.55,.048,3.20,0,.035,0,writingCover,.024);
 const pageBlock=box(writing,'Page block',2.39,.154,3.02,.025,.137,0,writingPageEdge,.018);
@@ -81,29 +81,29 @@ const research=new T.Group();research.name='Research';
 // Anti-moire paper construction: one continuous page block carries the edge mass,
 // while only a handful of broad leaves create visible layering. This avoids the dozens
 // of sub-pixel parallel edge bands that produced the previous "mosaic" shimmer.
-const researchPageBlock=box(research,'Research page block',2.76,.112,3.36,0,.068,0,edge,.010);
+const researchPageBlock=box(research,'Research page block',2.76,.116,3.36,0,.070,0,edge,.015);
 researchPageBlock.castShadow=true;researchPageBlock.receiveShadow=true;
 for(let i=0;i<5;i++){
- const sheet=box(research,'Research visible leaf '+i,2.765,.0065,3.365,
-  (i-2)*.006,.128+i*.008,(2-i)*.006,paper,.0045);
- sheet.rotation.y=(i-2)*.0016;sheet.rotation.z=(2-i)*.0010;sheet.castShadow=true;sheet.receiveShadow=true;
+ const sheet=box(research,'Research visible leaf '+i,2.765,.0072,3.365,
+  (i-2)*.013,.130+i*.009,(2-i)*.012,paper,.0065);
+ sheet.rotation.y=(i-2)*.0025;sheet.rotation.z=(2-i)*.0015;sheet.castShadow=true;sheet.receiveShadow=true;
 }
 // Top leaf gets one subtle, low-frequency bow; there are no tessellated side walls to alias.
 const pg=new T.PlaneGeometry(2.765,3.365,12,14);pg.rotateX(-Math.PI/2);const pa=pg.attributes.position;
 for(let i=0;i<pa.count;i++){
  const x=pa.getX(i),z=pa.getZ(i),edgeX=Math.pow(Math.abs(x)/1.3825,4),edgeZ=Math.pow(Math.abs(z)/1.6825,5);
- pa.setY(i,.170+.0050*edgeX+.0030*edgeZ+.0012*Math.sin(z*1.8)*(x/1.3825));
+ pa.setY(i,.177+.0062*edgeX+.0038*edgeZ+.0010*Math.sin(z*1.65)*(x/1.3825));
 }
 pg.computeVertexNormals();const top=new T.Mesh(pg,paper);top.name='Top research leaf';top.receiveShadow=true;top.castShadow=true;research.add(top);
 // A smooth double-loop wire clip: open tips, straight legs, round bends.
 const curl=(x,z)=>.0050*Math.pow(Math.abs(x)/1.3825,4)+.0030*Math.pow(Math.abs(z)/1.6825,5)+.0012*Math.sin(z*1.8)*(x/1.3825);
-const cp=[];const cy=.194;for(let i=0;i<=12;i++){let a=Math.PI+i/12*Math.PI;cp.push([1.065+Math.cos(a)*.094,cy,-1.545+Math.sin(a)*.094]);}cp.push([1.159,cy,-1.07]);for(let i=0;i<=12;i++){let a=i/12*Math.PI;cp.push([1.081+Math.cos(a)*.078,cy,-1.07+Math.sin(a)*.078]);}cp.push([1.003,cy,-1.49]);for(let i=0;i<=12;i++){let a=Math.PI+i/12*Math.PI;cp.push([1.063+Math.cos(a)*.060,cy+.004,-1.49+Math.sin(a)*.060]);}cp.push([1.123,cy+.004,-1.16]);
+const cp=[];const cy=.202;for(let i=0;i<=12;i++){let a=Math.PI+i/12*Math.PI;cp.push([1.065+Math.cos(a)*.094,cy,-1.545+Math.sin(a)*.094]);}cp.push([1.159,cy,-1.07]);for(let i=0;i<=12;i++){let a=i/12*Math.PI;cp.push([1.081+Math.cos(a)*.078,cy,-1.07+Math.sin(a)*.078]);}cp.push([1.003,cy,-1.49]);for(let i=0;i<=12;i++){let a=Math.PI+i/12*Math.PI;cp.push([1.063+Math.cos(a)*.060,cy+.004,-1.49+Math.sin(a)*.060]);}cp.push([1.123,cy+.004,-1.16]);
 for(const [i,p] of cp.entries()){
  // Round 36: move the clip to the actual upper-right paper edge instead of the page interior.
  // Keep the whole wire just inside the leaf boundary so it still reads as physically clipped-on.
  p[0]=1.185+(p[0]-1.065)*.72;
  p[2]=-1.430+(p[2]+1.30)*.72;
- p[1]=.170+curl(p[0],p[2])+.0065+.0016*Math.sin(i/(cp.length-1)*Math.PI);
+ p[1]=.177+curl(p[0],p[2])+.0075+.0014*Math.sin(i/(cp.length-1)*Math.PI);
 }
 tube(research,'Bent steel paperclip',cp,.0050,steel);
 return [writing,architecture,research];}

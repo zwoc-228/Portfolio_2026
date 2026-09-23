@@ -109,6 +109,15 @@
       "physicalMaterials": 0
     },
     {
+      "file": "dist/ui-reflection-proxies.js",
+      "raf": 0,
+      "caf": 0,
+      "listeners": 0,
+      "renderTargets": 0,
+      "framebufferCopies": 0,
+      "physicalMaterials": 0
+    },
+    {
       "file": "dist/ui-surface.js",
       "raf": 0,
       "caf": 0,
