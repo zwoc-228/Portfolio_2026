@@ -29,10 +29,12 @@ export function applyViewState({ state, selected, names, cats, statements = [], 
     }
   }
 
-  if (detail && state !== 'index') {
+  if (detail) {
     clearTimeout(detailExitTimer);
     clearTimeout(detailEnterTimer);
     detail.hidden = true;
+    detail.inert = true;
+    detail.dataset.phase = 'idle';
     document.body.classList.remove('detail-open');
   }
 
@@ -141,6 +143,7 @@ export function showProjectDetail({ title, image, category, year, selected = 0 }
 
   clearTimeout(detailExitTimer);
   clearTimeout(detailEnterTimer);
+  card.inert = false;
   card.dataset.phase = 'enter';
   card.hidden = false;
   document.body.classList.add('detail-open');
@@ -160,6 +163,7 @@ export function hideProjectDetail() {
   if (!card || card.hidden) return;
   clearTimeout(detailEnterTimer);
   clearTimeout(detailExitTimer);
+  card.inert = true;
   card.dataset.phase = 'exit';
   document.body.classList.remove('detail-open');
   detailExitTimer = setTimeout(() => { card.hidden = true; card.dataset.phase = 'idle'; }, 170);

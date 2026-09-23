@@ -30,10 +30,17 @@ export function createFloorReflection(renderer,scene,ground){
   uniforms[`panel${i}Strength`]={value:0};
   uniforms[`panel${i}Hover`]={value:0};
  }
+ // Three model footprints and the navigation sphere: keep desk reflections tight to the object footprint
+ // so rough-metal reflections read like studio product shots rather than long foggy streaks.
+ for(let i=0;i<4;i++){
+  uniforms[`object${i}Center`]={value:new T.Vector2(0,0)};
+  uniforms[`object${i}Radius`]={value:new T.Vector2(.55,.38)};
+  uniforms[`object${i}Strength`]={value:0};
+ }
  let transientObjects=[];
 
  const blurScene=new T.Scene();const blurCamera=new T.OrthographicCamera(-1,1,1,-1,0,1);
- const blurMat=new T.ShaderMaterial({toneMapped:false,depthTest:false,depthWrite:false,uniforms:{uMap:{value:raw.texture},uTexel:{value:new T.Vector2(1/W,1/H)},uDirection:{value:new T.Vector2(1,0)}},vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}`,fragmentShader:`precision highp float;uniform sampler2D uMap;uniform vec2 uTexel;uniform vec2 uDirection;varying vec2 vUv;void main(){vec2 d=uTexel*uDirection*3.15;vec4 c=texture2D(uMap,vUv)*.2270270270;c+=texture2D(uMap,vUv+d*1.3846153846)*.3162162162;c+=texture2D(uMap,vUv-d*1.3846153846)*.3162162162;c+=texture2D(uMap,vUv+d*3.2307692308)*.0702702703;c+=texture2D(uMap,vUv-d*3.2307692308)*.0702702703;gl_FragColor=c;}`});
+ const blurMat=new T.ShaderMaterial({toneMapped:false,depthTest:false,depthWrite:false,uniforms:{uMap:{value:raw.texture},uTexel:{value:new T.Vector2(1/W,1/H)},uDirection:{value:new T.Vector2(1,0)}},vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}`,fragmentShader:`precision highp float;uniform sampler2D uMap;uniform vec2 uTexel;uniform vec2 uDirection;varying vec2 vUv;void main(){vec2 d=uTexel*uDirection*1.05;vec4 c=texture2D(uMap,vUv)*.227027; c+=(texture2D(uMap,vUv+d)+texture2D(uMap,vUv-d))*.194595; c+=(texture2D(uMap,vUv+d*2.)+texture2D(uMap,vUv-d*2.))*.121622; c+=(texture2D(uMap,vUv+d*3.)+texture2D(uMap,vUv-d*3.))*.054054; c+=(texture2D(uMap,vUv+d*4.)+texture2D(uMap,vUv-d*4.))*.016216;gl_FragColor=c;}`});
  const blurQuad=new T.Mesh(new T.PlaneGeometry(2,2),blurMat);blurScene.add(blurQuad);
 
  ground.material.onBeforeCompile=shader=>{
@@ -46,6 +53,10 @@ uniform vec2 uiCenter; uniform vec2 uiAxis; uniform float uiHalfLength; uniform 
 uniform vec2 panel0Center; uniform vec2 panel0Axis; uniform vec2 panel0Normal; uniform float panel0HalfLength; uniform float panel0Depth; uniform float panel0Strength; uniform float panel0Hover;
 uniform vec2 panel1Center; uniform vec2 panel1Axis; uniform vec2 panel1Normal; uniform float panel1HalfLength; uniform float panel1Depth; uniform float panel1Strength; uniform float panel1Hover;
 uniform vec2 panel2Center; uniform vec2 panel2Axis; uniform vec2 panel2Normal; uniform float panel2HalfLength; uniform float panel2Depth; uniform float panel2Strength; uniform float panel2Hover;
+uniform vec2 object0Center; uniform vec2 object0Radius; uniform float object0Strength;
+uniform vec2 object1Center; uniform vec2 object1Radius; uniform float object1Strength;
+uniform vec2 object2Center; uniform vec2 object2Radius; uniform float object2Strength;
+uniform vec2 object3Center; uniform vec2 object3Radius; uniform float object3Strength;
 varying vec4 vFloorProjection; varying vec3 vFloorWorldPosition;
 float floorGlowMask(){vec2 gd=vFloorWorldPosition.xz-glowWorldXZ; return exp(-dot(gd,gd)/(2.0*glowRadius*glowRadius))*glowStrength;}
 vec3 uiGlassReflection(){
@@ -85,15 +96,31 @@ vec3 panelBoardReflection(){
       + boardReflection(panel2Center,panel2Axis,panel2Normal,panel2HalfLength,panel2Depth,panel2Strength,panel2Hover);
 }
 float panelBoardMask(){return clamp(panelBoardReflection().x,0.0,1.0);}
+float objectFootprint(vec2 center, vec2 radius, float strength){
+ vec2 d=(vFloorWorldPosition.xz-center)/max(radius,vec2(.02));
+ float ellipse=exp(-dot(d,d)*1.35);
+ float core=exp(-dot(d,d)*4.8);
+ return clamp((ellipse*.72+core*.28)*strength,0.0,1.0);
+}
+float reflectionFootprintMask(){
+ return max(
+  max(objectFootprint(object0Center,object0Radius,object0Strength), objectFootprint(object1Center,object1Radius,object1Strength)),
+  max(objectFootprint(object2Center,object2Radius,object2Strength),objectFootprint(object3Center,object3Radius,object3Strength))
+ );
+}
 `+shader.fragmentShader;
   shader.fragmentShader=shader.fragmentShader.replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\nroughnessFactor *= mix(1.0,0.82,clamp(floorGlowMask(),0.0,1.0)); roughnessFactor *= mix(1.0,.86,uiGlassMask()); roughnessFactor *= mix(1.0,.90,panelBoardMask());');
   shader.fragmentShader=shader.fragmentShader.replace('#include <opaque_fragment>',`
   vec2 reflectionUV=vFloorProjection.xy/vFloorProjection.w;
   vec4 reflected=texture2D(floorReflection,reflectionUV);
   float inside=step(0.0,reflectionUV.x)*step(reflectionUV.x,1.0)*step(0.0,reflectionUV.y)*step(reflectionUV.y,1.0)*step(0.0,vFloorProjection.w);
-  float reflectedAlpha=clamp(reflected.a,0.0,1.0)*inside;
+  float footprint=clamp(reflectionFootprintMask(),0.0,1.0);
+  float reflectedAlpha=clamp(reflected.a,0.0,1.0)*inside*mix(.08,1.0,footprint);
   vec3 reflectedColor=reflected.rgb/max(reflected.a,.001);
-  outgoingLight=mix(outgoingLight,reflectedColor,.43*reflectedAlpha);
+  float reflectedLuma=dot(reflectedColor,vec3(.2126,.7152,.0722));
+  reflectedColor=mix(vec3(reflectedLuma),reflectedColor,.22);
+  reflectedColor*=vec3(.90,.93,.96);
+  outgoingLight=mix(outgoingLight,reflectedColor,(.18+.10*footprint)*reflectedAlpha);
   float pointerGlow=clamp(floorGlowMask(),0.0,1.0);
   outgoingLight += vec3(.022,.026,.031)*pointerGlow;
   vec3 uiRef=uiGlassReflection(); float uiGlow=clamp(uiRef.x,0.0,1.0);
@@ -106,7 +133,7 @@ float panelBoardMask(){return clamp(panelBoardReflection().x,0.0,1.0);}
   outgoingLight += vec3(.048,.058,.066)*panelRef.x + vec3(.125,.138,.148)*panelRef.y + vec3(.068,.080,.090)*panelRef.z;
   #include <opaque_fragment>`);
  };
- ground.material.customProgramCacheKey=()=> 'reference-floor-v12-long-ui-reflections';
+ ground.material.customProgramCacheKey=()=> 'reference-floor-v14-contiguous-blur';
  const color=new T.Color(),look=new T.Vector3();
  function blur(){
   blurMat.uniforms.uMap.value=raw.texture;blurMat.uniforms.uDirection.value.set(1,0);renderer.setRenderTarget(blurA);renderer.clear();renderer.render(blurScene,blurCamera);
@@ -128,11 +155,19 @@ float panelBoardMask(){return clamp(panelBoardReflection().x,0.0,1.0);}
   uniforms[`panel${i}Strength`].value=strength;
   uniforms[`panel${i}Hover`].value=hover;
  }
+ function setObject(slot,x,z,rx,rz,strength=1){
+  const i=Math.max(0,Math.min(3,slot|0));
+  uniforms[`object${i}Center`].value.set(x,z);
+  uniforms[`object${i}Radius`].value.set(Math.max(.05,rx),Math.max(.05,rz));
+  uniforms[`object${i}Strength`].value=Math.max(0,strength);
+ }
  return {
   setGlow(x,z,strength=1){uniforms.glowWorldXZ.value.set(x,z);uniforms.glowStrength.value=strength;},
   setUICaustic(x,z,ax,az,halfLength,width,strength,progress=1,contact=1){uniforms.uiCenter.value.set(x,z);uniforms.uiAxis.value.set(ax,az);uniforms.uiHalfLength.value=halfLength;uniforms.uiWidth.value=width;uniforms.uiStrength.value=strength;uniforms.uiProgress.value=progress;uniforms.uiContact.value=contact;},
   setPanelReflection:setPanel,
   clearPanelReflections(){for(let i=0;i<3;i++)setPanel(i,0,0,1,0,0,1,0,.5,0,0);},
+  setObjectFootprint:setObject,
+  clearObjectFootprints(){for(let i=0;i<4;i++)setObject(i,0,0,.55,.38,0);},
   setTransientObjects(objects=[]){transientObjects=objects.filter(Boolean);},
   clear,
   update(camera){
@@ -142,11 +177,15 @@ float panelBoardMask(){return clamp(panelBoardReflection().x,0.0,1.0);}
    matrix.copy(bias).multiply(mirror.projectionMatrix).multiply(mirror.matrixWorldInverse);
    const old=renderer.getRenderTarget(),background=scene.background;renderer.getClearColor(color);const alpha=renderer.getClearAlpha();
    const transientState=transientObjects.map(obj=>({obj,visible:obj.visible,intensity:typeof obj.intensity==='number'?obj.intensity:null}));
-   for(const item of transientState){item.obj.visible=false;if(item.intensity!==null)item.obj.intensity=0;}
-   ground.visible=false;scene.background=null;renderer.setClearColor(0x000000,0);renderer.setRenderTarget(raw);renderer.clear(true,true,true);renderer.render(scene,mirror);
-   blur();
-   renderer.setRenderTarget(old);renderer.setClearColor(color,alpha);scene.background=background;ground.visible=true;
-   for(const item of transientState){item.obj.visible=item.visible;if(item.intensity!==null)item.obj.intensity=item.intensity;}
+   const groundVisible=ground.visible;
+   try {
+    for(const item of transientState){item.obj.visible=false;if(item.intensity!==null)item.obj.intensity=0;}
+    ground.visible=false;scene.background=null;renderer.setClearColor(0x000000,0);renderer.setRenderTarget(raw);renderer.clear(true,true,true);renderer.render(scene,mirror);
+    blur();
+   } finally {
+    renderer.setRenderTarget(old);renderer.setClearColor(color,alpha);scene.background=background;ground.visible=groundVisible;
+    for(const item of transientState){item.obj.visible=item.visible;if(item.intensity!==null)item.obj.intensity=item.intensity;}
+   }
   },
   dispose(){raw.dispose();blurA.dispose();blurB.dispose();blurQuad.geometry.dispose();blurMat.dispose();}
  };

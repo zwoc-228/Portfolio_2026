@@ -1,0 +1,2 @@
+{"meshes":31,"triangles":19912,"geometry":"finite","gltfContainers":"valid"}
+{"bakedMeshes":12,"atlasUV":"matched"}

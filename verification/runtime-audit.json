@@ -1,0 +1,143 @@
+{
+  "customModules": [
+    {
+      "file": "dist/app.js",
+      "raf": 0,
+      "caf": 0,
+      "listeners": 13,
+      "renderTargets": 0,
+      "framebufferCopies": 0,
+      "physicalMaterials": 1
+    },
+    {
+      "file": "dist/clay-orb.js",
+      "raf": 0,
+      "caf": 0,
+      "listeners": 0,
+      "renderTargets": 0,
+      "framebufferCopies": 0,
+      "physicalMaterials": 1
+    },
+    {
+      "file": "dist/contact-shadows.js",
+      "raf": 0,
+      "caf": 0,
+      "listeners": 0,
+      "renderTargets": 0,
+      "framebufferCopies": 0,
+      "physicalMaterials": 0
+    },
+    {
+      "file": "dist/content-data.js",
+      "raf": 0,
+      "caf": 0,
+      "listeners": 0,
+      "renderTargets": 0,
+      "framebufferCopies": 0,
+      "physicalMaterials": 0
+    },
+    {
+      "file": "dist/floor-reflection.js",
+      "raf": 0,
+      "caf": 0,
+      "listeners": 0,
+      "renderTargets": 3,
+      "framebufferCopies": 0,
+      "physicalMaterials": 0
+    },
+    {
+      "file": "dist/frame-runtime.js",
+      "raf": 3,
+      "caf": 1,
+      "listeners": 0,
+      "renderTargets": 0,
+      "framebufferCopies": 0,
+      "physicalMaterials": 0
+    },
+    {
+      "file": "dist/liquid-header.js",
+      "raf": 0,
+      "caf": 0,
+      "listeners": 4,
+      "renderTargets": 0,
+      "framebufferCopies": 1,
+      "physicalMaterials": 0
+    },
+    {
+      "file": "dist/liquid-panels.js",
+      "raf": 0,
+      "caf": 0,
+      "listeners": 0,
+      "renderTargets": 0,
+      "framebufferCopies": 1,
+      "physicalMaterials": 0
+    },
+    {
+      "file": "dist/models.js",
+      "raf": 0,
+      "caf": 0,
+      "listeners": 0,
+      "renderTargets": 0,
+      "framebufferCopies": 0,
+      "physicalMaterials": 2
+    },
+    {
+      "file": "dist/scene-layout.js",
+      "raf": 0,
+      "caf": 0,
+      "listeners": 0,
+      "renderTargets": 0,
+      "framebufferCopies": 0,
+      "physicalMaterials": 0
+    },
+    {
+      "file": "dist/studio-environment.js",
+      "raf": 0,
+      "caf": 0,
+      "listeners": 0,
+      "renderTargets": 0,
+      "framebufferCopies": 0,
+      "physicalMaterials": 0
+    },
+    {
+      "file": "dist/ui-motion.js",
+      "raf": 0,
+      "caf": 0,
+      "listeners": 0,
+      "renderTargets": 0,
+      "framebufferCopies": 0,
+      "physicalMaterials": 0
+    },
+    {
+      "file": "dist/ui-surface.js",
+      "raf": 0,
+      "caf": 0,
+      "listeners": 3,
+      "renderTargets": 0,
+      "framebufferCopies": 0,
+      "physicalMaterials": 0
+    },
+    {
+      "file": "dist/ui-view.js",
+      "raf": 0,
+      "caf": 0,
+      "listeners": 2,
+      "renderTargets": 0,
+      "framebufferCopies": 0,
+      "physicalMaterials": 0
+    }
+  ],
+  "customRaf": 3,
+  "nonRuntimeRaf": 0,
+  "checks": {
+    "singleFrameDriver": true,
+    "gsapHook": true,
+    "screenSpaceGlass": true,
+    "fullEffectFloorRT": true,
+    "reflectionPreblur": true,
+    "eventDrivenGlassCapture": true,
+    "stableBakedArchitecture": true,
+    "coarseHitTesting": true,
+    "synchronousShadowRefresh": true
+  }
+}

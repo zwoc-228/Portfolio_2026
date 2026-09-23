@@ -1,0 +1,42 @@
+[
+  {
+    "test": "bounce",
+    "fps": 30,
+    "contacts": 2,
+    "settled": true
+  },
+  {
+    "test": "bounce",
+    "fps": 60,
+    "contacts": 2,
+    "settled": true
+  },
+  {
+    "test": "bounce",
+    "fps": 120,
+    "contacts": 3,
+    "settled": true
+  },
+  {
+    "test": "orb screen position, contact and opening",
+    "width": 1672,
+    "height": 941,
+    "passed": true
+  },
+  {
+    "test": "orb screen position, contact and opening",
+    "width": 1440,
+    "height": 900,
+    "passed": true
+  },
+  {
+    "test": "orb screen position, contact and opening",
+    "width": 390,
+    "height": 844,
+    "passed": true
+  },
+  {
+    "test": "AO footprint stays on desk across lift and scale",
+    "passed": true
+  }
+]

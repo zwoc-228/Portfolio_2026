@@ -1,3 +1,7 @@
+# Current delivery: Round 41
+
+Read [START_HERE.md](START_HERE.md) and [ROUND41_STUDIO_FINISH.md](ROUND41_STUDIO_FINISH.md) first. Earlier notes below are historical.
+
 # Yuanlong Zhu — 3D Portfolio / Round 29
 
 Round 29 is the full-effect architecture rebuild.

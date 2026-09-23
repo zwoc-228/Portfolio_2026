@@ -1,1 +1,9 @@
-{"name":"yuanlong-reference-portfolio","private":true,"type":"module","scripts":{"dev":"node scripts/serve.mjs"}}
+{
+  "name": "yuanlong-reference-portfolio",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "check": "node scripts/check-project.mjs"
+  }
+}

@@ -1,5 +1,6 @@
 import * as T from './assets/three.module.js';
 import { createStudioEnvironment } from './studio-environment.js';
+import { createContactShadows } from './contact-shadows.js';
 import { createModels } from './models.js';
 import { HOME_TRANSFORMS } from './scene-layout.js';
 import { createFloorReflection } from './floor-reflection.js';
@@ -21,10 +22,10 @@ let selected = 0;
 let filter = 'All';
 let renderer, scene, camera, floorReflection, runtime;
 let liquidHeader, liquidPanels;
-let models = [], home = [], hoverProfiles = [], homeHitBoxes = [], homeHeaderBoxes = [], architectureGlassPairs = [], architectureGlassDetailed = false, writingController = null, contactShadows = [], contactShadowTexture = null;
+let models = [], home = [], hoverProfiles = [], homeHitBoxes = [], homeHeaderBoxes = [], writingController = null, contactShadows = null;
 let keyLight, keyCompanionLight;
 let flashlight, flashlightTarget, beamHalo, beamParticles;
-let transition = null, transitionFrame = 0;
+let transition = null;
 let resizePending = false, resizeDeadline = 0;
 
 const raycaster = new T.Raycaster();
@@ -44,11 +45,13 @@ let pointerDirty = false, pointerClientX = 0, pointerClientY = 0;
 let glowCurrentStrength = 0, glowTargetStrength = 0, hoveredModel = -1;
 let spotAngleCurrent = T.MathUtils.degToRad(2.0), spotAngleTarget = T.MathUtils.degToRad(2.0), spotIntensityTarget = 0;
 let particleTime = 0;
-let panelReflectionHover = 0, hoverShadowTick = 0, wasLiftMoving = false;
+let panelReflectionHover = 0, wasLiftMoving = false;
 
 let glassCaptureReady = false;
 function drawFrame({ reflection = false, capture = false } = {}) {
   if (!renderer || !scene || !camera) return;
+  syncContactShadows();
+  scene.updateMatrixWorld(true);
   if (reflection) floorReflection?.update(camera);
   renderer.setRenderTarget(null);
   renderer.render(scene, camera);
@@ -65,8 +68,7 @@ function drawFrame({ reflection = false, capture = false } = {}) {
 }
 
 function markKeyShadowDirty() { if (keyLight) keyLight.shadow.needsUpdate = true; }
-function markCompanionShadowDirty() { if (keyCompanionLight) keyCompanionLight.shadow.needsUpdate = true; }
-function markStaticShadowsDirty() { markKeyShadowDirty(); markCompanionShadowDirty(); }
+function markStaticShadowsDirty() { markKeyShadowDirty(); }
 
 
 function getProjectedScreenBox(box) {
@@ -199,33 +201,7 @@ function writingRevealTarget() {
   return state === 'preview' && selected === 0 ? 1 : 0;
 }
 
-function setArchitectureGlassDetail(detailed) {
-  if (!architectureGlassPairs.length || architectureGlassDetailed === detailed) return;
-  architectureGlassDetailed = detailed;
-  for (const pair of architectureGlassPairs) pair.mesh.material = detailed ? pair.detail : pair.home;
-  glassCaptureReady = false;
-}
-
-function createContactShadowTexture(size=128) {
-  const data=new Uint8Array(size*size*4);
-  for(let y=0;y<size;y++)for(let x=0;x<size;x++){
-    const u=(x+.5)/size*2-1,v=(y+.5)/size*2-1;
-    const r2=u*u+v*v; const broad=Math.exp(-r2*2.15), core=Math.exp(-r2*8.5);
-    const a=Math.max(0,Math.min(1,broad*.58+core*.42)); const q=Math.round(a*255); const i=(y*size+x)*4;
-    data[i]=q;data[i+1]=q;data[i+2]=q;data[i+3]=255;
-  }
-  const tex=new T.DataTexture(data,size,size,T.RGBAFormat,T.UnsignedByteType);tex.needsUpdate=true;tex.minFilter=T.LinearFilter;tex.magFilter=T.LinearFilter;tex.generateMipmaps=false;return tex;
-}
-function createContactShadow(root,index) {
-  const box=new T.Box3().setFromObject(root),size=new T.Vector3();box.getSize(size);
-  if(!contactShadowTexture)contactShadowTexture=createContactShadowTexture();
-  const material=new T.MeshBasicMaterial({color:0x4d555a,alphaMap:contactShadowTexture,transparent:true,opacity:index===1?.115:.085,depthWrite:false,depthTest:true,toneMapped:false});
-  const mesh=new T.Mesh(new T.PlaneGeometry(1,1),material);mesh.rotation.x=-Math.PI/2;mesh.position.y=-.0115;mesh.renderOrder=2;
-  mesh.userData={root,baseX:Math.max(.62,size.x*1.06),baseZ:Math.max(.62,size.z*1.06),baseOpacity:index===1?.115:.085,index};scene.add(mesh);contactShadows.push(mesh);return mesh;
-}
-function syncContactShadows() {
-  for(const shadow of contactShadows){const root=shadow.userData.root;if(!root)continue;const lift=Math.max(0,root.position.y);shadow.position.x=root.position.x;shadow.position.z=root.position.z;const spread=1+Math.min(.16,lift*.95);shadow.scale.set(shadow.userData.baseX*spread,shadow.userData.baseZ*spread,1);shadow.material.opacity=shadow.userData.baseOpacity*Math.max(.34,1-lift*4.2);}
-}
+function syncContactShadows() { contactShadows?.update(); }
 
 function updateWritingReveal(dt) {
   if (!writingController || transition) return false;
@@ -323,10 +299,10 @@ function getTargets() {
 
 function startTransition() {
   if (!models.length) return;
-  transitionFrame = 0;
   // Remove stale planar content before the first moved frame. Together with per-frame reflection
   // updates below, this prevents the old HOME architecture silhouette from hanging on the desk.
   floorReflection?.clear?.();
+  glassCaptureReady = false;
   document.documentElement.dataset.sceneReady = 'false';
   document.body.classList.add('is-transitioning');
   transition = {
@@ -344,7 +320,6 @@ function updateTransition(dt) {
   transition.elapsed += dt * 1000;
   const t = Math.min(1, transition.elapsed / transition.duration);
   const k = easeInOutExpo(t);
-  transitionFrame++;
   models.forEach((m, i) => {
     const a = transition.from[i], b = transition.to[i];
     m.position.set(T.MathUtils.lerp(a.x, b.x, k), T.MathUtils.lerp(a.y, b.y, k), T.MathUtils.lerp(a.z, b.z, k));
@@ -356,21 +331,14 @@ function updateTransition(dt) {
   }
   syncContactShadows();
   const finalFrame = t >= 1;
-  // Spatial transitions must never reuse old shadow/reflection positions. The previous ~20fps
-  // cadence was the visible 'afterimage' when Architecture left HOME. The key shadow follows every
-  // moved frame; the softer companion and planar reflection run at an even 30fps cadence after the
-  // first two frames, which stays visually locked without doubling the full render cost on older GPUs.
-  markKeyShadowDirty();
-  if (finalFrame || transitionFrame % 2 === 0) markCompanionShadowDirty();
-  const reflectionFrame = finalFrame || transitionFrame <= 2 || transitionFrame % 2 === 0;
+  // All spatial passes use this frame’s transforms; never stagger moving shadows.
+  markStaticShadowsDirty();
   if (finalFrame) {
-    if (state === 'preview' && selected === 1) setArchitectureGlassDetail(true);
     transition = null;
-    transitionFrame = 0;
-    document.documentElement.dataset.sceneReady = 'true';
+      document.documentElement.dataset.sceneReady = 'true';
     document.body.classList.remove('is-transitioning');
   }
-  return FRAME_RENDER | FRAME_CAPTURE | (reflectionFrame ? FRAME_REFLECTION : 0) | (!finalFrame ? FRAME_ACTIVE : 0);
+  return FRAME_RENDER | FRAME_CAPTURE | FRAME_REFLECTION | (!finalFrame ? FRAME_ACTIVE : 0);
 }
 
 function updateScene(dt, now) {
@@ -405,8 +373,7 @@ function updateScene(dt, now) {
   }
   syncContactShadows();
   if (liftMoving) {
-    hoverShadowTick++;
-    if (hoverShadowTick % 2) markKeyShadowDirty(); else markCompanionShadowDirty();
+    markStaticShadowsDirty();
     flags |= FRAME_RENDER | FRAME_REFLECTION | FRAME_ACTIVE;
   } else if (wasLiftMoving) {
     markStaticShadowsDirty();
@@ -462,9 +429,6 @@ function handleFilter(nextFilter) {
 function navigate(s, i = selected, push = true) {
   hideProjectDetail();
   state = s; selected = i; filter = 'All';
-  // Keep the lightweight HOME acrylic proxy while the Architecture model is moving. Switching to
-  // transmission before motion caused a second optical silhouette during the transition.
-  if (!(s === 'preview' && i === 1)) setArchitectureGlassDetail(false);
   if (s !== 'home') {
     hoveredModel = -1;
     setGlowTarget(glowTarget.x, glowTarget.y, glowTarget.z, 0, -1, spotAngleTarget, 0);
@@ -530,7 +494,11 @@ function bindSceneInput() {
     }
     if (bestIndex >= 0) navigate('preview', bestIndex);
   });
-  renderer.domElement.addEventListener('webglcontextlost', e => { e.preventDefault(); $('#failure').hidden = false; });
+  renderer.domElement.addEventListener('webglcontextlost', e => { e.preventDefault(); runtime.setPaused(true); $('#failure').hidden = false; });
+  renderer.domElement.addEventListener('webglcontextrestored', () => {
+    floorReflection.clear();glassCaptureReady=false;markStaticShadowsDirty();
+    $('#failure').hidden=true;runtime.setPaused(document.hidden);runtime.request(FRAME_RENDER|FRAME_REFLECTION|FRAME_CAPTURE);
+  });
   document.addEventListener('visibilitychange', () => {
     runtime.setPaused(document.hidden);
     if (!document.hidden) runtime.renderWithReflection();
@@ -559,6 +527,7 @@ async function loadTexture(loader, name, repeat = 1) {
 
 async function init() {
   try {
+    bindUI();
     initUIMotion();
     initSurfaceLightInteraction();
     renderer = new T.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
@@ -579,26 +548,25 @@ async function init() {
     pmrem.dispose();
 
     const loader = new T.TextureLoader();
-    const [deskMetalColor, deskMetalRough, deskMetalNormal, deskMetalMetalness, linen, paper, linenNormal, paperNormal, paperRough, print, writingPaperColor, writingPaperNormal, writingPaperRough, archMarbleNormal, archMetalColor, archMetalNormal, archMetalRough, archPlasticRough] = await Promise.all([
-      loadTexture(loader, 'desk-metal-color.png', 18), loadTexture(loader, 'desk-metal-roughness.png', 18), loadTexture(loader, 'desk-metal-normal.png', 18), loadTexture(loader, 'desk-metal-metalness.png', 18),
+    const [deskMetalNormal, linen, paper, linenNormal, paperNormal, paperRough, print, writingPaperColor, writingPaperNormal, writingPaperRough] = await Promise.all([
+      loadTexture(loader, 'desk-metal-normal.png', 18),
       loadTexture(loader, 'linen-bump.png', 3), loadTexture(loader, 'paper-bump.png', 2), loadTexture(loader, 'linen-normal.png', 3), loadTexture(loader, 'paper-normal.png', 2), loadTexture(loader, 'paper-rough.png', 2), loadTexture(loader, 'research-print.png'),
-      loadTexture(loader, 'writing-paper-color.png'), loadTexture(loader, 'writing-paper-normal.png'), loadTexture(loader, 'writing-paper-roughness.png'),
-      loadTexture(loader, 'arch-mineral-normal.png'), loadTexture(loader, 'arch-metal-color.jpg'), loadTexture(loader, 'arch-metal-normal.jpg'), loadTexture(loader, 'arch-metal-rough.jpg'), loadTexture(loader, 'arch-plastic-rough.jpg')
+      loadTexture(loader, 'writing-paper-color.png'), loadTexture(loader, 'writing-paper-normal.png'), loadTexture(loader, 'writing-paper-roughness.png')
     ]);
-    deskMetalColor.colorSpace = T.SRGBColorSpace; writingPaperColor.colorSpace = T.SRGBColorSpace; print.colorSpace = T.SRGBColorSpace; archMetalColor.colorSpace = T.SRGBColorSpace; print.anisotropy = 8;
+    writingPaperColor.colorSpace = T.SRGBColorSpace; print.colorSpace = T.SRGBColorSpace; print.anisotropy = 8;
     for (const t of [writingPaperColor, writingPaperNormal, writingPaperRough]) { t.repeat.set(1,1); t.offset.set(0,0); t.center.set(.5,.5); t.rotation = 0; t.needsUpdate = true; }
 
     const ground = new T.Mesh(new T.PlaneGeometry(200, 200), new T.MeshPhysicalMaterial({
-      color: 0xd9dddf, map: deskMetalColor, envMap: scene.environment, envMapIntensity: 1.28,
-      metalness: .92, metalnessMap: deskMetalMetalness, roughness: .52, roughnessMap: deskMetalRough,
-      normalMap: deskMetalNormal, normalScale: new T.Vector2(.075, .075), clearcoat: .022, clearcoatRoughness: .64,
-      anisotropy: .92, anisotropyRotation: 0
+      color: 0xbec6ca, envMap: scene.environment, envMapIntensity: 1.28,
+      metalness: .86, roughness: .48,
+      normalMap: deskMetalNormal, normalScale: new T.Vector2(.035, .035), clearcoat: .022, clearcoatRoughness: .64,
+      anisotropy: .55, anisotropyRotation: 0
     }));
     ground.rotation.x = -Math.PI / 2; ground.position.y = -.016; ground.receiveShadow = true; scene.add(ground);
 
     scene.add(new T.HemisphereLight(0xf9faf9, 0x8d969b, .29));
     keyLight = new T.DirectionalLight(0xfffdf8, .74); keyLight.position.set(-6.7, 10.2, 5.6); keyLight.castShadow = true; keyLight.shadow.mapSize.set(2048, 2048); Object.assign(keyLight.shadow.camera, { left: -8, right: 8, top: 6, bottom: -4, near: .1, far: 28 }); keyLight.shadow.bias = -.00008; keyLight.shadow.normalBias = .0048; keyLight.shadow.radius = 6.2; keyLight.shadow.blurSamples = 10; keyLight.shadow.autoUpdate = false; keyLight.shadow.needsUpdate = true; scene.add(keyLight);
-    keyCompanionLight = new T.DirectionalLight(0xf6f8f9, .22); keyCompanionLight.position.set(3.8, 7.6, 1.6); keyCompanionLight.castShadow = true; keyCompanionLight.shadow.mapSize.set(1024, 1024); Object.assign(keyCompanionLight.shadow.camera, { left: -7, right: 7, top: 5, bottom: -4, near: .1, far: 24 }); keyCompanionLight.shadow.bias = -.00008; keyCompanionLight.shadow.normalBias = .0046; keyCompanionLight.shadow.radius = 6.0; keyCompanionLight.shadow.blurSamples = 8; keyCompanionLight.shadow.autoUpdate = false; keyCompanionLight.shadow.needsUpdate = true; scene.add(keyCompanionLight);
+    keyCompanionLight = new T.DirectionalLight(0xf6f8f9, .22); keyCompanionLight.position.set(3.8, 7.6, 1.6); keyCompanionLight.castShadow = false; scene.add(keyCompanionLight);
     const fill = new T.DirectionalLight(0xeaf0f2, .18); fill.position.set(6.4, 6.4, -4.4); scene.add(fill);
 
     flashlightTarget = new T.Object3D(); scene.add(flashlightTarget);
@@ -619,45 +587,45 @@ async function init() {
     floorReflection.clear();
     runtime = createFrameRuntime(drawFrame);
     runtime.add(updateScene);
-    liquidHeader = createLiquidHeader({ renderer, camera, floorReflection, runtime, getBounds: getHomeHeaderScreenBounds });
+    liquidHeader = createLiquidHeader({ renderer, scene, camera, floorReflection, runtime, onMotion: markStaticShadowsDirty, getBounds: getHomeHeaderScreenBounds });
     liquidPanels = createLiquidPanels({ renderer, runtime });
 
     const [linenColor, linenRough, paperColor, steelRough] = await Promise.all([loadTexture(loader, 'linen-color.png', 3), loadTexture(loader, 'linen-rough.png', 3), loadTexture(loader, 'paper-color.png', 2), loadTexture(loader, 'steel-rough.png')]);
     for (const t of [linenColor, paperColor]) { t.colorSpace = T.SRGBColorSpace; t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy()); }
 
-    models = createModels({ linen, paper, print, linenNormal, paperNormal, paperRough, linenColor, linenRough, paperColor, steelRough, writingPaperColor, writingPaperNormal, writingPaperRough, archMarbleNormal, archMetalColor, archMetalNormal, archMetalRough, archPlasticRough });
+    models = createModels({ linen, paper, print, linenNormal, paperNormal, paperRough, linenColor, linenRough, paperColor, steelRough, writingPaperColor, writingPaperNormal, writingPaperRough });
     models.forEach((m, i) => {
       const f = HOME_TRANSFORMS[i]; m.scale.set(f[2], f[3], f[5]);
       const root = new T.Group(); root.add(m); root.position.set(f[0], 0, f[1]); root.rotation.y = f[4];
       if (i === 0 && m.userData.writingController) { writingController = m.userData.writingController; applyWritingMaterialReveal(writingController, 0); }
       models[i] = root; home.push({ x: f[0], z: f[1], r: f[4] }); scene.add(root);
     });
-    models.forEach((root,i)=>createContactShadow(root,i));
-    syncContactShadows();
-    floorReflection.setTransientObjects([flashlight, beamHalo, beamParticles, ...contactShadows]);
     homeHeaderBoxes = models.map(m => new T.Box3().setFromObject(m).clone());
-    // Unseen-style perceptual LOD: keep the acrylic/glass appearance on the HOME maquette without
-    // paying Three.js's full transmission prepass on every pointer frame. The true transmission
-    // materials are restored for the Architecture preview, where the optical detail is visible.
-    models[1].traverse(obj => {
-      if (!obj.isMesh || !obj.material || !(obj.material.transmission > 0)) return;
-      const detail = obj.material;
-      const homeMat = detail.clone();
-      homeMat.name = detail.name + ' · HOME optical proxy';
-      homeMat.transmission = 0;
-      homeMat.transparent = true;
-      homeMat.depthWrite = false;
-      if (/clear/i.test(detail.name)) homeMat.opacity = .22;
-      else if (/smoked/i.test(detail.name)) homeMat.opacity = .50;
-      else homeMat.opacity = .58;
-      obj.material = homeMat;
-      architectureGlassPairs.push({ mesh: obj, detail, home: homeMat });
-    });
-    architectureGlassDetailed = false;
     hoverProfiles = models.map(m => { const box = new T.Box3().setFromObject(m), center = new T.Vector3(), size = new T.Vector3(); box.getCenter(center); box.getSize(size); const horizontal = Math.max(size.x, size.z) * .54 + .18, approxDist = Math.max(4.7, 9.8 - center.y); return { x: center.x, y: center.y, z: center.z, angle: T.MathUtils.clamp(Math.atan(horizontal / approxDist) * 1.02, T.MathUtils.degToRad(4.9), T.MathUtils.degToRad(9.4)) }; });
     homeHitBoxes = models.map(m => new T.Box3().setFromObject(m).expandByScalar(.08));
 
-    bindUI(); bindSceneInput(); layout(false); readHash(false);
+    const [studioBake,bakedUV,contactLayout,...contactMaps] = await Promise.all([
+      loader.loadAsync('assets/architecture-studio-baked.jpg'),
+      fetch('assets/architecture-bake-uv.json').then(r=>{if(!r.ok)throw Error('Missing baked UV');return r.json();}),
+      fetch('assets/contact-ao-layout.json').then(r=>{if(!r.ok)throw Error('Missing contact layout');return r.json();}),
+      ...['writing','architecture','research'].map(n=>loader.loadAsync(`assets/${n}-contact-ao.png`))
+    ]);
+    studioBake.colorSpace=T.SRGBColorSpace;studioBake.channel=1;
+    studioBake.anisotropy=Math.min(16,renderer.capabilities.getMaxAnisotropy());
+    const studioMaterial=new T.MeshBasicMaterial({map:studioBake,color:0xffffff});
+    studioMaterial.name='Cycles baked handmade studio';
+    models[1].traverse(o=>{
+      if(!o.isMesh)return;
+      const uv=bakedUV[o.name];
+      if(o.geometry.index)o.geometry=o.geometry.toNonIndexed();
+      if(!uv || uv.length!==o.geometry.attributes.position.count*2)throw Error('Baked UV mismatch: '+o.name);
+      o.geometry.setAttribute('uv1',new T.Float32BufferAttribute(uv,2));
+      o.material.dispose();o.material=studioMaterial;o.receiveShadow=false;o.castShadow=true;
+    });
+    contactShadows=createContactShadows(scene,models,contactLayout,contactMaps,floorReflection);
+    floorReflection.setTransientObjects([flashlight,beamHalo,beamParticles,...contactShadows.meshes,...liquidHeader.transientObjects]);
+
+    bindSceneInput(); layout(false); readHash(false);
 
     // First settled frame: explicitly reset all transient beam state and clear reflection history
     // before any planar/glass capture. This prevents stale first-load or bfcache beam ghosts.
@@ -671,15 +639,7 @@ async function init() {
     runtime.renderWithReflection();
 
     document.fonts.ready.then(() => { liquidHeader?.syncLayout(); liquidPanels?.syncLayout(); glassCaptureReady = false; runtime.request(FRAME_RENDER | FRAME_REFLECTION | FRAME_CAPTURE); });
-    const idle = globalThis.requestIdleCallback || ((fn) => setTimeout(fn, 50));
-    idle(() => {
-      // Warm the expensive detailed Architecture transmission shaders off the critical interaction path.
-      const shouldBeDetailed = state === 'preview' && selected === 1;
-      if (!shouldBeDetailed) setArchitectureGlassDetail(true);
-      renderer.compile(scene, camera);
-      if (!shouldBeDetailed) setArchitectureGlassDetail(false);
-      runtime.request(FRAME_RENDER | FRAME_CAPTURE);
-    }, { timeout: 600 });
+
   } catch (e) {
     console.error(e);
     $('#failure').hidden = false;

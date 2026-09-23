@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Writing",
+    "file": "writing-contact-ao.png",
+    "width": 3.4598833417892454,
+    "depth": 4.034499893188476,
+    "x": -0.0175667405128479,
+    "z": 0.22124993801116943
+  },
+  {
+    "name": "Architecture",
+    "file": "architecture-contact-ao.png",
+    "width": 4.08099986076355,
+    "depth": 3.670999774932861,
+    "x": 0.0,
+    "z": -0.0
+  },
+  {
+    "name": "Research",
+    "file": "research-contact-ao.png",
+    "width": 3.769719371795654,
+    "depth": 3.835024366378784,
+    "x": 0.0,
+    "z": -0.0
+  }
+]

@@ -1,23 +1,11 @@
-# START HERE — Round 39
+# Round 41
 
-Current handoff target: the clean studio / physical-maquette direction.
+Start with `ROUND41_STUDIO_FINISH.md`. The current version uses real Cycles baked architectural lighting, individual geometry-derived AO, a scene-space clay sphere, and same-frame motion/reflection/shadows.
 
-Read in this order:
-1. `ROUND39_CLAY_AO_GHOST_FIX.md`
-2. `ROUND38_CERAMIC_STUDIO_LIGHTING.md`
-3. `ROUND30_UNSEEN_PERFORMANCE_AUDIT.md`
-4. `README.md`
-5. `dist/app.js`
-6. `dist/models.js`
-7. `dist/floor-reflection.js`
-8. `dist/liquid-header.js`
-9. `dist/frame-runtime.js`
+- Run: `npm run dev` (Node.js 18+), then open http://localhost:4173
+- Verify: `npm run check`
+- Deploy: contents of `dist/`, or use the separate DEPLOY ZIP whose root contains `index.html`.
+- Model evidence: `verification/architecture-web-material.png` (actual baked model, not a website screenshot).
+- Edit lights / rebuild: `scripts/architecture-studio-source.blend` and the bake scripts.
 
-Do not solve performance by removing the core visual system. The main Round 39 rules are:
-
-- no stale shadow/reflection state during spatial transitions;
-- Architecture uses matte fired-clay/mineral shading plus stable precomputed cavity AO;
-- detailed Architecture transmission is enabled only after the preview settles;
-- HOME sphere stays matte and physically grounded with a restrained intro bounce;
-- desk texture stays secondary to studio light, contact shadows and model material separation;
-- `dist/frame-runtime.js` remains the single frame owner.
+Earlier round documents are retained as history and do not override round41. Do not restore transmission proxy switching or staggered shadow/reflection updates.

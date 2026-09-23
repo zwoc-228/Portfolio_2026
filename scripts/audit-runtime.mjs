@@ -15,14 +15,14 @@ const result={
   customModules:rows,customRaf,nonRuntimeRaf,
   checks:{
     singleFrameDriver:nonRuntimeRaf===0,
-    gsapHook:fs.readFileSync('dist/index.html','utf8').includes('gsap@3.15.0'),
+    gsapHook:fs.readFileSync('dist/index.html','utf8').includes('assets/gsap.min.js'),
     screenSpaceGlass:fs.readFileSync('dist/liquid-panels.js','utf8').includes('FramebufferTexture'),
     fullEffectFloorRT:/const W=1024,H=576/.test(floor),
     reflectionPreblur:/blurA/.test(floor)&&/blurB/.test(floor)&&!floor.includes('for(int ix=-2;ix<=2;ix++)'),
     eventDrivenGlassCapture:app.includes('FRAME_CAPTURE')&&app.includes('glassCaptureReady'),
-    homeTransmissionLOD:app.includes('HOME optical proxy'),
+    stableBakedArchitecture:app.includes('Cycles baked handmade studio')&&!app.includes('setArchitectureGlassDetail'),
     coarseHitTesting:app.includes('intersectBox')&&!app.includes('intersectObjects(models, true)'),
-    staggeredShadowRefresh:app.includes('markKeyShadowDirty')&&app.includes('markCompanionShadowDirty')
+    synchronousShadowRefresh:app.includes('markStaticShadowsDirty')&&!app.includes('transitionFrame')&&!app.includes('hoverShadowTick')
   }
 };
 console.log(JSON.stringify(result,null,2));
