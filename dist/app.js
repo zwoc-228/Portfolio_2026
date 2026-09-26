@@ -474,11 +474,11 @@ async function init() {
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = T.VSMShadowMap;
     renderer.toneMapping = T.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.02;
+    renderer.toneMappingExposure = 1.14;
     $('#scene').append(renderer.domElement);
 
     scene = new T.Scene();
-    scene.background = new T.Color(0xd8dde0);
+    scene.background = new T.Color(0xdfe5e5);
     camera = new T.PerspectiveCamera(27, innerWidth / Math.max(1, innerHeight), .1, 200);
     // Size and aim the renderer before any runtime client can request a frame.  This
     // removes the old 300×150 default-canvas stretch that appeared as horizontal bands.
@@ -489,24 +489,24 @@ async function init() {
 
     const pmrem = new T.PMREMGenerator(renderer);
     scene.environment = pmrem.fromScene(createStudioEnvironment(), .04).texture;
-    scene.environmentIntensity = 1.05;
+    scene.environmentIntensity = 1.22;
     pmrem.dispose();
 
     const loader = new T.TextureLoader();
     const deskMetalNormal=await loadTexture(loader, 'desk-metal-normal.png',18);
 
     const ground = new T.Mesh(new T.PlaneGeometry(200, 200), new T.MeshPhysicalMaterial({
-      color: PALETTE.desk, envMap: scene.environment, envMapIntensity: 1.16,
-      metalness: .60, roughness: .60,
-      normalMap: deskMetalNormal, normalScale: new T.Vector2(.020, .020), clearcoat: .008, clearcoatRoughness: .64,
-      anisotropy: .34, anisotropyRotation: 0
+      color: PALETTE.desk, envMap: scene.environment, envMapIntensity: 1.32,
+      metalness: .76, roughness: .36,
+      normalMap: deskMetalNormal, normalScale: new T.Vector2(.011, .011), clearcoat: .036, clearcoatRoughness: .38,
+      anisotropy: .50, anisotropyRotation: 0
     }));
     ground.rotation.x = -Math.PI / 2; ground.position.y = -.016; ground.receiveShadow = true; scene.add(ground);
 
-    scene.add(new T.HemisphereLight(0xf9faf9, 0x8d969b, .29));
-    keyLight = new T.DirectionalLight(0xfffdf8, .74); keyLight.position.set(-6.7, 10.2, 5.6); keyLight.castShadow = true; keyLight.shadow.mapSize.set(2048, 2048); Object.assign(keyLight.shadow.camera, { left: -8, right: 8, top: 6, bottom: -4, near: .1, far: 28 }); keyLight.shadow.bias = -.00008; keyLight.shadow.normalBias = .0048; keyLight.shadow.radius = 6.2; keyLight.shadow.blurSamples = 10; keyLight.shadow.autoUpdate = false; keyLight.shadow.needsUpdate = true; scene.add(keyLight);
-    keyCompanionLight = new T.DirectionalLight(0xf6f8f9, .22); keyCompanionLight.position.set(3.8, 7.6, 1.6); keyCompanionLight.castShadow = false; scene.add(keyCompanionLight);
-    const fill = new T.DirectionalLight(0xeaf0f2, .18); fill.position.set(6.4, 6.4, -4.4); scene.add(fill);
+    scene.add(new T.HemisphereLight(0xfcfdfd, 0x95a0a5, .36));
+    keyLight = new T.DirectionalLight(0xfcfeff, .90); keyLight.position.set(-6.7, 10.2, 5.6); keyLight.castShadow = true; keyLight.shadow.mapSize.set(2048, 2048); Object.assign(keyLight.shadow.camera, { left: -8, right: 8, top: 6, bottom: -4, near: .1, far: 28 }); keyLight.shadow.bias = -.00008; keyLight.shadow.normalBias = .0048; keyLight.shadow.radius = 6.2; keyLight.shadow.blurSamples = 10; keyLight.shadow.autoUpdate = false; keyLight.shadow.needsUpdate = true; scene.add(keyLight);
+    keyCompanionLight = new T.DirectionalLight(0xf7fbfd, .28); keyCompanionLight.position.set(3.8, 7.6, 1.6); keyCompanionLight.castShadow = false; scene.add(keyCompanionLight);
+    const fill = new T.DirectionalLight(0xecf2f4, .24); fill.position.set(6.4, 6.4, -4.4); scene.add(fill);
 
     flashlightTarget = new T.Object3D(); scene.add(flashlightTarget);
     flashlight = new T.SpotLight(0xf6fbff, 0, 0, T.MathUtils.degToRad(2.0), .94, 0); flashlight.position.set(0, 9.8, 2.2); flashlight.target = flashlightTarget; flashlight.castShadow = false; scene.add(flashlight);
@@ -553,10 +553,38 @@ async function init() {
     models.forEach((root,i)=>{
       const atlas=atlases[i];atlas.colorSpace=T.SRGBColorSpace;atlas.channel=1;atlas.anisotropy=Math.min(16,renderer.capabilities.getMaxAnisotropy());
       const studioMaterial=new T.MeshBasicMaterial({map:atlas,color:0xffffff,side:T.DoubleSide});studioMaterial.name='Cycles baked handmade studio';
+      const useBakedAtlas=i===1;
       root.traverse(o=>{
         if(!o.isMesh)return;const uv=uvSets[i][o.name];if(o.geometry.index)o.geometry=o.geometry.toNonIndexed();
         if(!uv||uv.length!==o.geometry.attributes.position.count*2)throw Error('Baked UV mismatch: '+o.name);
-        o.geometry.setAttribute('uv1',new T.Float32BufferAttribute(uv,2));oldMaterials.add(o.material);o.material=studioMaterial;o.receiveShadow=false;o.castShadow=true;
+        o.geometry.setAttribute('uv1',new T.Float32BufferAttribute(uv,2));
+        o.receiveShadow=false;
+        // Thin paper layers are grounded by the baked AO/contact pass. Letting every
+        // 2–8 mm sheet cast VSM shadows produced the dark perimeter seams seen in R44.
+        // Keep shadows only on structural pieces and the metal clip.
+        if(i===0){
+          o.castShadow=/cover|spine|bookmark/i.test(o.name);
+        }else if(i===2){
+          o.castShadow=/paperclip/i.test(o.name);
+        }else{
+          o.castShadow=true;
+        }
+        if(useBakedAtlas){
+          oldMaterials.add(o.material);
+          o.material=studioMaterial;
+        }else{
+          if(Array.isArray(o.material)){
+            o.material=o.material.map(m=>{m.side=T.DoubleSide;m.envMap=scene.environment;m.envMapIntensity=.44;m.needsUpdate=true;return m;});
+          }else if(o.material){
+            o.material.side=T.DoubleSide;
+            o.material.envMap=scene.environment;
+            o.material.envMapIntensity=.50;
+            if(/paper|cover|sheet|gathering|clip|spine/i.test(o.name)){
+              o.material.roughness=Math.min(.90, (o.material.roughness ?? .7) + .025);
+            }
+            o.material.needsUpdate=true;
+          }
+        }
       });
     });
     oldMaterials.forEach(m=>m.dispose());

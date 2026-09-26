@@ -10,7 +10,7 @@ export function headerMetrics(width,progress){
 export function createLiquidHeader({scene,camera,floorReflection,runtime}){
  const el=document.querySelector('.site-header'),trigger=el.querySelector('.header-trigger'),links=el.querySelector('.header-links');
  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
- const material=new T.MeshPhysicalMaterial({color:PALETTE.surface,roughness:.74,metalness:0,clearcoat:.015,specularIntensity:.25});
+ const material=new T.MeshPhysicalMaterial({color:PALETTE.surface,roughness:.58,metalness:0,clearcoat:.035,clearcoatRoughness:.42,specularIntensity:.30});
  const proxy=new T.Mesh(new RoundedBoxGeometry(1,1,.035,3,.10),material);proxy.name='Navigation card reflection';proxy.visible=false;proxy.frustumCulled=false;scene.add(proxy);
  floorReflection.setPersistentReflectionOnlyObjects([proxy]);
  const ray=new T.Raycaster(),point=new T.Vector3(),view=new T.Vector3(),up=new T.Vector3();
@@ -23,7 +23,7 @@ export function createLiquidHeader({scene,camera,floorReflection,runtime}){
   const perPixel=-view.z*2*Math.tan(T.MathUtils.degToRad(camera.fov/2))/innerHeight;
   up.set(0,1,0).applyQuaternion(camera.quaternion);
   proxy.position.copy(point).addScaledVector(up,m.height*perPixel/2);proxy.quaternion.copy(camera.quaternion);proxy.scale.set(m.width*perPixel,m.height*perPixel,1);proxy.updateMatrixWorld(true);
-  floorReflection.setObjectFootprint(3,proxy.position.x,proxy.position.z,m.width*perPixel*.55,m.height*perPixel*.8,.78);
+  floorReflection.setObjectFootprint(3,proxy.position.x,proxy.position.z,m.width*perPixel*.64,m.height*perPixel*1.42,.90);
  }
  function apply(){
   const p=current*current*(3-2*current),m=headerMetrics(innerWidth,p);

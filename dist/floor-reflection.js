@@ -30,8 +30,8 @@ export function createFloorReflection(renderer,scene,ground){
   uniforms[`panel${i}Strength`]={value:0};
   uniforms[`panel${i}Hover`]={value:0};
  }
- // Three model footprints and the navigation sphere: keep desk reflections tight to the object footprint
- // so rough-metal reflections read like studio product shots rather than long foggy streaks.
+ // Three model footprints and the navigation card: use a broad, low-energy falloff so
+ // reflections extend away from the objects while retaining a grounded contact core.
  for(let i=0;i<4;i++){
   uniforms[`object${i}Center`]={value:new T.Vector2(0,0)};
   uniforms[`object${i}Radius`]={value:new T.Vector2(.55,.38)};
@@ -100,9 +100,9 @@ vec3 panelBoardReflection(){
 float panelBoardMask(){return clamp(panelBoardReflection().x,0.0,1.0);}
 float objectFootprint(vec2 center, vec2 radius, float strength){
  vec2 d=(vFloorWorldPosition.xz-center)/max(radius,vec2(.02));
- float ellipse=exp(-dot(d,d)*1.35);
- float core=exp(-dot(d,d)*4.8);
- return clamp((ellipse*.72+core*.28)*strength,0.0,1.0);
+ float ellipse=exp(-dot(d,d)*0.68);
+ float core=exp(-dot(d,d)*2.85);
+ return clamp((ellipse*.80+core*.20)*strength,0.0,1.0);
 }
 float reflectionFootprintMask(){
  return max(
@@ -124,10 +124,10 @@ float reflectionFootprintMask(){
   vec3 reflectedColor=reflected.rgb/max(reflected.a,.001);
   float reflectedLuma=dot(reflectedColor,vec3(.2126,.7152,.0722));
   reflectedColor=mix(vec3(reflectedLuma),reflectedColor,.22);
-  reflectedColor*=vec3(.90,.93,.96);
-  outgoingLight=mix(outgoingLight,reflectedColor,(.105+.155*footprint)*reflectedAlpha);
+  reflectedColor*=vec3(.925,.945,.965);
+  outgoingLight=mix(outgoingLight,reflectedColor,(.185+.285*footprint)*reflectedAlpha);
   float pointerGlow=clamp(floorGlowMask(),0.0,1.0);
-  outgoingLight += vec3(.022,.026,.031)*pointerGlow;
+  outgoingLight += vec3(.024,.029,.034)*pointerGlow;
   vec3 uiRef=uiGlassReflection(); float uiGlow=clamp(uiRef.x,0.0,1.0);
   float uiShadow=clamp(uiContactShadow(),0.0,1.0);
   outgoingLight*=1.0-uiShadow*.115;
@@ -138,11 +138,13 @@ float reflectionFootprintMask(){
   outgoingLight += vec3(.048,.058,.066)*panelRef.x + vec3(.125,.138,.148)*panelRef.y + vec3(.068,.080,.090)*panelRef.z;
   #include <opaque_fragment>`);
  };
- ground.material.customProgramCacheKey=()=> 'reference-floor-v15-physical-ui-proxies';
+ ground.material.customProgramCacheKey=()=> 'reference-floor-v17-long-neutral-metal-reflection';
  const color=new T.Color(),look=new T.Vector3();
  function blur(){
-  blurMat.uniforms.uMap.value=raw.texture;blurMat.uniforms.uDirection.value.set(1,0);renderer.setRenderTarget(blurA);renderer.clear();renderer.render(blurScene,blurCamera);
-  blurMat.uniforms.uMap.value=blurA.texture;blurMat.uniforms.uDirection.value.set(0,1);renderer.setRenderTarget(blurB);renderer.clear();renderer.render(blurScene,blurCamera);
+  blurMat.uniforms.uMap.value=raw.texture;blurMat.uniforms.uDirection.value.set(1.20,0);renderer.setRenderTarget(blurA);renderer.clear();renderer.render(blurScene,blurCamera);
+  // A longer vertical lobe gives the desk the low-angle product-photo reflection
+  // from the reference without turning the whole surface into a sharp mirror.
+  blurMat.uniforms.uMap.value=blurA.texture;blurMat.uniforms.uDirection.value.set(0,3.85);renderer.setRenderTarget(blurB);renderer.clear();renderer.render(blurScene,blurCamera);
  }
  function clear(){
   const old=renderer.getRenderTarget(),cc=new T.Color();renderer.getClearColor(cc);const ca=renderer.getClearAlpha();
