@@ -455,10 +455,37 @@ function navigate(s, i = selected, push = true) {
   if (push) history.pushState({ state, selected }, '', state === 'home' ? '#home' : '#' + names[i].toLowerCase() + '/' + state);
   startTransition();
 }
-function readHash(push = false) {
+function readHash(push = false, immediate = false) {
   const h = location.hash.slice(1).split('/');
   const i = names.findIndex(x => x.toLowerCase() === h[0]);
-  navigate(i >= 0 && ['preview', 'index'].includes(h[1]) ? h[1] : 'home', Math.max(0, i), push);
+  const nextState = i >= 0 && ['preview', 'index'].includes(h[1]) ? h[1] : 'home';
+  const nextSelected = Math.max(0, i);
+  if (!immediate) {
+    navigate(nextState, nextSelected, push);
+    return;
+  }
+
+  // Initial page load must not manufacture a transition from HOME to HOME.  The old
+  // route path started the frame runtime while textures/models were still settling,
+  // which exposed a stretched default WebGL frame before the real scene appeared.
+  hideProjectDetail();
+  state = nextState;
+  selected = nextSelected;
+  filter = 'All';
+  applyViewState({ state, selected, names, cats, statements, filter, onFilter: handleFilter });
+  drawIndex();
+  const targets = getTargets();
+  models.forEach((m, index) => {
+    const t = targets[index];
+    m.position.set(t.x, t.y, t.z);
+    m.scale.setScalar(t.s);
+    m.rotation.y = t.r;
+  });
+  if (writingController) applyWritingMaterialReveal(writingController, writingRevealTarget());
+  document.body.classList.remove('is-transitioning');
+  transition = null;
+  syncContactShadows();
+  if (push) history.pushState({ state, selected }, '', state === 'home' ? '#home' : '#' + names[selected].toLowerCase() + '/' + state);
 }
 
 function bindUI() {
@@ -556,7 +583,13 @@ async function init() {
 
     scene = new T.Scene();
     scene.background = new T.Color(0xd8dde0);
-    camera = new T.PerspectiveCamera(27, 1, .1, 200);
+    camera = new T.PerspectiveCamera(27, innerWidth / Math.max(1, innerHeight), .1, 200);
+    // Size and aim the renderer before any runtime client can request a frame.  This
+    // removes the old 300×150 default-canvas stretch that appeared as horizontal bands.
+    renderer.setSize(innerWidth, innerHeight, false);
+    camera.position.set(0, 9, 13);
+    camera.lookAt(0, .35, 0);
+    camera.updateProjectionMatrix();
 
     const pmrem = new T.PMREMGenerator(renderer);
     scene.environment = pmrem.fromScene(createStudioEnvironment(), .04).texture;
@@ -642,23 +675,38 @@ async function init() {
     contactShadows=createContactShadows(scene,models,contactLayout,contactMaps,floorReflection);
     floorReflection.setTransientObjects([flashlight,beamHalo,beamParticles,...contactShadows.meshes,...liquidHeader.transientObjects]);
 
-    bindSceneInput(); layout(false); readHash(false);
+    bindSceneInput();
+    layout(false);
+    readHash(false, true);
+
+    // Wait for the local display fonts before exposing the first frame so header/label
+    // measurements cannot shift after the scene is visible.
+    try { await document.fonts.ready; } catch {}
+    liquidHeader?.syncLayout();
+    liquidPanels?.syncLayout();
+    syncHomeLabelsToObjects();
+    syncPanelFloorReflection();
 
     // First settled frame: explicitly reset all transient beam state and clear reflection history
     // before any planar/glass capture. This prevents stale first-load or bfcache beam ghosts.
     resetTransientLighting();
     floorReflection.clear();
-    // Trionn-style warm-up: compile shaders and upload resources before the first settled interaction.
     renderer.compile(scene, camera);
     markStaticShadowsDirty();
-    floorReflection.update(camera);
-    drawFrame({ reflection: false });
-    runtime.renderWithReflection();
+    glassCaptureReady = false;
+    drawFrame({ reflection: true, capture: true });
 
-    document.fonts.ready.then(() => { liquidHeader?.syncLayout(); liquidPanels?.syncLayout(); glassCaptureReady = false; runtime.request(FRAME_RENDER | FRAME_REFLECTION | FRAME_CAPTURE); });
+    // Only now allow the orb animation/runtime to start.  The boot curtain remains for two
+    // RAFs, so the user never sees shader compilation, empty labels, or the default canvas.
+    document.documentElement.dataset.sceneReady = 'true';
+    runtime.request(FRAME_RENDER | FRAME_REFLECTION | FRAME_CAPTURE | FRAME_ACTIVE);
+    setTimeout(() => {
+      document.documentElement.dataset.boot = 'ready';
+    }, reduced ? 0 : 36);
 
   } catch (e) {
     console.error(e);
+    document.documentElement.dataset.boot = 'ready';
     $('#failure').hidden = false;
     try { readHash(false); } catch {}
   }

@@ -10,3 +10,19 @@ main,header,footer,dialog,#failure{position:relative;z-index:2}
 #failure{position:fixed;left:50%;top:50%;translate:-50% -50%;max-width:520px;padding:16px 20px;border-radius:18px;background:rgba(20,25,29,.72);color:#fff;text-align:center}
 [hidden]{display:none!important}
 .rule{display:block;width:20px;height:1px;background:currentColor;opacity:.48}
+
+/* Stable boot curtain: hide all intermediate WebGL/default-canvas frames until the
+   final camera, models, baked assets, fonts and floor reflection have been prepared. */
+html[data-boot="loading"] body::before,
+html[data-boot="ready"] body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  pointer-events:none;
+  background:#707b81;
+  opacity:1;
+  transition:opacity .20s ease;
+}
+html[data-boot="ready"] body::before{opacity:0}
+@media(prefers-reduced-motion:reduce){html[data-boot="ready"] body::before{transition:none}}

@@ -1,5 +1,6 @@
 import * as T from './assets/three.module.js';
-import { createClayOrb } from './clay-orb.js';
+import { createClayOrb, createPorcelainMaterial } from './clay-orb.js';
+import { RoundedBoxGeometry } from './assets/RoundedBoxGeometry.js';
 import { FRAME_ACTIVE, FRAME_RENDER, FRAME_REFLECTION, FRAME_CAPTURE } from './frame-runtime.js';
 
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -91,25 +92,29 @@ void main(){
   float edge = 1.0 - h;
   float fresnel = pow(clamp(1.0-normal.z,0.0,1.0),3.0);
   float rim = smoothstep(0.62,1.0,edge);
-  vec3 lightA = normalize(vec3(-0.46,0.72,0.52));
-  vec3 lightB = normalize(vec3(0.62,-0.16,0.52));
+  vec3 lightA = normalize(vec3(-0.48,0.73,0.49));
+  vec3 lightB = normalize(vec3(0.58,-0.12,0.60));
   vec3 viewDir = vec3(0.0,0.0,1.0);
-  float specA = pow(max(dot(reflect(-lightA,normal),viewDir),0.0),22.0);
-  float specB = pow(max(dot(reflect(-lightB,normal),viewDir),0.0),14.0);
-  float topLight = smoothstep(.08,.92,normal.y);
-  float bottomShade = smoothstep(.02,.95,-normal.y);
+  // Two-lobe glaze approximation: a tight clear-coat highlight over a broad ceramic body.
+  float coatA = pow(max(dot(reflect(-lightA,normal),viewDir),0.0),58.0);
+  float coatB = pow(max(dot(reflect(-lightB,normal),viewDir),0.0),34.0);
+  float bodyA = pow(max(dot(reflect(-lightA,normal),viewDir),0.0),12.0);
+  float topLight = smoothstep(.04,.94,normal.y);
+  float bottomShade = smoothstep(.02,.96,-normal.y);
   float lens = mix(sphereThickness,h,progress);
 
-  // The same warm ivory and broad glints used by the navigation cards.
-  vec3 ceramic = mix(vec3(.865,.883,.889),vec3(.976,.980,.977),clamp(topLight*.56 + lens*.22,0.0,1.0));
-  ceramic -= vec3(.043,.046,.044) * bottomShade;
-  ceramic += vec3(1.0) * (specA*.060 + specB*.026);
-  ceramic += vec3(.91,.94,.94) * (fresnel*.032 + rim*.026);
-  ceramic += vec3(1.0) * motion * rim * .006;
+  // Match createPorcelainMaterial(): warm ivory, moderate roughness, restrained clear-coat.
+  vec3 ceramic = vec3(.944,.938,.910);
+  ceramic *= mix(.925,1.055,clamp(topLight*.58 + lens*.20,0.0,1.0));
+  ceramic -= vec3(.036,.034,.030) * bottomShade;
+  ceramic += vec3(1.0) * (coatA*.105 + coatB*.040 + bodyA*.030);
+  ceramic += vec3(.965,.972,.970) * (fresnel*.028 + rim*.020);
+  ceramic += vec3(1.0) * motion * rim * .004;
 
-  float sceneMix = mix(.012,.012,progress);
+  // Only a trace of the captured scene remains; this is glazed porcelain, not glass.
+  float sceneMix = .010;
   vec3 color = mix(ceramic,softScene,sceneMix);
-  color *= mix(vec3(1.0),uTint,.013);
+  color *= mix(vec3(1.0),uTint,.006);
 
   float bodyAlpha = 1.0;
   float outAlpha = alpha * (bodyAlpha + rim*.025 + fresnel*.018) * smoothstep(.015,.14,uProgress);
@@ -167,6 +172,55 @@ export function createLiquidHeader({ renderer, scene, camera, floorReflection, r
   const floorPlane=new T.Plane(new T.Vector3(0,1,0),.014);
   const hitL=new T.Vector3(), hitR=new T.Vector3(), hitC=new T.Vector3();
 
+  // The visible header is a screen-space morph, but its desk interaction is generated
+  // by a real reflection-only ceramic slab.  It shares the exact porcelain PBR material
+  // with the orb and is only enabled inside the mirror-camera pass.
+  const headerReflectionMaterial=createPorcelainMaterial({
+    transparent:true,opacity:0,depthWrite:false,side:T.DoubleSide
+  });
+  headerReflectionMaterial.name='Header porcelain reflection material';
+  const headerReflection=new T.Mesh(new RoundedBoxGeometry(1,1,.055,4,.10),headerReflectionMaterial);
+  headerReflection.name='Header porcelain reflection proxy';
+  headerReflection.visible=false;
+  headerReflection.frustumCulled=false;
+  scene.add(headerReflection);
+  floorReflection?.setPersistentReflectionOnlyObjects?.([headerReflection]);
+  const proxyBottom=new T.Vector3(),proxyView=new T.Vector3(),proxyUp=new T.Vector3(),proxyForward=new T.Vector3();
+  const proxyQuaternion=new T.Quaternion();
+
+  function syncHeaderReflectionProxy(progress){
+    const fade=T.MathUtils.smoothstep(progress,.035,.18);
+    headerReflectionMaterial.opacity=fade*.94;
+    if(fade<=.001){
+      floorReflection?.setObjectFootprint?.(3,orb.sphere.position.x,orb.sphere.position.z,Math.max(.05,orb.sphere.scale.x*2),Math.max(.05,orb.sphere.scale.z*2),orb.sphere.material.opacity);
+      return;
+    }
+    camera.updateMatrixWorld(true);
+    const x=currentCenterX;
+    const y=Math.min(cssH-2,headerTop+currentHeight);
+    pointerNDC.set(x/cssW*2-1,1-y/cssH*2);
+    raycaster.setFromCamera(pointerNDC,camera);
+    const bottomHeight=.19;
+    if(Math.abs(raycaster.ray.direction.y)<1e-5)return;
+    const t=(bottomHeight-raycaster.ray.origin.y)/raycaster.ray.direction.y;
+    if(!Number.isFinite(t)||t<=.01)return;
+    proxyBottom.copy(raycaster.ray.origin).addScaledVector(raycaster.ray.direction,t);
+    proxyView.copy(proxyBottom).applyMatrix4(camera.matrixWorldInverse);
+    const depth=-proxyView.z;
+    if(!Number.isFinite(depth)||depth<=.1)return;
+    const worldPerPx=2*depth*Math.tan(T.MathUtils.degToRad(camera.fov*.5))/cssH;
+    const worldW=currentWidth*worldPerPx;
+    const worldH=currentHeight*worldPerPx;
+    proxyQuaternion.copy(camera.quaternion);
+    proxyUp.set(0,1,0).applyQuaternion(proxyQuaternion).normalize();
+    proxyForward.set(0,0,-1).applyQuaternion(proxyQuaternion).normalize();
+    headerReflection.position.copy(proxyBottom).addScaledVector(proxyUp,worldH*.5).addScaledVector(proxyForward,.014);
+    headerReflection.quaternion.copy(proxyQuaternion);
+    headerReflection.scale.set(worldW,worldH,1);
+    headerReflection.updateMatrixWorld(true);
+    floorReflection?.setObjectFootprint?.(3,headerReflection.position.x,headerReflection.position.z,Math.max(.08,worldW*.52),Math.max(.11,worldH*.62),fade);
+  }
+
   function resolveExpandedBounds(){
     const b=getBounds?.();
     const viewportMax=Math.max(520,cssW-64);
@@ -221,21 +275,10 @@ export function createLiquidHeader({ renderer, scene, camera, floorReflection, r
   }
 
   function updateDeskFeedback(progress){
-    if(!floorReflection?.setUICaustic)return;
-    const top=headerTop;
-    const y=top+currentHeight+7;
-    const half=currentWidth*.49;
-    const cx=currentCenterX;
-    const l=screenRayToFloor(cx-half,y,hitL);
-    const r=screenRayToFloor(cx+half,y,hitR);
-    const c=screenRayToFloor(cx,y,hitC);
-    if(!l||!r||!c){floorReflection.setUICaustic(0,0,1,0,0,1,0,progress);return;}
-    const dx=r.x-l.x,dz=r.z-l.z,len=Math.max(.05,Math.hypot(dx,dz));
-    const ax=dx/len,az=dz/len;
-    const width=Math.max(.11,.135+.050*progress);
-    const strength=.08*progress;
-    const shadowContact=0;
-    floorReflection.setUICaustic(c.x,c.z,ax,az,len*.50,width,strength,progress,shadowContact);
+    // Do not paint a screen-space glare onto the desk.  The header's floor response
+    // comes from headerReflection through the same mirror camera + blur used by objects.
+    floorReflection?.setUICaustic?.(0,0,1,0,0,.18,0,progress,0);
+    syncHeaderReflectionProxy(progress);
   }
 
   function updateCaptureMapping(){
@@ -256,13 +299,17 @@ export function createLiquidHeader({ renderer, scene, camera, floorReflection, r
     const p=smooth(progress);
     const bounds=resolveExpandedBounds();
     currentWidth=T.MathUtils.lerp(44,bounds.width,p);
-    currentHeight=T.MathUtils.lerp(44,56,p);
+    currentHeight=T.MathUtils.lerp(44,52,p);
     currentCenterX=T.MathUtils.lerp(cssW*.5,bounds.center,p);
     currentLeft=currentCenterX-currentWidth*.5;
 
-    orbState=orb.update({dt,width:cssW,height:cssH,x:currentCenterX,y:42,progress:p,ready:document.documentElement.dataset.sceneReady==='true'});
-    floorReflection?.setObjectFootprint(3,orb.sphere.position.x,orb.sphere.position.z,orb.sphere.scale.x*2,orb.sphere.scale.z*2,orb.sphere.material.opacity);
-    headerTop=T.MathUtils.lerp(orbState.top,20,p);
+    const anchorY=42;
+    orbState=orb.update({dt,width:cssW,height:cssH,x:currentCenterX,y:anchorY,progress:p,ready:document.documentElement.dataset.sceneReady==='true'});
+    // Grow from the sphere's actual projected center.  Do not drift the bar downward
+    // during expansion: the ball and the header now share one screen-space anchor.
+    const orbCenterY=orbState.top+22;
+    const centerY=T.MathUtils.lerp(orbCenterY,anchorY,T.MathUtils.smoothstep(p,.02,.18));
+    headerTop=centerY-currentHeight*.5;
     mesh.visible=p>.001;
     mesh.scale.set(currentWidth,currentHeight,1);
     mesh.position.set(currentCenterX-cssW*.5,cssH/2-headerTop-currentHeight/2,0);
@@ -339,6 +386,8 @@ export function createLiquidHeader({ renderer, scene, camera, floorReflection, r
       orb.dispose();removeRuntime();clearTimeout(collapseTimer);
       headerEl.removeEventListener('pointerenter',onEnter);headerEl.removeEventListener('pointerleave',onLeave);
       headerEl.removeEventListener('focusin',onFocusIn);headerEl.removeEventListener('focusout',onFocusOut);
+      floorReflection?.setPersistentReflectionOnlyObjects?.([]);
+      headerReflection.removeFromParent();headerReflection.geometry.dispose();headerReflectionMaterial.dispose();
       mesh.geometry.dispose();material.dispose();capture.dispose();
     }
   };

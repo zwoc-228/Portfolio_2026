@@ -3,8 +3,8 @@ import {RoundedBoxGeometry} from './assets/RoundedBoxGeometry.js';
 export function createModels(textures={}){
 const mat=(name,color,roughness=0.7,metalness=0,extra={})=>{let m=new T.MeshPhysicalMaterial({color,roughness,metalness,...Object.fromEntries(Object.entries(extra).filter(([k,v])=>v!==undefined))});m.name=name;return m;};
 const linen=mat('Linen',0xeeeae2,.78,0,{map:textures.linenColor,roughnessMap:textures.linenRough,normalMap:textures.linenNormal,bumpMap:textures.linen,bumpScale:.0010,normalScale:new T.Vector2(.16,.16),sheen:.12,sheenColor:new T.Color(0xf0ece4),sheenRoughness:.86,clearcoat:.010,clearcoatRoughness:.92,specularIntensity:.26});
-const paper=mat('Paper',0xf0ede5,.82,0,{map:textures.paperColor,roughnessMap:textures.paperRough,normalMap:textures.paperNormal,bumpMap:textures.paper,bumpScale:.00024,normalScale:new T.Vector2(.10,.10),ior:1.38,specularIntensity:.25,sheen:.025,sheenColor:new T.Color(0xf7f4ed),sheenRoughness:.92});
-const edge=mat('Page edges',0xe0dbd1,.86,0,{map:textures.paperColor,roughnessMap:textures.paperRough,normalMap:textures.paperNormal,bumpMap:textures.paper,bumpScale:.00013,normalScale:new T.Vector2(.065,.065),ior:1.37,specularIntensity:.22});
+const paper=mat('Paper',0xf3f1eb,.80,0,{roughnessMap:textures.paperRough,normalMap:textures.paperNormal,bumpMap:textures.paper,bumpScale:.00020,normalScale:new T.Vector2(.085,.085),ior:1.38,specularIntensity:.29,sheen:.020,sheenColor:new T.Color(0xf8f6f0),sheenRoughness:.90,envMapIntensity:1.14});
+const edge=mat('Page edges',0xe9e6df,.84,0,{roughnessMap:textures.paperRough,normalMap:textures.paperNormal,bumpMap:textures.paper,bumpScale:.00011,normalScale:new T.Vector2(.055,.055),ior:1.37,specularIntensity:.24,envMapIntensity:1.12});
 // Opaque cast resin retains volume on both views without a transmission material swap.
 const glass=mat('Pale cast resin',0xcbd9d7,.40,0,{ior:1.42,specularIntensity:.32,clearcoat:.01});
 const frosted=mat('Chalk resin',0xe0e4df,.70,0,{specularIntensity:.25});
@@ -36,14 +36,14 @@ function revealableMaterial(name,opts,closed,opened){
  return m;
 }
 const writingCover=revealableMaterial('Writing cover cloth',{
- color:0xf2efe8,map:writingClothColor,roughness:.78,roughnessMap:writingClothRough,metalness:0,normalMap:writingClothNormal,normalScale:new T.Vector2(.042,.042),sheen:.11,sheenColor:new T.Color(0xf2eee7),sheenRoughness:.78,clearcoat:.012,clearcoatRoughness:.90,specularIntensity:.25
- },{color:0xf0ede6,roughness:.82,normalScale:[.034,.034],sheen:.075,clearcoat:.01},{color:0xe9e5dd,roughness:.77,normalScale:[.12,.12],sheen:.14,clearcoat:.014});
+ color:0xf1f0ea,roughness:.76,roughnessMap:writingClothRough,metalness:0,normalMap:writingClothNormal,normalScale:new T.Vector2(.060,.060),sheen:.095,sheenColor:new T.Color(0xf5f2ec),sheenRoughness:.82,clearcoat:.010,clearcoatRoughness:.90,specularIntensity:.29,envMapIntensity:1.14
+ },{color:0xf1f0ea,roughness:.79,normalScale:[.050,.050],sheen:.080,clearcoat:.01},{color:0xedeae3,roughness:.76,normalScale:[.105,.105],sheen:.12,clearcoat:.012});
 const writingPaper=revealableMaterial('Writing paper',{
- color:0xf4f1ea,map:textures.writingPaperColor,roughness:.86,roughnessMap:textures.writingPaperRough,metalness:0,normalMap:textures.writingPaperNormal,normalScale:new T.Vector2(.035,.035),ior:1.38,specularIntensity:.23
- },{color:0xf2efe8,roughness:.89,normalScale:[.026,.026]},{color:0xeee9df,roughness:.86,normalScale:[.13,.13]});
+ color:0xf4f2ed,roughness:.82,roughnessMap:textures.writingPaperRough,metalness:0,normalMap:textures.writingPaperNormal,normalScale:new T.Vector2(.050,.050),ior:1.38,specularIntensity:.28,envMapIntensity:1.14
+ },{color:0xf4f2ed,roughness:.85,normalScale:[.040,.040]},{color:0xefebe4,roughness:.82,normalScale:[.110,.110]});
 const writingPageEdge=revealableMaterial('Writing page edge',{
- color:0xe9e4da,map:textures.writingPaperColor,roughness:.90,roughnessMap:textures.writingPaperRough,metalness:0,normalMap:textures.writingPaperNormal,normalScale:new T.Vector2(.026,.026),ior:1.37,specularIntensity:.20
- },{color:0xe9e4da,roughness:.92,normalScale:[.020,.020]},{color:0xe5dfd4,roughness:.89,normalScale:[.095,.095]});
+ color:0xeae7df,roughness:.86,roughnessMap:textures.writingPaperRough,metalness:0,normalMap:textures.writingPaperNormal,normalScale:new T.Vector2(.038,.038),ior:1.37,specularIntensity:.24,envMapIntensity:1.12
+ },{color:0xeae7df,roughness:.88,normalScale:[.030,.030]},{color:0xe6e2da,roughness:.85,normalScale:[.085,.085]});
 const writingElastic=mat('Writing elastic',0xd9d6cf,.77,0,{normalMap:textures.writingPaperNormal,normalScale:new T.Vector2(.018,.018),specularIntensity:.22});
 
 const lowerCover=box(writing,'Lower linen cover',2.55,.048,3.20,0,.035,0,writingCover,.024);

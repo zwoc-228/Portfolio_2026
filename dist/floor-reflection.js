@@ -39,6 +39,7 @@ export function createFloorReflection(renderer,scene,ground){
  }
  let transientObjects=[];
  let reflectionOnlyObjects=[];
+ let persistentReflectionOnlyObjects=[];
 
  const blurScene=new T.Scene();const blurCamera=new T.OrthographicCamera(-1,1,1,-1,0,1);
  const blurMat=new T.ShaderMaterial({toneMapped:false,depthTest:false,depthWrite:false,uniforms:{uMap:{value:raw.texture},uTexel:{value:new T.Vector2(1/W,1/H)},uDirection:{value:new T.Vector2(1,0)}},vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}`,fragmentShader:`precision highp float;uniform sampler2D uMap;uniform vec2 uTexel;uniform vec2 uDirection;varying vec2 vUv;void main(){vec2 d=uTexel*uDirection*1.05;vec4 c=texture2D(uMap,vUv)*.227027; c+=(texture2D(uMap,vUv+d)+texture2D(uMap,vUv-d))*.194595; c+=(texture2D(uMap,vUv+d*2.)+texture2D(uMap,vUv-d*2.))*.121622; c+=(texture2D(uMap,vUv+d*3.)+texture2D(uMap,vUv-d*3.))*.054054; c+=(texture2D(uMap,vUv+d*4.)+texture2D(uMap,vUv-d*4.))*.016216;gl_FragColor=c;}`});
@@ -174,6 +175,7 @@ float reflectionFootprintMask(){
   clearObjectFootprints(){for(let i=0;i<4;i++)setObject(i,0,0,.55,.38,0);},
   setTransientObjects(objects=[]){transientObjects=objects.filter(Boolean);},
   setReflectionOnlyObjects(objects=[]){reflectionOnlyObjects=objects.filter(Boolean);},
+  setPersistentReflectionOnlyObjects(objects=[]){persistentReflectionOnlyObjects=objects.filter(Boolean);},
   clear,
   update(camera){
    mirror.copy(camera);mirror.position.y=2*ground.position.y-camera.position.y;
@@ -182,7 +184,8 @@ float reflectionFootprintMask(){
    matrix.copy(bias).multiply(mirror.projectionMatrix).multiply(mirror.matrixWorldInverse);
    const old=renderer.getRenderTarget(),background=scene.background;renderer.getClearColor(color);const alpha=renderer.getClearAlpha();
    const transientState=transientObjects.map(obj=>({obj,visible:obj.visible,intensity:typeof obj.intensity==='number'?obj.intensity:null}));
-   const reflectionOnlyState=reflectionOnlyObjects.map(obj=>({obj,visible:obj.visible}));
+   const allReflectionOnly=[...new Set([...persistentReflectionOnlyObjects,...reflectionOnlyObjects])];
+   const reflectionOnlyState=allReflectionOnly.map(obj=>({obj,visible:obj.visible}));
    const groundVisible=ground.visible;
    try {
     for(const item of transientState){item.obj.visible=false;if(item.intensity!==null)item.obj.intensity=0;}

@@ -18,22 +18,27 @@ export function createBounce(reduced=false) {
  }};
 }
 
-export function createClayOrb(scene,camera,{reducedMotion=false}={}) {
- const sphereMaterial=new T.MeshPhysicalMaterial({
-  // Glazed porcelain: a warm ceramic body with a tight clear-coat lobe.
-  // Keep this materially distinct from glass: no transmission, only surface glaze.
-  color:0xf0efe8,
-  roughness:.32,
+export function createPorcelainMaterial(overrides={}) {
+ const material=new T.MeshPhysicalMaterial({
+  // Shared navigation porcelain.  The orb and the expanded header reflection proxy
+  // use this exact material so the transition does not jump between two finishes.
+  color:0xf2f0e8,
+  roughness:.30,
   metalness:0,
-  clearcoat:.78,
-  clearcoatRoughness:.16,
-  ior:1.51,
-  specularIntensity:.72,
+  clearcoat:.72,
+  clearcoatRoughness:.18,
+  ior:1.50,
+  specularIntensity:.66,
   specularColor:new T.Color(0xffffff),
-  envMapIntensity:1.16,
-  transparent:true,
-  opacity:1
+  envMapIntensity:1.08,
+  ...overrides
  });
+ material.name='Shared glazed porcelain';
+ return material;
+}
+
+export function createClayOrb(scene,camera,{reducedMotion=false}={}) {
+ const sphereMaterial=createPorcelainMaterial({transparent:true,opacity:1});
  const sphere=new T.Mesh(new T.SphereGeometry(1,64,48),sphereMaterial);
  sphere.name='Glazed porcelain navigation sphere';sphere.castShadow=true;sphere.receiveShadow=true;scene.add(sphere);
  const shadow=new T.Mesh(new T.PlaneGeometry(1,1),new T.ShaderMaterial({
