@@ -44,21 +44,36 @@ def light(name,loc,power,size,color):
  d=bpy.data.lights.new(name,'AREA');d.energy=power;d.shape='DISK';d.size=size;d.color=color
  o=bpy.data.objects.new(name,d);bpy.context.collection.objects.link(o);o.location=loc;o.rotation_euler=(-o.location).to_track_quat('-Z','Y').to_euler()
 light('Large warm softbox',(-3.5,-4,6),440,5,(1,.95,.88));light('Cool bounce',(4,-1,3.6),170,4.5,(.84,.92,1));light('Ceiling diffusion',(0,3.5,6),240,5,(1,1,1))
-bpy.ops.mesh.primitive_plane_add(size=200,location=(0,0,-.016));desk=bpy.context.object;desk.name='Studio desk';desk.data.materials.append(material('Quiet silver',(.46,.50,.52),.48,.40))
-visible_group('Architecture');arch=groups['Architecture'];select(arch)
-bpy.ops.object.mode_set(mode='EDIT');bpy.ops.mesh.select_all(action='SELECT');bpy.ops.uv.smart_project(angle_limit=math.radians(66),island_margin=.012);bpy.ops.object.mode_set(mode='OBJECT')
-uvs={}
-for ob in arch:
- uv=ob.data.uv_layers.active.data
- uvs[ob.name]=[v for poly in ob.data.polygons for li in poly.loop_indices for v in uv[li].uv]
-(ASSETS/'architecture-bake-uv.json').write_text(json.dumps(uvs,separators=(',',':')))
-image=bpy.data.images.new('Architecture studio lighting',width=2048,height=2048,alpha=False);image.colorspace_settings.name='sRGB'
-for ob in arch:
- for m in ob.data.materials:
-  nodes=m.node_tree.nodes;n=nodes.new('ShaderNodeTexImage');n.image=image;nodes.active=n
-s.render.bake.margin=16;s.render.bake.use_clear=False
-bpy.ops.object.bake(type='COMBINED')
-image.filepath_raw=str(ASSETS/'architecture-studio-baked.png');image.file_format='PNG';image.save()
+bpy.ops.mesh.primitive_plane_add(size=200,location=(0,0,-.016));desk=bpy.context.object;desk.name='Studio desk';desk.data.materials.append(material('Quiet silver',(.64,.67,.65),.56,.42))
+# Unwrap exact runtime meshes, then join temporary duplicates to bake each atlas in one pass.
+for name,objects in groups.items():
+ visible_group(name);select(objects)
+ bpy.ops.object.mode_set(mode='EDIT');bpy.ops.mesh.select_all(action='SELECT');bpy.ops.uv.smart_project(angle_limit=math.radians(66),margin_method='FRACTION' if name=='Writing' else 'SCALED',island_margin=.008 if name=='Writing' else .012);bpy.ops.object.mode_set(mode='OBJECT')
+ uvs={}
+ for ob in objects:
+  uv=ob.data.uv_layers.active.data
+  uvs[ob.name]=[round(v,6) for poly in ob.data.polygons for li in poly.loop_indices for v in uv[li].uv]
+ (ASSETS/(name.lower()+'-bake-uv.json')).write_text(json.dumps(uvs,separators=(',',':')))
+ size=4096 if name=='Writing' else 2048
+ image=bpy.data.images.new(name+' studio lighting',width=size,height=size,alpha=False);image.colorspace_settings.name='sRGB'
+ for ob in objects:
+  for m in ob.data.materials:
+   nodes=m.node_tree.nodes
+   if not any(n.type=='TEX_IMAGE' and n.image==image for n in nodes):
+    n=nodes.new('ShaderNodeTexImage');n.image=image;nodes.active=n
+ duplicates=[]
+ for ob in objects:
+  duplicate=ob.copy();duplicate.data=ob.data.copy();bpy.context.collection.objects.link(duplicate);duplicates.append(duplicate)
+  ob.hide_render=True;ob.hide_set(True)
+ select(duplicates);bpy.ops.object.join();combined=bpy.context.object
+ s.render.bake.margin=8 if name=='Writing' else 12;s.render.bake.use_clear=True
+ s.cycles.samples=96 if name=='Writing' else 48
+ if name=='Writing':bpy.ops.object.bake(type='DIFFUSE',pass_filter={'COLOR','DIRECT','INDIRECT'})
+ else:bpy.ops.object.bake(type='COMBINED')
+ image.filepath_raw=str(ASSETS/(name.lower()+'-studio-baked.png'));image.file_format='PNG';image.save()
+ bpy.data.objects.remove(combined,do_unlink=True)
+ visible_group(name)
+ print('ATLAS_COMPLETE',name,flush=True)
 # Ground-contact AO for all three actual model silhouettes.
 desk.hide_render=True;layout=[]
 for name,objects in groups.items():
@@ -75,6 +90,9 @@ for name,objects in groups.items():
 visible_group('Architecture');desk.hide_render=False
 bpy.ops.object.camera_add(location=(4.6,-6.5,4.2));camera=bpy.context.object;camera.rotation_euler=(Vector((0,0,.38))-camera.location).to_track_quat('-Z','Y').to_euler();camera.data.type='ORTHO';camera.data.ortho_scale=5.4;s.camera=camera
 s.render.resolution_x=1100;s.render.resolution_y=850;s.render.resolution_percentage=100
-bpy.ops.wm.save_as_mainfile(filepath=str(ROOT/'scripts/architecture-studio-source.blend'))
-s.render.filepath=str(VERIFY/'architecture-studio-source.png');bpy.ops.render.render(write_still=True)
+bpy.ops.wm.save_as_mainfile(filepath=str(ROOT/'scripts/studio-source.blend'))
+for name in groups:
+ visible_group(name)
+ s.render.filepath=str(VERIFY/(name.lower()+'-source.png'));bpy.ops.render.render(write_still=True)
+
 print('STUDIO_BAKE_COMPLETE')

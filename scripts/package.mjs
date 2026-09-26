@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {titles} from '../dist/content-data.js';
 // Stage only runtime dependencies, keeping editable source and history out of deployment.
-const root=path.resolve('dist'),out=path.resolve('../../release/DEPLOY');fs.mkdirSync(out,{recursive:true});
+const root=path.resolve('dist'),out=path.resolve('../release44/DEPLOY');fs.mkdirSync(out,{recursive:true});
 const files=new Set();
 function include(relative){
  const clean=path.normalize(relative);if(files.has(clean))return;
@@ -16,7 +16,7 @@ function include(relative){
 }
 include('index.html');
 const app=fs.readFileSync('dist/app.js','utf8');for(const m of app.matchAll(/loadTexture\(loader, '([^']+)'/g))include('assets/'+m[1]);
-for(const name of ['architecture-studio-baked.jpg','architecture-bake-uv.json','contact-ao-layout.json','writing-contact-ao.png','architecture-contact-ao.png','research-contact-ao.png'])include('assets/'+name);
+for(const name of ['contact-ao-layout.json',...['writing','architecture','research'].flatMap(n=>[n+'-studio-baked.jpg',n+'-bake-uv.json',n+'-contact-ao.png'])])include('assets/'+name);
 titles.forEach((items,c)=>items.forEach((_,i)=>include(`assets/index-${[0,4,8][c]+i}.png`)));
 for(const name of fs.readdirSync('dist/assets').filter(n=>/LICENSE/.test(n)))include('assets/'+name);
 for(const f of files){fs.mkdirSync(path.dirname(path.join(out,f)),{recursive:true});fs.copyFileSync(path.join(root,f),path.join(out,f));}

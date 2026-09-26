@@ -46,7 +46,7 @@ export function createUIReflectionProxies({ scene, camera, floorReflection }) {
   const makeProxy = (name) => {
     const uniforms = {
       uSizePx:{value:new T.Vector2(280,400)},
-      uBase:{value:new T.Color(0xe9ece8)},
+      uBase:{value:new T.Color(0xeeefe9)},
       uOpacity:{value:.82}
     };
     const material = new T.ShaderMaterial({
@@ -79,7 +79,7 @@ export function createUIReflectionProxies({ scene, camera, floorReflection }) {
   const q = new T.Quaternion();
   const forward = new T.Vector3();
 
-  function place(proxy, rect, { bottomHeight=.22, opacity=.82, tint=0xe9ece8 } = {}) {
+  function place(proxy, rect, { bottomHeight=.22, opacity=.82, tint=0xeeefe9 } = {}) {
     if (!rect || rect.width < 4 || rect.height < 4 || rect.bottom < 0 || rect.top > innerHeight) return false;
     camera.updateMatrixWorld(true);
     const x = rect.left + rect.width * .5;
@@ -107,7 +107,7 @@ export function createUIReflectionProxies({ scene, camera, floorReflection }) {
     proxy.mesh.scale.set(w,h,1);
     proxy.uniforms.uSizePx.value.set(rect.width,rect.height);
     proxy.uniforms.uBase.value.setHex(tint);
-    proxy.uniforms.uOpacity.value=opacity;
+    proxy.uniforms.uOpacity.value=opacity*(rect.opacity??1);
     proxy.mesh.updateMatrixWorld(true);
     return true;
   }
@@ -115,15 +115,15 @@ export function createUIReflectionProxies({ scene, camera, floorReflection }) {
   function sync({ category=null, cards=[], detail=null, hover=0 } = {}) {
     const active=[];
     const specs=[];
-    if(category) specs.push({rect:category,bottomHeight:.25,opacity:.88+hover*.05,tint:0xe9ece8});
-    cards.slice(0,4).forEach((rect)=>specs.push({rect,bottomHeight:.20,opacity:.70,tint:0xe7eae7}));
-    if(detail) specs.push({rect:detail,bottomHeight:.18,opacity:.80,tint:0xe9ece8});
+    if(category) specs.push({rect:category,bottomHeight:.25,opacity:.88+hover*.05,tint:0xeeefe9});
+    cards.slice(0,4).forEach((rect)=>specs.push({rect,bottomHeight:.20,opacity:.70,tint:0xeeefe9}));
+    if(detail) specs.push({rect:detail,bottomHeight:.18,opacity:.80,tint:0xeeefe9});
 
     let cursor=0;
     for(const spec of specs){
       if(cursor>=proxies.length)break;
       const proxy=proxies[cursor++];
-      if(place(proxy,spec)){active.push(proxy.mesh);}
+      if(place(proxy,spec.rect,spec)){active.push(proxy.mesh);}
     }
     for(let i=cursor;i<proxies.length;i++)proxies[i].mesh.visible=false;
     // Main camera never sees these; floor-reflection temporarily toggles only this active list.

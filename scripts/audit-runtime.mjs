@@ -16,10 +16,10 @@ const result={
   checks:{
     singleFrameDriver:nonRuntimeRaf===0,
     gsapHook:fs.readFileSync('dist/index.html','utf8').includes('assets/gsap.min.js'),
-    screenSpaceGlass:fs.readFileSync('dist/liquid-panels.js','utf8').includes('FramebufferTexture'),
+    singleUISurface:!fs.readFileSync('dist/liquid-panels.js','utf8').includes('FramebufferTexture')&&fs.readFileSync('dist/style.css','utf8').includes('ui-system.css'),
     fullEffectFloorRT:/const W=1024,H=576/.test(floor),
     reflectionPreblur:/blurA/.test(floor)&&/blurB/.test(floor)&&!floor.includes('for(int ix=-2;ix<=2;ix++)'),
-    eventDrivenGlassCapture:app.includes('FRAME_CAPTURE')&&app.includes('glassCaptureReady'),
+    noStaleCapture:!app.includes('copyFramebufferToTexture')&&!app.includes('glassCaptureReady'),
     stableBakedArchitecture:app.includes('Cycles baked handmade studio')&&!app.includes('setArchitectureGlassDetail'),
     coarseHitTesting:app.includes('intersectBox')&&!app.includes('intersectObjects(models, true)'),
     synchronousShadowRefresh:app.includes('markStaticShadowsDirty')&&!app.includes('transitionFrame')&&!app.includes('hoverShadowTick')

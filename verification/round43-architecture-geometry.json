@@ -1,0 +1,254 @@
+[
+  {
+    "name": "Mineral plinth",
+    "position": [
+      0,
+      0.11,
+      0
+    ],
+    "quaternion": [
+      0,
+      0,
+      0,
+      1
+    ],
+    "scale": [
+      1,
+      1,
+      1
+    ],
+    "vertices": 1764,
+    "hash": "78e87398a7eaa67f3fe81ab8ac80ea1d14fc7c174b7e6a561739b76d15889217"
+  },
+  {
+    "name": "Rear mineral tower",
+    "position": [
+      0.08,
+      0.89,
+      -0.36
+    ],
+    "quaternion": [
+      0,
+      0,
+      0,
+      1
+    ],
+    "scale": [
+      1,
+      1,
+      1
+    ],
+    "vertices": 1764,
+    "hash": "fc8931fa23a11e935d503021dc093584022a5ccfcb6ccdfa86b220809f12ea6c"
+  },
+  {
+    "name": "Main cantilever slab",
+    "position": [
+      0.78,
+      1.02,
+      -0.02
+    ],
+    "quaternion": [
+      0,
+      0,
+      0,
+      1
+    ],
+    "scale": [
+      1,
+      1,
+      1
+    ],
+    "vertices": 1764,
+    "hash": "a11783c91e2e618c61824fb63f3fc58b75b663280cb269c4a777a6a87c7f4b2b"
+  },
+  {
+    "name": "Front mineral podium",
+    "position": [
+      -0.1,
+      0.42,
+      0.76
+    ],
+    "quaternion": [
+      0,
+      0,
+      0,
+      1
+    ],
+    "scale": [
+      1,
+      1,
+      1
+    ],
+    "vertices": 1764,
+    "hash": "87f26eb93e1d082bfd260ec0017d1c1cfcc2e10555dc9e9fc07871737da44150"
+  },
+  {
+    "name": "Low mineral shelf",
+    "position": [
+      -0.8,
+      0.58,
+      0.16
+    ],
+    "quaternion": [
+      0,
+      0,
+      0,
+      1
+    ],
+    "scale": [
+      1,
+      1,
+      1
+    ],
+    "vertices": 1764,
+    "hash": "a48246740c82ce6286e77f4c2979b5f1b3ca0e61752a9d29bd2473ad573c91c2"
+  },
+  {
+    "name": "Left frosted tower",
+    "position": [
+      -0.9,
+      0.72,
+      -0.04
+    ],
+    "quaternion": [
+      0,
+      0,
+      0,
+      1
+    ],
+    "scale": [
+      1,
+      1,
+      1
+    ],
+    "vertices": 1764,
+    "hash": "96707f65de70b02795c3dffd8fad98b95a13d584aebbf6f239022cbb7a398b77"
+  },
+  {
+    "name": "Left clear volume",
+    "position": [
+      -0.96,
+      0.25,
+      0.82
+    ],
+    "quaternion": [
+      0,
+      0,
+      0,
+      1
+    ],
+    "scale": [
+      1,
+      1,
+      1
+    ],
+    "vertices": 1764,
+    "hash": "77b36b0a4c1910823d53867033a9e6edc00c2c050fdb80a80827543b66ea8c48"
+  },
+  {
+    "name": "Center clear fin",
+    "position": [
+      0.12,
+      0.35,
+      0.26
+    ],
+    "quaternion": [
+      0,
+      0,
+      0,
+      1
+    ],
+    "scale": [
+      1,
+      1,
+      1
+    ],
+    "vertices": 1764,
+    "hash": "cab4abe410296ead98e2683620a720ac3b253675de83194b991b3aa59a3356a2"
+  },
+  {
+    "name": "Clear bridge",
+    "position": [
+      0.06,
+      0.58,
+      0.26
+    ],
+    "quaternion": [
+      0,
+      0,
+      0,
+      1
+    ],
+    "scale": [
+      1,
+      1,
+      1
+    ],
+    "vertices": 1764,
+    "hash": "370cd59759fe5c61c2ae5bba4934d48057956e8af387e3ac94714adfb0315999"
+  },
+  {
+    "name": "Copper anchor",
+    "position": [
+      0.88,
+      0.45,
+      0.02
+    ],
+    "quaternion": [
+      0,
+      0,
+      0,
+      1
+    ],
+    "scale": [
+      1,
+      1,
+      1
+    ],
+    "vertices": 1764,
+    "hash": "7d6bfd279938121e037c6b017398d9221ca950e5de71f0315d35e44a49438d4f"
+  },
+  {
+    "name": "Graphite base",
+    "position": [
+      0.92,
+      0.46,
+      0.82
+    ],
+    "quaternion": [
+      0,
+      0,
+      0,
+      1
+    ],
+    "scale": [
+      1,
+      1,
+      1
+    ],
+    "vertices": 1764,
+    "hash": "14910fa1c9697286dfe020a8d353af3c01a2f0daf88083c40f572eaafe497c13"
+  },
+  {
+    "name": "Smoked glass cap",
+    "position": [
+      0.92,
+      0.8,
+      0.82
+    ],
+    "quaternion": [
+      0,
+      0,
+      0,
+      1
+    ],
+    "scale": [
+      1,
+      1,
+      1
+    ],
+    "vertices": 1764,
+    "hash": "bded61e903a8b1c3def90b49277f1cb5661f8c56c222ad74103fe7fcb251617e"
+  }
+]

@@ -10,15 +10,6 @@
       "physicalMaterials": 1
     },
     {
-      "file": "dist/clay-orb.js",
-      "raf": 0,
-      "caf": 0,
-      "listeners": 0,
-      "renderTargets": 0,
-      "framebufferCopies": 0,
-      "physicalMaterials": 1
-    },
-    {
       "file": "dist/contact-shadows.js",
       "raf": 0,
       "caf": 0,
@@ -58,18 +49,18 @@
       "file": "dist/liquid-header.js",
       "raf": 0,
       "caf": 0,
-      "listeners": 4,
+      "listeners": 7,
       "renderTargets": 0,
-      "framebufferCopies": 1,
-      "physicalMaterials": 0
+      "framebufferCopies": 0,
+      "physicalMaterials": 1
     },
     {
       "file": "dist/liquid-panels.js",
       "raf": 0,
       "caf": 0,
-      "listeners": 0,
+      "listeners": 3,
       "renderTargets": 0,
-      "framebufferCopies": 1,
+      "framebufferCopies": 0,
       "physicalMaterials": 0
     },
     {
@@ -79,7 +70,16 @@
       "listeners": 0,
       "renderTargets": 0,
       "framebufferCopies": 0,
-      "physicalMaterials": 2
+      "physicalMaterials": 1
+    },
+    {
+      "file": "dist/palette.js",
+      "raf": 0,
+      "caf": 0,
+      "listeners": 0,
+      "renderTargets": 0,
+      "framebufferCopies": 0,
+      "physicalMaterials": 0
     },
     {
       "file": "dist/scene-layout.js",
@@ -141,10 +141,10 @@
   "checks": {
     "singleFrameDriver": true,
     "gsapHook": true,
-    "screenSpaceGlass": true,
+    "singleUISurface": true,
     "fullEffectFloorRT": true,
     "reflectionPreblur": true,
-    "eventDrivenGlassCapture": true,
+    "noStaleCapture": true,
     "stableBakedArchitecture": true,
     "coarseHitTesting": true,
     "synchronousShadowRefresh": true

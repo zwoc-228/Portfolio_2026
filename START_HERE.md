@@ -1,10 +1,14 @@
-# Round 43
+# Round 44
 
-Start with `ROUND43_BOOT_MATERIAL_HEADER_COHERENCE.md`.
+Read `ROUND44_PORTFOLIO_MATERIALS_AND_MODELS.md` first. Prior round notes are historical.
 
-- Run: `npm run dev` (Node.js 18+), then open http://localhost:4173
-- Verify: `npm run check`
-- Deploy: contents of `dist/`.
-- Main Round 43 changes: first-load curtain / immediate routing, unified Writing + Research maquette material values, exact ball/header screen anchor, one WebGL header surface, shared porcelain definition, and mirror-camera header reflection proxy.
+- Run locally: `npm run dev`, then open http://localhost:4173
+- Check: `npm run check`
+- Deploy: contents of `dist/`, or the separate DEPLOY ZIP (root `index.html`).
+- Palette: `dist/palette.js`
+- UI material / layout: `dist/styles/ui-system.css`
+- Model geometry: `dist/models.js`
+- Editable studio: `scripts/studio-source.blend`
+- Actual model/texture renders: `verification/`
 
-Earlier round documents are retained as history and do not override Round 43.
+The architecture geometry is unchanged. The book and loose paper have new geometry and all three models use a shared baked studio pipeline. The entry control is a hover-expandable rounded card; the sphere, name and coordinates are removed from the header.
