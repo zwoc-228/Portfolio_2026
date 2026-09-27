@@ -1,10 +1,25 @@
-# Round46
+# Portfolio 2026 · Round55
 
-Read ROUND46_CHANGES.md. This version starts from round44, keeps its geometry and refines paper edges, glass navigation, neutral desk/reflections and bounded gallery cards.
+## 修复的实际问题
+上传项目根目录是 Round53，但 `.github/workflows/pages.yml` 发布旧 `dist/`，`scripts/serve.mjs` 也服务旧 `dist/`。这解释了为何改动没有进入实际使用的入口。Round54 的版本目录补丁没有解决这个项目的构建流程，已不再沿用。
 
-- Run: npm run dev → http://localhost:4173
-- Check: npm run check
-- Deploy: use the separate DEPLOY ZIP, or dist/.
-- Updated maps: dist/assets/writing-studio-clean.png and research-studio-clean.png.
-- Older round notes, scene and reference renders are historical.
-- Browser visual acceptance remains outstanding; no round46 website screenshot is supplied.
+现在根目录是唯一可编辑运行源码，`dist/` 完全由构建生成。GitHub Actions 发布前运行检查与构建；本地启动也先构建。所有动态贴图列在 `runtime-assets.js`，运行时和构建共享同一清单。
+
+## 使用
+- `npm run dev`：构建并在 http://localhost:4173 启动。
+- `npm run check`：源码/几何/运行调度检查，重建并审计 dist。
+- `npm run build`：生成静态发布目录 `dist/`。
+- GitHub Pages：现有 main 分支工作流自动执行检查/构建，再发布 dist。
+- 手动部署：使用 DEPLOY 包，或完整上传生成的 dist 内容。
+- 无需安装 npm 依赖。Node 18+。
+
+## 本轮保留与修正
+保留建筑网格、模型烘焙光影、回形针、光束/粒子、地面倒影与导航交互。使此前的黑线贴图清理、石膏 UI、共享外框和弧形背景真正进入发布目录。
+修复渲染调度使用 GSAP 时间而 resize 使用 performance 时间的不一致；清除 header 中从不显示的网格/材质及侧栏无效的逐次鼠标坐标写入。
+
+## 清理范围
+交付仅包含运行依赖、有效检查/构建脚本和封面修复工具。旧轮次说明、旧 dist、未引用贴图、未加载的 GLB、历史截图和过时脚本不混入交付。上传原包保持不变；Blender 作者文件仍在原包中，未删除。可编辑网格定义在 models.js。
+
+## 验证范围
+已检查源文件与 dist 的哈希一致、所有入口/静态/动态资源、本地 HTTP 返回、UV 兼容、模型投影范围、header 对齐、运行调度休眠/恢复和单一帧驱动。
+未完成浏览器 WebGL 视觉验收与真实设备帧率测量，不宣称已达到最终摄影质感。

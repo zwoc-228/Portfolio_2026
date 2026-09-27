@@ -1,6 +1,0 @@
-[
-  "AO stays on desk during scaling/lift",
-  "Nine curved sheets have separate surfaces and nonintersecting height bands",
-  "UI reflection geometry has valid positions for actual card rectangles",
-  "Card hover opens, Escape closes, hidden links inert, idle frame loop stops"
-]

@@ -12,11 +12,6 @@ export function createFrameRuntime(draw) {
   let pending = FRAME_RENDER;
   let paused = document.hidden;
 
-  function normalizeNow(value) {
-    // gsap.ticker passes seconds; requestAnimationFrame passes milliseconds.
-    return gsap ? value * 1000 : value;
-  }
-
   function stopDriver() {
     if (!running) return;
     running = false;
@@ -33,10 +28,11 @@ export function createFrameRuntime(draw) {
     else raf = requestAnimationFrame(tick);
   }
 
-  function tick(rawNow) {
+  function tick() {
     if (!running || paused) return;
     if (!gsap) raf = 0;
-    const now = normalizeNow(rawNow);
+    // Use the same monotonic clock as resize deadlines; GSAP time is lag-smoothed.
+    const now = performance.now();
     const dt = last ? Math.min(0.05, Math.max(0.001, (now - last) / 1000)) : 1 / 60;
     last = now;
 

@@ -1,5 +1,0 @@
-{
-  "resources": 51,
-  "status": "passed",
-  "scope": "HTTP serving and byte equality; not browser rendering"
-}

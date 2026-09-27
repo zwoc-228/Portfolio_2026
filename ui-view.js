@@ -1,3 +1,4 @@
+import {PROJECT_IMAGES} from './runtime-assets.js';
 let detailExitTimer = 0;
 let detailEnterTimer = 0;
 let categoryEnterTimer = 0;
@@ -87,7 +88,7 @@ export function renderIndex({ state, selected, filter, cats, titles, subs, onOpe
 
     const img = document.createElement('img');
     const imageIndex = [0, 4, 8][selected] + i;
-    img.src = `assets/index-${imageIndex}.png`;
+    img.src = PROJECT_IMAGES[imageIndex];
     img.alt = `${title} — reference image`;
     img.loading = 'eager';
     img.decoding = 'async';

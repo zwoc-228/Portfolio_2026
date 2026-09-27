@@ -1,1 +1,10 @@
-{"private":true,"type":"module","scripts":{"check":"node tools/check.mjs"}}
+{
+  "name": "portfolio-2026",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "npm run build && node scripts/serve.mjs",
+    "check": "node tools/check.mjs && node tools/runtime-check.mjs && node scripts/build.mjs && node scripts/audit-runtime.mjs"
+  }
+}

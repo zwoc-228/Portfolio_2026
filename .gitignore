@@ -1,10 +1,5 @@
+dist/
 node_modules/
+tools/cover.json
+tools/cover-preview.png
 .DS_Store
-.env
-.env.*
-!.env.example
-.sites-runtime/
-.openai/
-__pycache__/
-artifacts/
-dist/downloads/

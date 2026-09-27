@@ -1,7 +1,0 @@
-{
-  "transitionInterrupt": "continuous",
-  "spatialPasses": "synchronous",
-  "detailCloseReopen": "passed",
-  "categoryChange": "detail reset",
-  "frameDriver": "idle and pause passed"
-}

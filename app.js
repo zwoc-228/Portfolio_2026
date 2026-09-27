@@ -1,3 +1,4 @@
+import {MODEL_ASSETS,CONTACT_LAYOUT,DESK_NORMAL} from './runtime-assets.js';
 import { fitStudioCamera } from './camera-rig.js';
 import * as T from './assets/three.module.js';
 import {PALETTE} from './palette.js';
@@ -447,7 +448,7 @@ function bindSceneInput() {
 }
 
 async function loadTexture(loader, name, repeat = 1) {
-  const t = await loader.loadAsync('assets/' + name);
+  const t = await loader.loadAsync(name);
   t.wrapS = t.wrapT = T.RepeatWrapping;
   t.repeat.set(repeat, repeat);
   t.anisotropy = Math.min(16, renderer.capabilities.getMaxAnisotropy());
@@ -483,7 +484,7 @@ async function init() {
     pmrem.dispose();
 
     const loader = new T.TextureLoader();
-    const deskMetalNormal=await loadTexture(loader, 'desk-metal-normal.png',18);
+    const deskMetalNormal=await loadTexture(loader, DESK_NORMAL,18);
 
     const ground = new T.Mesh(new T.PlaneGeometry(48, 30), new T.MeshPhysicalMaterial({
       color: PALETTE.desk, envMap: scene.environment, envMapIntensity: 1.16,
@@ -532,13 +533,12 @@ async function init() {
     hoverProfiles = models.map(m => { const box = new T.Box3().setFromObject(m), center = new T.Vector3(), size = new T.Vector3(); box.getCenter(center); box.getSize(size); const horizontal = Math.max(size.x, size.z) * .54 + .18, approxDist = Math.max(4.7, 9.8 - center.y); return { x: center.x, y: center.y, z: center.z, angle: T.MathUtils.clamp(Math.atan(horizontal / approxDist) * 1.02, T.MathUtils.degToRad(4.9), T.MathUtils.degToRad(9.4)) }; });
     homeHitBoxes = models.map(m => new T.Box3().setFromObject(m).expandByScalar(.08));
 
-    const modelNames=['writing','architecture','research'];
     const json=async url=>{const r=await fetch(url);if(!r.ok)throw Error('Missing '+url);return r.json();};
     const [atlases,uvSets,contactLayout,contactMaps]=await Promise.all([
-      Promise.all(modelNames.map(n=>loader.loadAsync(`assets/${n}${n==='architecture'?'-studio-baked.jpg':n==='writing'?'-studio-round53.png':'-studio-clean.png'}`))),
-      Promise.all(modelNames.map(n=>json(`assets/${n}-bake-uv.json`))),
-      json('assets/contact-ao-layout.json'),
-      Promise.all(modelNames.map(n=>loader.loadAsync(`assets/${n}-contact-ao.png`)))
+      Promise.all(MODEL_ASSETS.map(a=>loader.loadAsync(a.atlas))),
+      Promise.all(MODEL_ASSETS.map(a=>json(a.uv))),
+      json(CONTACT_LAYOUT),
+      Promise.all(MODEL_ASSETS.map(a=>loader.loadAsync(a.contact)))
     ]);
     const oldMaterials=new Set();
     const clipMaterial=new T.MeshPhysicalMaterial({color:0xc5c5c5,metalness:1,roughness:.24,envMapIntensity:1.25});clipMaterial.name='Round44 neutral steel clip';
