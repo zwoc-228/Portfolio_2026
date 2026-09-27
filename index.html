@@ -24,10 +24,29 @@
         <button data-category="2" data-role-index="1">Research</button>
       </nav>
       <nav class="primary-links" aria-label="Primary navigation">
-        <button id="brand" aria-label="Return to home">Home</button><button id="archive">Archive</button><button data-dialog="about">About</button><button data-dialog="contact">Contact</button>
+        <button id="brand" aria-label="Return to home">Home</button><button id="archive">Archive</button><button data-dialog="about">About</button><button data-dialog="contact">Contact</button><button id="studio-time-toggle" class="studio-time-toggle" type="button" aria-haspopup="dialog" aria-controls="studio-time-panel" aria-expanded="false"><span class="time-icon" aria-hidden="true">◐</span><span id="studio-time-short">Local</span></button>
       </nav>
     </div>
+    <div id="studio-time-panel" class="studio-time-panel" hidden>
+      <div class="studio-time-heading"><span>Studio light</span><output id="studio-time-readout">12:00</output></div>
+      <label for="studio-timezone">Location</label>
+      <select id="studio-timezone">
+        <option value="local">Local device</option>
+        <option value="America/Los_Angeles">Seattle</option>
+        <option value="America/New_York">New York</option>
+        <option value="Europe/London">London</option>
+        <option value="Europe/Paris">Paris</option>
+        <option value="Asia/Shanghai">Shanghai</option>
+        <option value="Asia/Tokyo">Tokyo</option>
+        <option value="Australia/Sydney">Sydney</option>
+      </select>
+      <label for="studio-time-range">Time</label>
+      <input id="studio-time-range" type="range" min="0" max="23.75" step=".25" value="12">
+      <div class="studio-time-actions"><button id="studio-time-auto" type="button" aria-pressed="true">Live local time</button></div>
+    </div>
   </header>
+
+
 
   <main>
     <div id="home-labels" class="home-labels" aria-label="Portfolio categories">

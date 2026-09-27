@@ -98,3 +98,36 @@ body.preview .index-content,body.preview .detail-card{display:none}
 /* No decorative inner panel: the header uses the same plaster surface as every card. */
 .site-header::before,.site-header::after,.header-trigger::before{content:none}
 @media(min-width:761px){.project-card{max-width:320px}}
+
+
+/* Studio-time control: part of the header, using the same surface language. */
+.site-header.time-open{overflow:visible}
+.primary-links .studio-time-toggle{
+ width:34px;height:34px;min-width:34px;padding:0;display:flex;align-items:center;justify-content:center;gap:0;
+ border-radius:9px;background:rgba(255,255,255,.34);color:var(--ui-ink-2);
+}
+.primary-links .studio-time-toggle:hover,.primary-links .studio-time-toggle[aria-expanded="true"]{background:rgba(255,255,255,.68);color:var(--ui-ink)}
+.time-icon{font:400 16px/1 var(--font-ui)}
+#studio-time-short{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+.studio-time-panel{
+ position:absolute;right:0;top:64px;width:248px;padding:18px;border:1px solid rgba(255,255,255,.30);
+ border-radius:16px;background:linear-gradient(145deg,rgba(238,238,238,.98),rgba(226,226,226,.98));
+ box-shadow:10px 14px 34px rgba(48,48,48,.16),inset 1px 1px 1px rgba(255,255,255,.52);
+ backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+ font:500 11px/1 var(--font-ui);color:var(--ui-ink);
+}
+.studio-time-heading{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:18px;color:var(--ui-ink)}
+.studio-time-heading span{font:400 19px/1 var(--font-display)}
+.studio-time-heading output{font:500 11px/1 var(--font-ui);color:var(--ui-ink-2);font-variant-numeric:tabular-nums}
+.studio-time-panel label{display:block;margin:13px 0 7px;color:var(--ui-ink-3);font-size:9px;letter-spacing:.08em;text-transform:uppercase}
+.studio-time-panel select{
+ width:100%;height:34px;padding:0 10px;border:1px solid rgba(90,90,90,.10);border-radius:9px;
+ background:rgba(255,255,255,.48);color:var(--ui-ink);font:500 11px/1 var(--font-ui);outline:none;
+}
+.studio-time-panel input[type="range"]{width:100%;height:22px;margin:0;accent-color:#737373}
+.studio-time-actions{display:flex;justify-content:flex-end;margin-top:12px}
+.studio-time-actions button{padding:8px 10px;border-radius:8px;color:var(--ui-ink-2);background:rgba(255,255,255,.42);font-size:10px}
+.studio-time-actions button[aria-pressed="true"]{color:var(--ui-ink);background:rgba(255,255,255,.70)}
+@media(max-width:760px){
+ .studio-time-panel{right:0;top:110px;width:min(248px,calc(100vw - 32px))}
+}

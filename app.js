@@ -26,7 +26,8 @@ let state = 'home';
 let selected = 0;
 let filter = 'All';
 let renderer, scene, camera, floorReflection, runtime, uiReflectionProxies;
-let liquidHeader, liquidPanels;
+let liquidHeader, liquidPanels, ground, hemisphereLight, fillLight;
+let studioHour = 12, studioTimeAuto = true, studioTimezone = 'local', studioClockTimer = 0, studioTimeCommitTimer = 0;
 let models = [], home = [], hoverProfiles = [], homeHitBoxes = [], homeHeaderBoxes = [], contactShadows = null;
 let keyLight, keyCompanionLight;
 let flashlight, flashlightTarget, beamHalo, beamParticles;
@@ -43,6 +44,10 @@ const glowTarget = new T.Vector3();
 const beamDir = new T.Vector3();
 const beamMid = new T.Vector3();
 const beamUp = new T.Vector3(0, -1, 0);
+const beamAcross = new T.Vector3();
+const beamFacing = new T.Vector3();
+const beamAxis = new T.Vector3();
+const beamBasis = new T.Matrix4();
 const spotOrigin = new T.Vector3();
 let pointerDirty = false, pointerClientX = 0, pointerClientY = 0;
 let glowCurrentStrength = 0, glowTargetStrength = 0, hoveredModel = -1;
@@ -62,6 +67,125 @@ function drawFrame({ reflection = false } = {}) {
 
 function markKeyShadowDirty() { if (keyLight) keyLight.shadow.needsUpdate = true; }
 function markStaticShadowsDirty() { markKeyShadowDirty(); }
+
+
+function hourInTimezone(zone='local'){
+  if(zone==='local') return new Date().getHours()+new Date().getMinutes()/60;
+  try{
+    const parts=new Intl.DateTimeFormat('en-GB',{timeZone:zone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date());
+    const values=Object.fromEntries(parts.map(p=>[p.type,p.value]));
+    return Number(values.hour)+(Number(values.minute)||0)/60;
+  }catch{return new Date().getHours()+new Date().getMinutes()/60;}
+}
+
+function formatStudioHour(hour){
+  const total=Math.round((((hour%24)+24)%24)*60);
+  const h=Math.floor(total/60)%24,m=total%60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+}
+
+function applyStudioTime(nextHour,{refreshShadow=true}={}){
+  studioHour=((Number(nextHour)||0)%24+24)%24;
+  const daylight=studioHour>=6&&studioHour<19;
+  const phase=daylight?T.MathUtils.clamp((studioHour-6)/13,0,1):0;
+  const solarHeight=daylight?Math.sin(Math.PI*phase):0;
+  const edge=Math.min(Math.abs(studioHour-6),Math.abs(studioHour-19));
+  const warm=daylight?1-T.MathUtils.smoothstep(edge,0,3):0;
+
+  const keyColor=new T.Color(daylight?0xfff3dc:0xb9ceff);
+  if(daylight) keyColor.lerp(new T.Color(0xffc98d),warm*.55);
+  const fillColor=new T.Color(daylight?0xf5f0e6:0xcbd8ff);
+  const companionColor=new T.Color(daylight?0xfff8ea:0xaabfff);
+
+  ground?.userData?.setStudioTime?.(studioHour);
+  if(keyLight){
+    keyLight.color.copy(keyColor);
+    keyLight.intensity=daylight?.72+.28*solarHeight:.44;
+    keyLight.position.set(
+      daylight?T.MathUtils.lerp(-8.6,8.6,phase):4.8,
+      daylight?7.0+5.2*solarHeight:8.2,
+      daylight?5.8:3.4
+    );
+  }
+  if(keyCompanionLight){
+    keyCompanionLight.color.copy(companionColor);
+    keyCompanionLight.intensity=daylight?.20+.08*solarHeight:.13;
+  }
+  if(fillLight){
+    fillLight.color.copy(fillColor);
+    fillLight.intensity=daylight?.15:.12;
+  }
+  if(hemisphereLight){
+    hemisphereLight.color.set(daylight?0xfffbf3:0xe2eaff);
+    hemisphereLight.groundColor.set(daylight?0x96938d:0x6f788f);
+    hemisphereLight.intensity=daylight?.28:.24;
+  }
+  const beamColor=daylight?0xfff3dc:0xd8e5ff;
+  flashlight?.color.set(beamColor);
+  beamHalo?.material?.uniforms?.uColor?.value.set(beamColor);
+  beamParticles?.material?.uniforms?.uColor?.value.set(beamColor);
+
+  const range=$('#studio-time-range'),readout=$('#studio-time-readout'),short=$('#studio-time-short'),icon=document.querySelector('.time-icon');
+  if(range&&!range.matches(':active')) range.value=String(studioHour);
+  if(readout) readout.value=formatStudioHour(studioHour);
+  if(short) short.textContent=daylight?'Sun':'Moon';
+  if(icon) icon.textContent=daylight?'☼':'☾';
+
+  if(refreshShadow&&keyLight){
+    markStaticShadowsDirty();
+    floorReflection?.clear?.();
+    runtime?.request(FRAME_RENDER|FRAME_REFLECTION);
+  }
+}
+
+function syncAutomaticStudioTime(){
+  if(!studioTimeAuto)return;
+  applyStudioTime(hourInTimezone(studioTimezone));
+}
+
+function bindStudioTimeUI(){
+  const toggle=$('#studio-time-toggle'),panel=$('#studio-time-panel'),range=$('#studio-time-range');
+  const zone=$('#studio-timezone'),auto=$('#studio-time-auto');
+  if(!toggle||!panel||!range||!zone||!auto)return;
+
+  toggle.onclick=e=>{
+    e.stopPropagation();
+    const open=panel.hidden;
+    panel.hidden=!open;
+    toggle.setAttribute('aria-expanded',String(open));
+    toggle.closest('.site-header')?.classList.toggle('time-open',open);
+  };
+  panel.onclick=e=>e.stopPropagation();
+  document.addEventListener('click',()=>{
+    panel.hidden=true;
+    toggle.setAttribute('aria-expanded','false');
+    toggle.closest('.site-header')?.classList.remove('time-open');
+  });
+  zone.onchange=()=>{
+    studioTimezone=zone.value;
+    studioTimeAuto=true;
+    auto.setAttribute('aria-pressed','true');
+    auto.textContent=zone.value==='local'?'Live local time':'Live location time';
+    syncAutomaticStudioTime();
+  };
+  range.oninput=()=>{
+    studioTimeAuto=false;
+    auto.setAttribute('aria-pressed','false');
+    auto.textContent='Use live time';
+    clearTimeout(studioTimeCommitTimer);
+    applyStudioTime(Number(range.value),{refreshShadow:false});
+    runtime?.request(FRAME_RENDER);
+    studioTimeCommitTimer=window.setTimeout(()=>applyStudioTime(Number(range.value)),90);
+  };
+  auto.onclick=()=>{
+    studioTimeAuto=true;
+    auto.setAttribute('aria-pressed','true');
+    auto.textContent=zone.value==='local'?'Live local time':'Live location time';
+    syncAutomaticStudioTime();
+  };
+  studioClockTimer=window.setInterval(syncAutomaticStudioTime,60000);
+}
+
 
 
 function getProjectedScreenBox(box) {
@@ -157,10 +281,16 @@ function updateBeam() {
 
   if (beamHalo) {
     beamHalo.position.copy(beamMid);
-    beamHalo.quaternion.setFromUnitVectors(beamUp, beamDir);
-    beamHalo.scale.set(radius * 1.08, dist, radius * 1.08);
-    // Restored full Round 22/26 volumetric strength: no visual subtraction.
-    const haloTarget = hover ? glowCurrentStrength * (lowPower ? .040 : .052) : 0;
+    // Keep the fog sheet facing the camera around the actual lamp-to-target axis.
+    beamAxis.copy(beamDir).multiplyScalar(-1);
+    beamFacing.subVectors(camera.position,beamMid).normalize();
+    beamAcross.crossVectors(beamAxis,beamFacing);
+    if(beamAcross.lengthSq()<1e-5)beamAcross.set(1,0,0);else beamAcross.normalize();
+    beamFacing.crossVectors(beamAcross,beamAxis).normalize();
+    beamBasis.makeBasis(beamAcross,beamAxis,beamFacing);
+    beamHalo.quaternion.setFromRotationMatrix(beamBasis);
+    beamHalo.scale.set(radius * 1.18,dist,1);
+    const haloTarget=hover?glowCurrentStrength*(lowPower?.115:.155):0;
     beamHalo.material.uniforms.uOpacity.value = T.MathUtils.lerp(beamHalo.material.uniforms.uOpacity.value, haloTarget, .16);
     beamHalo.material.uniforms.uTime.value = particleTime;
     beamHalo.visible = hover && beamHalo.material.uniforms.uOpacity.value > .002;
@@ -370,6 +500,7 @@ function readHash(push = false, immediate = false) {
 }
 
 function bindUI() {
+  bindStudioTimeUI();
   $('#brand').onclick = () => navigate('home');
   $('#archive').onclick = () => navigate('index', selected);
   $('#enter').onclick = () => navigate('index');
@@ -479,45 +610,57 @@ async function init() {
     const loader = new T.TextureLoader();
     const deskMetalNormal=await loadTexture(loader, DESK_NORMAL,18);
 
-    const localHour = new Date().getHours();
-    const nightStudio = localHour < 6 || localHour >= 19;
-    const studioTint = nightStudio ? 0xc5d5ff : 0xfff0d7;
-    const ground = createStudioBackdrop({
-      normalMap: deskMetalNormal,
-      environment: scene.environment,
-      hour: localHour
+    studioHour=hourInTimezone(studioTimezone);
+    const nightStudio=studioHour<6||studioHour>=19;
+    ground=createStudioBackdrop({
+      normalMap:deskMetalNormal,
+      environment:scene.environment,
+      hour:studioHour
     });
     scene.add(ground);
 
-    scene.add(new T.HemisphereLight(nightStudio ? 0xe7edff : 0xfffbf2, nightStudio ? 0x737b91 : 0x96938d, .30));
-    keyLight = new T.DirectionalLight(studioTint, nightStudio ? .68 : .78); keyLight.position.set(-6.7, 10.2, 5.6); keyLight.castShadow = true; keyLight.shadow.mapSize.set(lowPower ? 768 : 1024, lowPower ? 768 : 1024); Object.assign(keyLight.shadow.camera, { left: -8, right: 8, top: 6, bottom: -4, near: .1, far: 28 }); keyLight.shadow.bias = -.00008; keyLight.shadow.normalBias = .0048; keyLight.shadow.radius = 4.5; keyLight.shadow.blurSamples = lowPower ? 4 : 6; keyLight.shadow.autoUpdate = false; keyLight.shadow.needsUpdate = true; scene.add(keyLight);
-    keyCompanionLight = new T.DirectionalLight(nightStudio ? 0xaebfff : 0xfff8e9, nightStudio ? .18 : .24); keyCompanionLight.position.set(3.8, 7.6, 1.6); keyCompanionLight.castShadow = false; scene.add(keyCompanionLight);
-    const fill = new T.DirectionalLight(nightStudio ? 0xdce5ff : 0xf4f0e8, .17); fill.position.set(6.4, 6.4, -4.4); scene.add(fill);
+    hemisphereLight=new T.HemisphereLight(0xfffbf2,0x96938d,.28);scene.add(hemisphereLight);
+    keyLight=new T.DirectionalLight(0xfff0d7,.82);keyLight.position.set(-6.7,10.2,5.6);keyLight.castShadow=true;keyLight.shadow.mapSize.set(lowPower?768:1024,lowPower?768:1024);Object.assign(keyLight.shadow.camera,{left:-8,right:8,top:6,bottom:-4,near:.1,far:28});keyLight.shadow.bias=-.00008;keyLight.shadow.normalBias=.0048;keyLight.shadow.radius=4.5;keyLight.shadow.blurSamples=lowPower?4:6;keyLight.shadow.autoUpdate=false;keyLight.shadow.needsUpdate=true;scene.add(keyLight);
+    keyCompanionLight=new T.DirectionalLight(0xfff8e9,.24);keyCompanionLight.position.set(3.8,7.6,1.6);keyCompanionLight.castShadow=false;scene.add(keyCompanionLight);
+    fillLight=new T.DirectionalLight(0xf4f0e8,.15);fillLight.position.set(6.4,6.4,-4.4);scene.add(fillLight);
 
     flashlightTarget = new T.Object3D(); scene.add(flashlightTarget);
     flashlight = new T.SpotLight(0xffffff, 0, 0, T.MathUtils.degToRad(4.2), .92, 0); flashlight.position.set(0, 9.4, 2.8); flashlight.target = flashlightTarget; flashlight.castShadow = false; scene.add(flashlight);
-    const beamVert = `varying vec3 vPos;varying vec3 vNormalV;varying vec3 vViewPos;void main(){vPos=position;vNormalV=normalize(normalMatrix*normal);vec4 mv=modelViewMatrix*vec4(position,1.0);vViewPos=mv.xyz;gl_Position=projectionMatrix*mv;}`;
-    const beamFrag = `uniform vec3 uColor;uniform float uOpacity;uniform float uTime;varying vec3 vPos;varying vec3 vNormalV;varying vec3 vViewPos;
-      float hash21(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+    const beamVert=`varying vec2 vUv;varying vec3 vViewPos;void main(){vUv=uv;vec4 mv=modelViewMatrix*vec4(position,1.0);vViewPos=mv.xyz;gl_Position=projectionMatrix*mv;}`;
+    const beamFrag=`uniform vec3 uColor;uniform float uOpacity;uniform float uTime;varying vec2 vUv;varying vec3 vViewPos;
+      float hash21(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
+      float noise21(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash21(i),hash21(i+vec2(1,0)),f.x),mix(hash21(i+vec2(0,1)),hash21(i+vec2(1)),f.x),f.y);}
       void main(){
-       float h=clamp(.5-vPos.y,0.,1.);
-       float ends=smoothstep(.025,.16,h)*(1.-smoothstep(.78,.995,h));
-       float facing=pow(clamp(abs(vNormalV.z),0.,1.),.62);
-       vec2 cell=floor(vec2(vPos.x*18.+h*7.,h*46.));
-       float grain=.78+.22*hash21(cell+floor(uTime*.32));
-       float ribbons=.88+.12*sin(h*54.+vPos.x*19.+uTime*.7);
-       float depthFade=clamp(1.-length(vViewPos)*.012,0.72,1.);
-       float alpha=uOpacity*ends*(.28+.72*facing)*grain*ribbons*depthFade;
+       float travel=1.-vUv.y;
+       float halfWidth=mix(.055,.50,pow(travel,.82));
+       float across=abs(vUv.x-.5);
+       float edge=1.-smoothstep(halfWidth*.48,halfWidth,across);
+       float ends=smoothstep(.015,.14,travel)*(1.-smoothstep(.86,1.,travel));
+       vec2 p=vec2((vUv.x-.5)*9.,travel*8.5);
+       float broad=noise21(p+vec2(uTime*.025,-uTime*.018));
+       float fine=noise21(p*2.7+vec2(-uTime*.045,uTime*.032));
+       float shafts=.72+.28*sin((vUv.x-.5)*32.+travel*7.+broad*2.2);
+       float density=mix(.54,1.,broad)*mix(.78,1.,fine)*shafts;
+       float core=exp(-pow(across/max(halfWidth,.001),2.)*2.1);
+       float depthFade=clamp(1.-length(vViewPos)*.010,0.76,1.);
+       float alpha=uOpacity*edge*ends*density*(.55+.45*core)*depthFade;
        gl_FragColor=vec4(uColor,alpha);
       }`;
-    const beamMaterial = (color) => new T.ShaderMaterial({ uniforms: { uColor: { value: new T.Color(color) }, uOpacity: { value: 0 }, uTime: { value: 0 } }, vertexShader: beamVert, fragmentShader: beamFrag, transparent: true, depthWrite: false, depthTest: true, blending: T.AdditiveBlending, side: T.DoubleSide });
-    beamHalo = new T.Mesh(new T.ConeGeometry(1, 1, lowPower ? 24 : 40, 1, true), beamMaterial(nightStudio ? 0xdce7ff : 0xfff6df)); beamHalo.renderOrder = 1; scene.add(beamHalo);
+    const beamMaterial=new T.ShaderMaterial({
+      uniforms:{uColor:{value:new T.Color(nightStudio?0xdce7ff:0xfff6df)},uOpacity:{value:0},uTime:{value:0}},
+      vertexShader:beamVert,fragmentShader:beamFrag,transparent:true,depthWrite:false,depthTest:true,
+      blending:T.AdditiveBlending,side:T.DoubleSide,toneMapped:false
+    });
+    // A camera-readable volume plane avoids the hollow cone edge while retaining
+    // layered fog detail. It is only visible over a model, so the idle cost is zero.
+    beamHalo=new T.Mesh(new T.PlaneGeometry(2,1),beamMaterial);beamHalo.renderOrder=1;scene.add(beamHalo);
     const dustCount = lowPower ? 28 : 56, dustPos = new Float32Array(dustCount * 3), dustSeed = new Float32Array(dustCount);
     for (let i = 0; i < dustCount; i++) { const h = Math.random(), a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * h * .92; dustPos[i*3] = Math.cos(a) * r; dustPos[i*3+1] = .5 - h; dustPos[i*3+2] = Math.sin(a) * r; dustSeed[i] = Math.random(); }
     const dustGeom = new T.BufferGeometry(); dustGeom.setAttribute('position', new T.BufferAttribute(dustPos, 3)); dustGeom.setAttribute('aSeed', new T.BufferAttribute(dustSeed, 1));
     const dustMat = new T.ShaderMaterial({ uniforms: { uOpacity: { value: 0 }, uTime: { value: 0 }, uColor: { value: new T.Color(nightStudio ? 0xdce7ff : 0xfff6df) } }, vertexShader: `attribute float aSeed;uniform float uTime;varying float vSeed;void main(){vSeed=aSeed;vec3 p=position;p.y+=sin(uTime*.55+aSeed*18.)*.009;vec4 mv=modelViewMatrix*vec4(p,1.);gl_PointSize=(1.25+aSeed*2.35)*(26./max(1.,-mv.z));gl_Position=projectionMatrix*mv;}`, fragmentShader: `uniform float uOpacity;uniform vec3 uColor;varying float vSeed;void main(){float d=length(gl_PointCoord-.5);float soft=1.-smoothstep(.12,.5,d);float twinkle=.55+.45*sin(vSeed*31.);gl_FragColor=vec4(uColor,uOpacity*soft*twinkle);}`, transparent: true, depthWrite: false, depthTest: true, blending: T.AdditiveBlending });
     beamParticles = new T.Points(dustGeom, dustMat); beamParticles.renderOrder = 3; scene.add(beamParticles);
     flashlight.visible = false; beamHalo.visible = false; beamParticles.visible = false;
+    applyStudioTime(studioHour,{refreshShadow:false});
 
     floorReflection = createFloorReflection(renderer, scene, ground);
     floorReflection.setTransientObjects([flashlight, beamHalo, beamParticles]);
@@ -553,7 +696,7 @@ async function init() {
       const atlas=atlases[i];atlas.colorSpace=T.SRGBColorSpace;atlas.channel=1;atlas.anisotropy=Math.min(16,renderer.capabilities.getMaxAnisotropy());
       const surfaceProfiles=[
         {roughness:.58,clearcoat:.07,clearcoatRoughness:.42,envMapIntensity:.86,specularIntensity:.34},
-        {roughness:.32,clearcoat:.34,clearcoatRoughness:.20,envMapIntensity:1.14,specularIntensity:.52},
+        {roughness:.28,clearcoat:.26,clearcoatRoughness:.16,envMapIntensity:1.18,specularIntensity:.58},
         {roughness:.67,clearcoat:.035,clearcoatRoughness:.52,envMapIntensity:.76,specularIntensity:.28}
       ];
       const profile=surfaceProfiles[i];

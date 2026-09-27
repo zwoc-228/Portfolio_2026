@@ -45,7 +45,10 @@ export function createFloorReflection(renderer,scene,ground){
  const blurMat=new T.ShaderMaterial({toneMapped:false,depthTest:false,depthWrite:false,uniforms:{uMap:{value:raw.texture},uTexel:{value:new T.Vector2(1/W,1/H)},uDirection:{value:new T.Vector2(1,0)}},vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}`,fragmentShader:`precision highp float;uniform sampler2D uMap;uniform vec2 uTexel;uniform vec2 uDirection;varying vec2 vUv;void main(){vec2 d=uTexel*uDirection*.78;vec4 c=texture2D(uMap,vUv)*.227027; c+=(texture2D(uMap,vUv+d)+texture2D(uMap,vUv-d))*.194595; c+=(texture2D(uMap,vUv+d*2.)+texture2D(uMap,vUv-d*2.))*.121622; c+=(texture2D(uMap,vUv+d*3.)+texture2D(uMap,vUv-d*3.))*.054054; c+=(texture2D(uMap,vUv+d*4.)+texture2D(uMap,vUv-d*4.))*.016216;gl_FragColor=c;}`});
  const blurQuad=new T.Mesh(new T.PlaneGeometry(2,2),blurMat);blurScene.add(blurQuad);
 
+ const backdropCompile=ground.material.onBeforeCompile;
+ const backdropProgramKey=ground.material.customProgramCacheKey?.bind(ground.material);
  ground.material.onBeforeCompile=shader=>{
+  backdropCompile?.(shader);
   Object.assign(shader.uniforms,uniforms);
   shader.vertexShader='varying vec4 vFloorProjection; varying vec3 vFloorWorldPosition; uniform mat4 floorProjection;\n'+shader.vertexShader;
   shader.vertexShader=shader.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\nvec4 floorWorld = modelMatrix * vec4(transformed,1.0);\nvFloorWorldPosition = floorWorld.xyz;\nvFloorProjection = floorProjection * floorWorld;');
@@ -122,7 +125,7 @@ float reflectionFootprintMask(){
   // through the object-footprint mask; model footprints still receive extra energy.
   // Fade the planar mirror before the floor reaches the cove. Without this,
   // the mirror pass ends abruptly at the tangent and reads as a horizontal line.
-  float coveFade=smoothstep(-3.55,-2.45,vFloorWorldPosition.z);
+  float coveFade=smoothstep(-3.75,-.35,vFloorWorldPosition.z);
   float reflectedAlpha=clamp(reflected.a,0.0,1.0)*inside*coveFade;
   vec3 reflectedColor=reflected.rgb/max(reflected.a,.001);
   float reflectedLuma=dot(reflectedColor,vec3(.2126,.7152,.0722));
@@ -141,7 +144,7 @@ float reflectionFootprintMask(){
   outgoingLight += vec3(.058)*panelRef.x + vec3(.138)*panelRef.y + vec3(.080)*panelRef.z;
   #include <opaque_fragment>`);
  };
- ground.material.customProgramCacheKey=()=> 'reference-floor-v16-neutral-mirror';
+ ground.material.customProgramCacheKey=()=> `${backdropProgramKey?.()||'backdrop'}-reference-floor-v17-wide-cove-fade`;
  const color=new T.Color(),look=new T.Vector3();
  function blur(){
   blurMat.uniforms.uMap.value=raw.texture;blurMat.uniforms.uDirection.value.set(1,0);renderer.setRenderTarget(blurA);renderer.clear();renderer.render(blurScene,blurCamera);
