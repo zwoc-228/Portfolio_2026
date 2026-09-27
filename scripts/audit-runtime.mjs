@@ -20,7 +20,7 @@ const result={
     fullEffectFloorRT:/const W=1024,H=576/.test(floor),
     reflectionPreblur:/blurA/.test(floor)&&/blurB/.test(floor)&&!floor.includes('for(int ix=-2;ix<=2;ix++)'),
     noStaleCapture:!app.includes('copyFramebufferToTexture')&&!app.includes('glassCaptureReady'),
-    livePBRModels:!app.includes('MeshBasicMaterial')&&app.includes('o.receiveShadow=true'),
+    stableBakedArchitecture:app.includes('Cycles baked handmade studio')&&!app.includes('setArchitectureGlassDetail'),
     coarseHitTesting:app.includes('intersectBox')&&!app.includes('intersectObjects(models, true)'),
     synchronousShadowRefresh:app.includes('markStaticShadowsDirty')&&!app.includes('transitionFrame')&&!app.includes('hoverShadowTick')
   }

@@ -7,7 +7,7 @@
       "listeners": 13,
       "renderTargets": 0,
       "framebufferCopies": 0,
-      "physicalMaterials": 1
+      "physicalMaterials": 2
     },
     {
       "file": "dist/contact-shadows.js",
@@ -52,7 +52,7 @@
       "listeners": 7,
       "renderTargets": 0,
       "framebufferCopies": 0,
-      "physicalMaterials": 2
+      "physicalMaterials": 1
     },
     {
       "file": "dist/liquid-panels.js",
@@ -82,15 +82,6 @@
       "physicalMaterials": 0
     },
     {
-      "file": "dist/render-budget.js",
-      "raf": 0,
-      "caf": 0,
-      "listeners": 0,
-      "renderTargets": 0,
-      "framebufferCopies": 0,
-      "physicalMaterials": 0
-    },
-    {
       "file": "dist/scene-layout.js",
       "raf": 0,
       "caf": 0,
@@ -101,15 +92,6 @@
     },
     {
       "file": "dist/studio-environment.js",
-      "raf": 0,
-      "caf": 0,
-      "listeners": 0,
-      "renderTargets": 0,
-      "framebufferCopies": 0,
-      "physicalMaterials": 0
-    },
-    {
-      "file": "dist/studio-shadows.js",
       "raf": 0,
       "caf": 0,
       "listeners": 0,
@@ -172,7 +154,7 @@
     "fullEffectFloorRT": true,
     "reflectionPreblur": true,
     "noStaleCapture": true,
-    "livePBRModels": true,
+    "stableBakedArchitecture": true,
     "coarseHitTesting": true,
     "synchronousShadowRefresh": true
   }

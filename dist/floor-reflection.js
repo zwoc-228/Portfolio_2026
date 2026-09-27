@@ -186,16 +186,13 @@ float reflectionFootprintMask(){
    const transientState=transientObjects.map(obj=>({obj,visible:obj.visible,intensity:typeof obj.intensity==='number'?obj.intensity:null}));
    const allReflectionOnly=[...new Set([...persistentReflectionOnlyObjects,...reflectionOnlyObjects])];
    const reflectionOnlyState=allReflectionOnly.map(obj=>({obj,visible:obj.visible}));
-   const optical=[];scene.traverse(o=>{if(o.userData.reflectionMaterial)optical.push({o,material:o.material});});
    const groundVisible=ground.visible;
    try {
-    for(const item of optical)item.o.material=item.o.userData.reflectionMaterial;
     for(const item of transientState){item.obj.visible=false;if(item.intensity!==null)item.obj.intensity=0;}
     for(const item of reflectionOnlyState)item.obj.visible=true;
     ground.visible=false;scene.background=null;renderer.setClearColor(0x000000,0);renderer.setRenderTarget(raw);renderer.clear(true,true,true);renderer.render(scene,mirror);
     blur();
    } finally {
-    for(const item of optical)item.o.material=item.material;
     renderer.setRenderTarget(old);renderer.setClearColor(color,alpha);scene.background=background;ground.visible=groundVisible;
     for(const item of transientState){item.obj.visible=item.visible;if(item.intensity!==null)item.obj.intensity=item.intensity;}
     for(const item of reflectionOnlyState)item.obj.visible=item.visible;

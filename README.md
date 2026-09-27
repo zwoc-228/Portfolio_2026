@@ -1,9 +1,10 @@
-# Round47 — repaired archive
+# Round46
 
-Current source, runtime assets, editable procedural model code, PBR GLBs and validation scripts are included. Unused historical bakes and reference screenshots were removed from this smaller package.
+Read ROUND46_CHANGES.md. This version starts from round44, keeps its geometry and refines paper edges, glass navigation, neutral desk/reflections and bounded gallery cards.
 
-Run: npm run dev → http://localhost:4173
-Check: npm run check
-Deploy: dist/ or the separate DEPLOY ZIP.
-
-No website code was changed for this archive repair. See ROUND47_REALTIME_STUDIO.md for changes and validation limits. References there to historical .blend and old render files describe the earlier archive; those optional historical resources are not included here.
+- Run: npm run dev → http://localhost:4173
+- Check: npm run check
+- Deploy: use the separate DEPLOY ZIP, or dist/.
+- Updated maps: dist/assets/writing-studio-clean.png and research-studio-clean.png.
+- Older round notes, scene and reference renders are historical.
+- Browser visual acceptance remains outstanding; no round46 website screenshot is supplied.

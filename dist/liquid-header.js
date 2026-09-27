@@ -1,26 +1,20 @@
 import * as T from './assets/three.module.js';
 import {createSurfaceContact} from './surface-contact.js';
-
+import {RoundedBoxGeometry} from './assets/RoundedBoxGeometry.js';
 import {PALETTE} from './palette.js';
 import {FRAME_ACTIVE,FRAME_RENDER,FRAME_REFLECTION} from './frame-runtime.js';
 
-export function createGlassGeometry(w,h,depth){
- const r=Math.min(h*.23,w*.23),shape=new T.Shape();
- shape.moveTo(-w/2+r,-h/2);shape.lineTo(w/2-r,-h/2);shape.quadraticCurveTo(w/2,-h/2,w/2,-h/2+r);shape.lineTo(w/2,h/2-r);shape.quadraticCurveTo(w/2,h/2,w/2-r,h/2);shape.lineTo(-w/2+r,h/2);shape.quadraticCurveTo(-w/2,h/2,-w/2,h/2-r);shape.lineTo(-w/2,-h/2+r);shape.quadraticCurveTo(-w/2,-h/2,-w/2+r,-h/2);
- const bevel=Math.min(depth*.28,h*.055),g=new T.ExtrudeGeometry(shape,{depth:depth-bevel*2,bevelEnabled:true,bevelThickness:bevel,bevelSize:bevel,bevelSegments:5,curveSegments:10,steps:1});g.translate(0,0,-(depth-bevel*2)/2);g.computeVertexNormals();return g;
-}
 export function headerMetrics(width,progress){
  const gutter=Math.max(16,Math.min(32,width*.025));
- return {width:T.MathUtils.lerp(88,Math.min(960,width-gutter*2),progress),height:T.MathUtils.lerp(64,width<=760?104:64,progress),top:gutter,center:width/2};
+ return {width:T.MathUtils.lerp(144,Math.min(960,width-gutter*2),progress),height:T.MathUtils.lerp(48,width<=760?104:56,progress),top:gutter,center:width/2};
 }
 export function createLiquidHeader({scene,camera,floorReflection,runtime}){
  const el=document.querySelector('.site-header'),trigger=el.querySelector('.header-trigger'),links=el.querySelector('.header-links');
  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
- const material=new T.MeshPhysicalMaterial({color:0xffffff,roughness:.13,metalness:0,transmission:1,thickness:.12,ior:1.46,attenuationColor:0xffffff,attenuationDistance:4,envMapIntensity:1.4,clearcoat:.25,clearcoatRoughness:.08,opacity:1});
- const proxy=new T.Mesh(createGlassGeometry(1,.5,.10),material);proxy.name='Solid refractive navigation glass';proxy.visible=true;proxy.frustumCulled=false;scene.add(proxy);
- 
+ const material=new T.MeshPhysicalMaterial({color:0xffffff,roughness:.17,metalness:0,clearcoat:1,specularIntensity:1,transparent:true,opacity:.34});
+ const proxy=new T.Mesh(new RoundedBoxGeometry(1,1,.035,3,.10),material);proxy.name='Navigation card reflection';proxy.visible=false;proxy.frustumCulled=false;scene.add(proxy);
+ floorReflection.setPersistentReflectionOnlyObjects([proxy]);
  const contact=createSurfaceContact(scene);
- const reflectedGlass=new T.MeshPhysicalMaterial({color:0xe8e8e8,roughness:.17,metalness:.12,transparent:true,opacity:.32,envMapIntensity:1.3});proxy.userData.reflectionMaterial=reflectedGlass;
  const ray=new T.Raycaster(),point=new T.Vector3(),view=new T.Vector3(),up=new T.Vector3();
  let current=0,target=0,hovered=false,focusWithin=false,pinned=false,timer=0,dirty=true;
  function place(m){
@@ -29,10 +23,9 @@ export function createLiquidHeader({scene,camera,floorReflection,runtime}){
   const t=(.12-ray.ray.origin.y)/ray.ray.direction.y;if(!Number.isFinite(t)||t<=0)return;
   point.copy(ray.ray.origin).addScaledVector(ray.ray.direction,t);view.copy(point).applyMatrix4(camera.matrixWorldInverse);
   const perPixel=-view.z*2*Math.tan(T.MathUtils.degToRad(camera.fov/2))/innerHeight;
-  contact.place(point,m.width*perPixel,Math.max(.20,m.height*perPixel*.65),.055);
+  contact.place(point,m.width*perPixel,Math.max(.20,m.height*perPixel*.85),.10);
   up.set(0,1,0).applyQuaternion(camera.quaternion);
-  proxy.position.copy(point).addScaledVector(up,m.height*perPixel/2);proxy.quaternion.copy(camera.quaternion);const w=m.width*perPixel,h=m.height*perPixel,depth=Math.min(.16,h*.18);
-  proxy.geometry.dispose();proxy.geometry=createGlassGeometry(w,h,depth);proxy.scale.set(1,1,1);material.thickness=depth;proxy.updateMatrixWorld(true);
+  proxy.position.copy(point).addScaledVector(up,m.height*perPixel/2);proxy.quaternion.copy(camera.quaternion);proxy.scale.set(m.width*perPixel,m.height*perPixel,1);proxy.updateMatrixWorld(true);
   floorReflection.setObjectFootprint(3,proxy.position.x,proxy.position.z,m.width*perPixel*.55,m.height*perPixel*.8,.78);
  }
  function apply(){
@@ -59,5 +52,5 @@ export function createLiquidHeader({scene,camera,floorReflection,runtime}){
  });
  function syncLayout(){dirty=true;apply();runtime.request(FRAME_RENDER|FRAME_REFLECTION);}
  syncLayout();
- return {mesh:proxy,transientObjects:[contact.mesh],syncLayout,dispose(){contact.dispose();clearTimeout(timer);remove();el.removeEventListener('pointerenter',enter);el.removeEventListener('pointerleave',leave);el.removeEventListener('focusin',focus);el.removeEventListener('focusout',blur);el.removeEventListener('keydown',key);trigger.removeEventListener('click',click);document.removeEventListener('pointerdown',outside);floorReflection.setPersistentReflectionOnlyObjects([]);proxy.removeFromParent();proxy.geometry.dispose();material.dispose();reflectedGlass.dispose();}};
+ return {transientObjects:[contact.mesh],syncLayout,dispose(){contact.dispose();clearTimeout(timer);remove();el.removeEventListener('pointerenter',enter);el.removeEventListener('pointerleave',leave);el.removeEventListener('focusin',focus);el.removeEventListener('focusout',blur);el.removeEventListener('keydown',key);trigger.removeEventListener('click',click);document.removeEventListener('pointerdown',outside);floorReflection.setPersistentReflectionOnlyObjects([]);proxy.removeFromParent();proxy.geometry.dispose();material.dispose();}};
 }
