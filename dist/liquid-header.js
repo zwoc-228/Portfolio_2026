@@ -11,9 +11,12 @@ export function headerMetrics(width,progress){
 export function createLiquidHeader({scene,camera,floorReflection,runtime}){
  const el=document.querySelector('.site-header'),trigger=el.querySelector('.header-trigger'),links=el.querySelector('.header-links');
  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
- const material=new T.MeshStandardMaterial({color:0xf1f0ec,roughness:.88,metalness:0});
+ const material=new T.MeshStandardMaterial({color:0xe9e6de,roughness:.97,metalness:0});
  const proxy=new T.Mesh(new RoundedBoxGeometry(1,1,.035,3,.10),material);proxy.name='Navigation card reflection';proxy.visible=false;proxy.frustumCulled=false;scene.add(proxy);
- floorReflection.setPersistentReflectionOnlyObjects([proxy]);
+ // Round51: plaster header should not paint a bright mirrored blob onto the desk.
+ // Keep only the soft contact shadow; do not register a dedicated reflection proxy.
+ floorReflection.setPersistentReflectionOnlyObjects([]);
+ floorReflection.setObjectFootprint(3,0,0,.55,.38,0);
  const contact=createSurfaceContact(scene);
  const ray=new T.Raycaster(),point=new T.Vector3(),view=new T.Vector3(),up=new T.Vector3();
  let current=0,target=0,hovered=false,focusWithin=false,pinned=false,timer=0,dirty=true;
@@ -26,7 +29,6 @@ export function createLiquidHeader({scene,camera,floorReflection,runtime}){
   contact.place(point,m.width*perPixel,Math.max(.20,m.height*perPixel*.85),.10);
   up.set(0,1,0).applyQuaternion(camera.quaternion);
   proxy.position.copy(point).addScaledVector(up,m.height*perPixel/2);proxy.quaternion.copy(camera.quaternion);proxy.scale.set(m.width*perPixel,m.height*perPixel,1);proxy.updateMatrixWorld(true);
-  floorReflection.setObjectFootprint(3,proxy.position.x,proxy.position.z,m.width*perPixel*.55,m.height*perPixel*.8,.78);
  }
  function apply(){
   const p=current*current*(3-2*current),m=headerMetrics(innerWidth,p);
@@ -52,5 +54,5 @@ export function createLiquidHeader({scene,camera,floorReflection,runtime}){
  });
  function syncLayout(){dirty=true;apply();runtime.request(FRAME_RENDER|FRAME_REFLECTION);}
  syncLayout();
- return {transientObjects:[contact.mesh],syncLayout,dispose(){contact.dispose();clearTimeout(timer);remove();el.removeEventListener('pointerenter',enter);el.removeEventListener('pointerleave',leave);el.removeEventListener('focusin',focus);el.removeEventListener('focusout',blur);el.removeEventListener('keydown',key);trigger.removeEventListener('click',click);document.removeEventListener('pointerdown',outside);floorReflection.setPersistentReflectionOnlyObjects([]);proxy.removeFromParent();proxy.geometry.dispose();material.dispose();}};
+ return {transientObjects:[contact.mesh],syncLayout,dispose(){contact.dispose();clearTimeout(timer);remove();el.removeEventListener('pointerenter',enter);el.removeEventListener('pointerleave',leave);el.removeEventListener('focusin',focus);el.removeEventListener('focusout',blur);el.removeEventListener('keydown',key);trigger.removeEventListener('click',click);document.removeEventListener('pointerdown',outside);floorReflection.setPersistentReflectionOnlyObjects([]);floorReflection.setObjectFootprint(3,0,0,.55,.38,0);proxy.removeFromParent();proxy.geometry.dispose();material.dispose();}};
 }
