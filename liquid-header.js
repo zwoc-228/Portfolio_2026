@@ -5,7 +5,7 @@ import {FRAME_ACTIVE,FRAME_RENDER,FRAME_REFLECTION} from './frame-runtime.js';
 export function headerMetrics(width,progress){
  const gutter=Math.max(16,Math.min(32,width*.025));
  const frame=Math.min(1280,width-gutter*2),w=T.MathUtils.lerp(144,frame,progress);
- return {width:w,height:T.MathUtils.lerp(48,width<=760?104:56,progress),top:gutter,center:(width-frame+w)/2};
+ return {width:w,height:T.MathUtils.lerp(48,width<=760?104:56,progress),top:gutter,center:width/2};
 }
 export function createLiquidHeader({scene,camera,floorReflection,runtime}){
  const el=document.querySelector('.site-header'),trigger=el.querySelector('.header-trigger'),links=el.querySelector('.header-links');
