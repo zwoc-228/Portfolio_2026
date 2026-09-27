@@ -1,10 +1,10 @@
 import * as T from './assets/three.module.js';
 
 // High-quality planar reflection with separable blur plus screen-UI contact reflections.
-// Interactive build uses a 768x432 HalfFloat reflection budget, but makes UI reflections
+// Round 37 keeps the 1024x576 HalfFloat reflection budget, but makes UI reflections
 // directional and elongated across the metal desk instead of symmetric glow blobs.
-export function createFloorReflection(renderer,scene,ground){
- const W=768,H=432;
+export function createFloorReflection(renderer,scene,ground,{lowPower=false}={}){
+ const W=lowPower?512:768,H=lowPower?288:432;
  const raw=new T.WebGLRenderTarget(W,H,{type:T.HalfFloatType,depthBuffer:true});
  raw.texture.generateMipmaps=false;raw.texture.minFilter=T.LinearFilter;raw.texture.magFilter=T.LinearFilter;
  if('samples' in raw)raw.samples=2;
@@ -47,8 +47,8 @@ export function createFloorReflection(renderer,scene,ground){
 
  ground.material.onBeforeCompile=shader=>{
   Object.assign(shader.uniforms,uniforms);
-  shader.vertexShader='varying vec4 vFloorProjection; varying vec3 vFloorWorldPosition; uniform mat4 floorProjection;\n'+shader.vertexShader;
-  shader.vertexShader=shader.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\nvec4 floorWorld = modelMatrix * vec4(transformed,1.0);\nvFloorWorldPosition = floorWorld.xyz;\nvFloorProjection = floorProjection * floorWorld;');
+  shader.vertexShader='varying vec4 vFloorProjection; varying vec3 vFloorWorldPosition; varying vec3 vFloorWorldNormal; uniform mat4 floorProjection;\n'+shader.vertexShader;
+  shader.vertexShader=shader.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\nvec4 floorWorld = modelMatrix * vec4(transformed,1.0);\nvFloorWorldPosition = floorWorld.xyz;\nvFloorWorldNormal = normalize(mat3(modelMatrix) * objectNormal);\nvFloorProjection = floorProjection * floorWorld;');
   shader.fragmentShader=`uniform sampler2D floorReflection;
 uniform vec2 glowWorldXZ; uniform float glowStrength; uniform float glowRadius;
 uniform vec2 uiCenter; uniform vec2 uiAxis; uniform float uiHalfLength; uniform float uiWidth; uniform float uiStrength; uniform float uiProgress; uniform float uiContact;
@@ -59,7 +59,7 @@ uniform vec2 object0Center; uniform vec2 object0Radius; uniform float object0Str
 uniform vec2 object1Center; uniform vec2 object1Radius; uniform float object1Strength;
 uniform vec2 object2Center; uniform vec2 object2Radius; uniform float object2Strength;
 uniform vec2 object3Center; uniform vec2 object3Radius; uniform float object3Strength;
-varying vec4 vFloorProjection; varying vec3 vFloorWorldPosition;
+varying vec4 vFloorProjection; varying vec3 vFloorWorldPosition; varying vec3 vFloorWorldNormal;
 float floorGlowMask(){vec2 gd=vFloorWorldPosition.xz-glowWorldXZ; return exp(-dot(gd,gd)/(2.0*glowRadius*glowRadius))*glowStrength;}
 vec3 uiGlassReflection(){
  vec2 d=vFloorWorldPosition.xz-uiCenter; vec2 a=normalize(uiAxis+vec2(1e-5)); vec2 n=vec2(-a.y,a.x);
@@ -111,11 +111,11 @@ float reflectionFootprintMask(){
  );
 }
 `+shader.fragmentShader;
-  shader.fragmentShader=shader.fragmentShader.replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\nroughnessFactor *= mix(1.0,0.74,clamp(floorGlowMask(),0.0,1.0)); roughnessFactor *= mix(1.0,.86,uiGlassMask()); roughnessFactor *= mix(1.0,.90,panelBoardMask());');
+  shader.fragmentShader=shader.fragmentShader.replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\nroughnessFactor *= mix(1.0,0.82,clamp(floorGlowMask(),0.0,1.0)); roughnessFactor *= mix(1.0,.86,uiGlassMask()); roughnessFactor *= mix(1.0,.90,panelBoardMask());');
   shader.fragmentShader=shader.fragmentShader.replace('#include <opaque_fragment>',`
   vec2 reflectionUV=vFloorProjection.xy/vFloorProjection.w;
   vec4 reflected=texture2D(floorReflection,reflectionUV);
-  float inside=step(0.0,reflectionUV.x)*step(reflectionUV.x,1.0)*step(0.0,reflectionUV.y)*step(reflectionUV.y,1.0)*step(0.0,vFloorProjection.w);
+  float floorFacing=smoothstep(.78,.985,vFloorWorldNormal.y);\n  float inside=step(0.0,reflectionUV.x)*step(reflectionUV.x,1.0)*step(0.0,reflectionUV.y)*step(reflectionUV.y,1.0)*step(0.0,vFloorProjection.w)*floorFacing;
   float footprint=clamp(reflectionFootprintMask(),0.0,1.0);
   // Reflection-only UI proxy meshes are real scene geometry during the mirror pass.
   // Keep a visible low-energy base response everywhere instead of suppressing them
@@ -127,7 +127,7 @@ float reflectionFootprintMask(){
   reflectedColor*=.98;
   outgoingLight=mix(outgoingLight,reflectedColor,(.28+.10*footprint)*reflectedAlpha);
   float pointerGlow=clamp(floorGlowMask(),0.0,1.0);
-  outgoingLight += vec3(.085,.083,.078)*pointerGlow;
+  outgoingLight += vec3(.052)*pointerGlow;
   vec3 uiRef=uiGlassReflection(); float uiGlow=clamp(uiRef.x,0.0,1.0);
   float uiShadow=clamp(uiContactShadow(),0.0,1.0);
   outgoingLight*=1.0-uiShadow*.115;
@@ -138,7 +138,7 @@ float reflectionFootprintMask(){
   outgoingLight += vec3(.058)*panelRef.x + vec3(.138)*panelRef.y + vec3(.080)*panelRef.z;
   #include <opaque_fragment>`);
  };
- ground.material.customProgramCacheKey=()=> 'reference-floor-v17-viewer-light';
+ ground.material.customProgramCacheKey=()=> 'reference-floor-v17-seamless-cove';
  const color=new T.Color(),look=new T.Vector3();
  function blur(){
   blurMat.uniforms.uMap.value=raw.texture;blurMat.uniforms.uDirection.value.set(1,0);renderer.setRenderTarget(blurA);renderer.clear();renderer.render(blurScene,blurCamera);
@@ -178,8 +178,9 @@ float reflectionFootprintMask(){
   setPersistentReflectionOnlyObjects(objects=[]){persistentReflectionOnlyObjects=objects.filter(Boolean);},
   clear,
   update(camera){
-   mirror.copy(camera);mirror.position.y=2*ground.position.y-camera.position.y;
-   camera.getWorldDirection(look);look.add(camera.position);look.y=2*ground.position.y-look.y;
+   const floorY=ground.userData?.reflectionY??ground.position.y;
+   mirror.copy(camera);mirror.position.y=2*floorY-camera.position.y;
+   camera.getWorldDirection(look);look.add(camera.position);look.y=2*floorY-look.y;
    mirror.up.set(0,-1,0);mirror.lookAt(look);mirror.updateMatrixWorld();
    matrix.copy(bias).multiply(mirror.projectionMatrix).multiply(mirror.matrixWorldInverse);
    const old=renderer.getRenderTarget(),background=scene.background;renderer.getClearColor(color);const alpha=renderer.getClearAlpha();
