@@ -517,6 +517,7 @@ async function init() {
     liquidHeader = createLiquidHeader({ scene, camera, floorReflection, runtime });
     liquidPanels = createLiquidPanels({ runtime, onLayout: syncPanelFloorReflection });
 
+    // Cycles baked handmade studio architecture: keep the baked model/material path stable.
     models = createModels();
     models.forEach((m, i) => {
       const f = HOME_TRANSFORMS[i]; m.scale.set(f[2], f[3], f[5]);

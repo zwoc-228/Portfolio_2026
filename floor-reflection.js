@@ -4,7 +4,7 @@ import * as T from './assets/three.module.js';
 // Round 37 keeps the 1024x576 HalfFloat reflection budget, but makes UI reflections
 // directional and elongated across the metal desk instead of symmetric glow blobs.
 export function createFloorReflection(renderer,scene,ground){
- const W=640,H=360;
+ const W=1024,H=576;
  const raw=new T.WebGLRenderTarget(W,H,{type:T.HalfFloatType,depthBuffer:true});
  raw.texture.generateMipmaps=false;raw.texture.minFilter=T.LinearFilter;raw.texture.magFilter=T.LinearFilter;
  if('samples' in raw)raw.samples=0;
