@@ -11,7 +11,7 @@ export function createContactShadows(scene, roots, layouts, textures, reflection
    void main(){float r=(.7+lift*7.)/512.;float a=texture2D(map,vUv).r*.28;
    a+=(texture2D(map,vUv+vec2(r,0.)).r+texture2D(map,vUv-vec2(r,0.)).r+texture2D(map,vUv+vec2(0.,r)).r+texture2D(map,vUv-vec2(0.,r)).r)*.12;
    a+=(texture2D(map,vUv+vec2(r,r)).r+texture2D(map,vUv+vec2(-r,r)).r+texture2D(map,vUv+vec2(r,-r)).r+texture2D(map,vUv-vec2(r,r)).r)*.06;
-   gl_FragColor=vec4(.10,.12,.13,(1.-a)*opacity*(1.-lift*.6));}`});
+   gl_FragColor=vec4(.11,.11,.11,(1.-a)*opacity*(1.-lift*.6));}`});
   const mesh=new T.Mesh(new T.PlaneGeometry(l.width,l.depth),material);
   mesh.name=l.name+' baked contact';mesh.rotation.x=-Math.PI/2;mesh.position.set(l.x,-.013,l.z);mesh.renderOrder=2;
   root.add(mesh);return mesh;

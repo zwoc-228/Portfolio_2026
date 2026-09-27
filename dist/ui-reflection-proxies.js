@@ -1,4 +1,5 @@
 import * as T from './assets/three.module.js';
+import {createSurfaceContact} from './surface-contact.js';
 
 // Screen UI is DOM, so it has no geometry for the desk's planar mirror pass.
 // These reflection-only billboards give each visible card a real 3D pose. The floor
@@ -46,7 +47,7 @@ export function createUIReflectionProxies({ scene, camera, floorReflection }) {
   const makeProxy = (name) => {
     const uniforms = {
       uSizePx:{value:new T.Vector2(280,400)},
-      uBase:{value:new T.Color(0xeeefe9)},
+      uBase:{value:new T.Color(0xf1f1f1)},
       uOpacity:{value:.82}
     };
     const material = new T.ShaderMaterial({
@@ -59,7 +60,7 @@ export function createUIReflectionProxies({ scene, camera, floorReflection }) {
     mesh.visible=false;
     mesh.frustumCulled=false;
     group.add(mesh);
-    return {mesh,uniforms};
+    return {mesh,uniforms,contact:createSurfaceContact(scene)};
   };
 
   const proxies = [
@@ -68,7 +69,8 @@ export function createUIReflectionProxies({ scene, camera, floorReflection }) {
     makeProxy('Project UI reflection 2'),
     makeProxy('Project UI reflection 3'),
     makeProxy('Project UI reflection 4'),
-    makeProxy('Detail UI reflection')
+    makeProxy('Detail UI reflection'),
+    makeProxy('Dialog UI reflection')
   ];
 
   const ray = new T.Raycaster();
@@ -79,7 +81,7 @@ export function createUIReflectionProxies({ scene, camera, floorReflection }) {
   const q = new T.Quaternion();
   const forward = new T.Vector3();
 
-  function place(proxy, rect, { bottomHeight=.22, opacity=.82, tint=0xeeefe9 } = {}) {
+  function place(proxy, rect, { bottomHeight=.22, opacity=.82, tint=0xf1f1f1 } = {}) {
     if (!rect || rect.width < 4 || rect.height < 4 || rect.bottom < 0 || rect.top > innerHeight) return false;
     camera.updateMatrixWorld(true);
     const x = rect.left + rect.width * .5;
@@ -109,16 +111,19 @@ export function createUIReflectionProxies({ scene, camera, floorReflection }) {
     proxy.uniforms.uBase.value.setHex(tint);
     proxy.uniforms.uOpacity.value=opacity*(rect.opacity??1);
     proxy.mesh.updateMatrixWorld(true);
+    proxy.contact.place(bottom,w,Math.min(1.2,h*.18+.18),.12*(rect.opacity??1));
     return true;
   }
 
-  function sync({ category=null, cards=[], detail=null, hover=0 } = {}) {
+  function sync({ category=null, cards=[], detail=null, info=null, hover=0 } = {}) {
     const active=[];
+    proxies.forEach(p=>p.contact.hide());
     const specs=[];
-    if(category) specs.push({rect:category,bottomHeight:.25,opacity:.88+hover*.05,tint:0xeeefe9});
-    cards.slice(0,4).forEach((rect)=>specs.push({rect,bottomHeight:.20,opacity:.70,tint:0xeeefe9}));
-    if(detail) specs.push({rect:detail,bottomHeight:.18,opacity:.80,tint:0xeeefe9});
+    if(category) specs.push({rect:category,bottomHeight:.25,opacity:.88+hover*.05,tint:0xf1f1f1});
+    cards.slice(0,4).forEach((rect)=>specs.push({rect,bottomHeight:.20,opacity:.70,tint:0xf1f1f1}));
+    if(detail) specs.push({rect:detail,bottomHeight:.18,opacity:.80,tint:0xf1f1f1});
 
+    if(info) specs.push({rect:info,bottomHeight:.18,opacity:.80,tint:0xf1f1f1});
     let cursor=0;
     for(const spec of specs){
       if(cursor>=proxies.length)break;
@@ -135,8 +140,8 @@ export function createUIReflectionProxies({ scene, camera, floorReflection }) {
   function dispose(){
     floorReflection?.setReflectionOnlyObjects?.([]);
     group.removeFromParent();
-    for(const {mesh} of proxies){mesh.geometry.dispose();mesh.material.dispose();}
+    for(const {mesh,contact} of proxies){contact.dispose();mesh.geometry.dispose();mesh.material.dispose();}
   }
 
-  return { sync, dispose, meshes:proxies.map(p=>p.mesh) };
+  return { sync, dispose, contacts:proxies.map(p=>p.contact.mesh), meshes:proxies.map(p=>p.mesh) };
 }

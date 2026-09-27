@@ -26,11 +26,11 @@
     "assets/reference-serif.otf",
     "assets/research-bake-uv.json",
     "assets/research-contact-ao.png",
-    "assets/research-studio-baked.jpg",
+    "assets/research-studio-clean.png",
     "assets/three.module.js",
     "assets/writing-bake-uv.json",
     "assets/writing-contact-ao.png",
-    "assets/writing-studio-baked.jpg",
+    "assets/writing-studio-clean.png",
     "contact-shadows.js",
     "content-data.js",
     "floor-reflection.js",
@@ -46,11 +46,12 @@
     "styles/base.css",
     "styles/tokens.css",
     "styles/ui-system.css",
+    "surface-contact.js",
     "ui-motion.js",
     "ui-reflection-proxies.js",
     "ui-surface.js",
     "ui-view.js"
   ],
-  "count": 50,
-  "bytes": 6632668
+  "count": 51,
+  "bytes": 7522866
 }

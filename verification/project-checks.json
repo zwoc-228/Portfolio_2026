@@ -1,6 +1,6 @@
 {
-  "syntaxModules": 19,
-  "localReferences": 59,
+  "syntaxModules": 20,
+  "localReferences": 62,
   "regressionSuites": 5,
   "status": "passed",
   "liveWebGLScreenshot": false

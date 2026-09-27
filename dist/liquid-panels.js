@@ -6,6 +6,7 @@ export function createLiquidPanels({runtime,onLayout}){
  const wake=()=>{remaining=.32;runtime.request(FRAME_RENDER|FRAME_REFLECTION|FRAME_ACTIVE);};
  const root=document.querySelector('#category');
  const observer=new MutationObserver(wake);observer.observe(root,{subtree:true,attributes:true,childList:true,attributeFilter:['class','hidden','data-phase']});observer.observe(document.body,{attributes:true,attributeFilter:['class']});
+ const info=document.querySelector('#info');if(info)observer.observe(info,{attributes:true,childList:true,subtree:true,attributeFilter:['open']});
  const resize=new ResizeObserver(wake);resize.observe(root);
  root.addEventListener('scroll',wake,true);root.addEventListener('pointerover',wake);root.addEventListener('pointerout',wake);
  const remove=runtime.add(dt=>{if(remaining<=0)return 0;remaining-=dt;onLayout?.();return FRAME_RENDER|FRAME_REFLECTION|(remaining>0?FRAME_ACTIVE:0);});

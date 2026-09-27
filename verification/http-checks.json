@@ -1,5 +1,5 @@
 {
-  "resources": 50,
+  "resources": 51,
   "status": "passed",
-  "scope": "Deployed asset HTTP and byte equality, not browser rendering"
+  "scope": "HTTP serving and byte equality; not browser rendering"
 }

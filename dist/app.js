@@ -115,6 +115,7 @@ function syncPanelFloorReflection() {
     category: categoryRect,
     cards: cardRects,
     detail: detailRect,
+    info: visibleUIRect(document.querySelector('#info')),
     hover: panelReflectionHover
   });
   if (state === 'home') floorReflection.clearPanelReflections?.();
@@ -474,11 +475,11 @@ async function init() {
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = T.VSMShadowMap;
     renderer.toneMapping = T.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.14;
+    renderer.toneMappingExposure = 1.02;
     $('#scene').append(renderer.domElement);
 
     scene = new T.Scene();
-    scene.background = new T.Color(0xdfe5e5);
+    scene.background = new T.Color(0xdedede);
     camera = new T.PerspectiveCamera(27, innerWidth / Math.max(1, innerHeight), .1, 200);
     // Size and aim the renderer before any runtime client can request a frame.  This
     // removes the old 300×150 default-canvas stretch that appeared as horizontal bands.
@@ -489,35 +490,35 @@ async function init() {
 
     const pmrem = new T.PMREMGenerator(renderer);
     scene.environment = pmrem.fromScene(createStudioEnvironment(), .04).texture;
-    scene.environmentIntensity = 1.22;
+    scene.environmentIntensity = 1.05;
     pmrem.dispose();
 
     const loader = new T.TextureLoader();
     const deskMetalNormal=await loadTexture(loader, 'desk-metal-normal.png',18);
 
     const ground = new T.Mesh(new T.PlaneGeometry(200, 200), new T.MeshPhysicalMaterial({
-      color: PALETTE.desk, envMap: scene.environment, envMapIntensity: 1.32,
-      metalness: .76, roughness: .36,
-      normalMap: deskMetalNormal, normalScale: new T.Vector2(.011, .011), clearcoat: .036, clearcoatRoughness: .38,
-      anisotropy: .50, anisotropyRotation: 0
+      color: PALETTE.desk, envMap: scene.environment, envMapIntensity: 1.16,
+      metalness: .48, roughness: .34,
+      normalMap: deskMetalNormal, normalScale: new T.Vector2(.006, .006), clearcoat: .008, clearcoatRoughness: .64,
+      anisotropy: .12, anisotropyRotation: 0
     }));
     ground.rotation.x = -Math.PI / 2; ground.position.y = -.016; ground.receiveShadow = true; scene.add(ground);
 
-    scene.add(new T.HemisphereLight(0xfcfdfd, 0x95a0a5, .36));
-    keyLight = new T.DirectionalLight(0xfcfeff, .90); keyLight.position.set(-6.7, 10.2, 5.6); keyLight.castShadow = true; keyLight.shadow.mapSize.set(2048, 2048); Object.assign(keyLight.shadow.camera, { left: -8, right: 8, top: 6, bottom: -4, near: .1, far: 28 }); keyLight.shadow.bias = -.00008; keyLight.shadow.normalBias = .0048; keyLight.shadow.radius = 6.2; keyLight.shadow.blurSamples = 10; keyLight.shadow.autoUpdate = false; keyLight.shadow.needsUpdate = true; scene.add(keyLight);
-    keyCompanionLight = new T.DirectionalLight(0xf7fbfd, .28); keyCompanionLight.position.set(3.8, 7.6, 1.6); keyCompanionLight.castShadow = false; scene.add(keyCompanionLight);
-    const fill = new T.DirectionalLight(0xecf2f4, .24); fill.position.set(6.4, 6.4, -4.4); scene.add(fill);
+    scene.add(new T.HemisphereLight(0xfafafa, 0x969696, .29));
+    keyLight = new T.DirectionalLight(0xffffff, .74); keyLight.position.set(-6.7, 10.2, 5.6); keyLight.castShadow = true; keyLight.shadow.mapSize.set(2048, 2048); Object.assign(keyLight.shadow.camera, { left: -8, right: 8, top: 6, bottom: -4, near: .1, far: 28 }); keyLight.shadow.bias = -.00008; keyLight.shadow.normalBias = .0048; keyLight.shadow.radius = 6.2; keyLight.shadow.blurSamples = 10; keyLight.shadow.autoUpdate = false; keyLight.shadow.needsUpdate = true; scene.add(keyLight);
+    keyCompanionLight = new T.DirectionalLight(0xffffff, .22); keyCompanionLight.position.set(3.8, 7.6, 1.6); keyCompanionLight.castShadow = false; scene.add(keyCompanionLight);
+    const fill = new T.DirectionalLight(0xf0f0f0, .18); fill.position.set(6.4, 6.4, -4.4); scene.add(fill);
 
     flashlightTarget = new T.Object3D(); scene.add(flashlightTarget);
-    flashlight = new T.SpotLight(0xf6fbff, 0, 0, T.MathUtils.degToRad(2.0), .94, 0); flashlight.position.set(0, 9.8, 2.2); flashlight.target = flashlightTarget; flashlight.castShadow = false; scene.add(flashlight);
+    flashlight = new T.SpotLight(0xffffff, 0, 0, T.MathUtils.degToRad(2.0), .94, 0); flashlight.position.set(0, 9.8, 2.2); flashlight.target = flashlightTarget; flashlight.castShadow = false; scene.add(flashlight);
     const beamVert = `varying vec3 vPos;varying vec3 vNormalV;void main(){vPos=position;vNormalV=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`;
     const beamFrag = `uniform vec3 uColor;uniform float uOpacity;varying vec3 vPos;varying vec3 vNormalV;void main(){float h=clamp(.5-vPos.y,0.,1.);float vertical=smoothstep(.015,.18,h)*(1.-smoothstep(.80,.995,h));float facing=.46+.54*(1.-abs(vNormalV.z));float alpha=uOpacity*vertical*facing;gl_FragColor=vec4(uColor,alpha);}`;
     const beamMaterial = (color) => new T.ShaderMaterial({ uniforms: { uColor: { value: new T.Color(color) }, uOpacity: { value: 0 } }, vertexShader: beamVert, fragmentShader: beamFrag, transparent: true, depthWrite: false, depthTest: true, blending: T.AdditiveBlending, side: T.DoubleSide });
-    beamHalo = new T.Mesh(new T.ConeGeometry(1, 1, 24, 1, true), beamMaterial(0xe9f3fb)); beamHalo.renderOrder = 1; scene.add(beamHalo);
+    beamHalo = new T.Mesh(new T.ConeGeometry(1, 1, 24, 1, true), beamMaterial(0xffffff)); beamHalo.renderOrder = 1; scene.add(beamHalo);
     const dustCount = 36, dustPos = new Float32Array(dustCount * 3), dustSeed = new Float32Array(dustCount);
     for (let i = 0; i < dustCount; i++) { const h = Math.random(), a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * h * .92; dustPos[i*3] = Math.cos(a) * r; dustPos[i*3+1] = .5 - h; dustPos[i*3+2] = Math.sin(a) * r; dustSeed[i] = Math.random(); }
     const dustGeom = new T.BufferGeometry(); dustGeom.setAttribute('position', new T.BufferAttribute(dustPos, 3)); dustGeom.setAttribute('aSeed', new T.BufferAttribute(dustSeed, 1));
-    const dustMat = new T.ShaderMaterial({ uniforms: { uOpacity: { value: 0 }, uTime: { value: 0 }, uColor: { value: new T.Color(0xf1f8fd) } }, vertexShader: `attribute float aSeed;uniform float uTime;varying float vSeed;void main(){vSeed=aSeed;vec3 p=position;p.y+=sin(uTime*.55+aSeed*18.)*.009;vec4 mv=modelViewMatrix*vec4(p,1.);gl_PointSize=(1.25+aSeed*2.35)*(26./max(1.,-mv.z));gl_Position=projectionMatrix*mv;}`, fragmentShader: `uniform float uOpacity;uniform vec3 uColor;varying float vSeed;void main(){float d=length(gl_PointCoord-.5);float soft=1.-smoothstep(.12,.5,d);float twinkle=.55+.45*sin(vSeed*31.);gl_FragColor=vec4(uColor,uOpacity*soft*twinkle);}`, transparent: true, depthWrite: false, depthTest: true, blending: T.AdditiveBlending });
+    const dustMat = new T.ShaderMaterial({ uniforms: { uOpacity: { value: 0 }, uTime: { value: 0 }, uColor: { value: new T.Color(0xffffff) } }, vertexShader: `attribute float aSeed;uniform float uTime;varying float vSeed;void main(){vSeed=aSeed;vec3 p=position;p.y+=sin(uTime*.55+aSeed*18.)*.009;vec4 mv=modelViewMatrix*vec4(p,1.);gl_PointSize=(1.25+aSeed*2.35)*(26./max(1.,-mv.z));gl_Position=projectionMatrix*mv;}`, fragmentShader: `uniform float uOpacity;uniform vec3 uColor;varying float vSeed;void main(){float d=length(gl_PointCoord-.5);float soft=1.-smoothstep(.12,.5,d);float twinkle=.55+.45*sin(vSeed*31.);gl_FragColor=vec4(uColor,uOpacity*soft*twinkle);}`, transparent: true, depthWrite: false, depthTest: true, blending: T.AdditiveBlending });
     beamParticles = new T.Points(dustGeom, dustMat); beamParticles.renderOrder = 3; scene.add(beamParticles);
     flashlight.visible = false; beamHalo.visible = false; beamParticles.visible = false;
 
@@ -544,52 +545,25 @@ async function init() {
     const modelNames=['writing','architecture','research'];
     const json=async url=>{const r=await fetch(url);if(!r.ok)throw Error('Missing '+url);return r.json();};
     const [atlases,uvSets,contactLayout,contactMaps]=await Promise.all([
-      Promise.all(modelNames.map(n=>loader.loadAsync(`assets/${n}-studio-baked.jpg`))),
+      Promise.all(modelNames.map(n=>loader.loadAsync(`assets/${n}${n==='architecture'?'-studio-baked.jpg':'-studio-clean.png'}`))),
       Promise.all(modelNames.map(n=>json(`assets/${n}-bake-uv.json`))),
       json('assets/contact-ao-layout.json'),
       Promise.all(modelNames.map(n=>loader.loadAsync(`assets/${n}-contact-ao.png`)))
     ]);
     const oldMaterials=new Set();
+    const clipMaterial=new T.MeshPhysicalMaterial({color:0xc5c5c5,metalness:1,roughness:.24,envMapIntensity:1.25});clipMaterial.name='Round44 neutral steel clip';
     models.forEach((root,i)=>{
       const atlas=atlases[i];atlas.colorSpace=T.SRGBColorSpace;atlas.channel=1;atlas.anisotropy=Math.min(16,renderer.capabilities.getMaxAnisotropy());
       const studioMaterial=new T.MeshBasicMaterial({map:atlas,color:0xffffff,side:T.DoubleSide});studioMaterial.name='Cycles baked handmade studio';
-      const useBakedAtlas=i===1;
       root.traverse(o=>{
         if(!o.isMesh)return;const uv=uvSets[i][o.name];if(o.geometry.index)o.geometry=o.geometry.toNonIndexed();
         if(!uv||uv.length!==o.geometry.attributes.position.count*2)throw Error('Baked UV mismatch: '+o.name);
-        o.geometry.setAttribute('uv1',new T.Float32BufferAttribute(uv,2));
-        o.receiveShadow=false;
-        // Thin paper layers are grounded by the baked AO/contact pass. Letting every
-        // 2–8 mm sheet cast VSM shadows produced the dark perimeter seams seen in R44.
-        // Keep shadows only on structural pieces and the metal clip.
-        if(i===0){
-          o.castShadow=/cover|spine|bookmark/i.test(o.name);
-        }else if(i===2){
-          o.castShadow=/paperclip/i.test(o.name);
-        }else{
-          o.castShadow=true;
-        }
-        if(useBakedAtlas){
-          oldMaterials.add(o.material);
-          o.material=studioMaterial;
-        }else{
-          if(Array.isArray(o.material)){
-            o.material=o.material.map(m=>{m.side=T.DoubleSide;m.envMap=scene.environment;m.envMapIntensity=.44;m.needsUpdate=true;return m;});
-          }else if(o.material){
-            o.material.side=T.DoubleSide;
-            o.material.envMap=scene.environment;
-            o.material.envMapIntensity=.50;
-            if(/paper|cover|sheet|gathering|clip|spine/i.test(o.name)){
-              o.material.roughness=Math.min(.90, (o.material.roughness ?? .7) + .025);
-            }
-            o.material.needsUpdate=true;
-          }
-        }
+        o.geometry.setAttribute('uv1',new T.Float32BufferAttribute(uv,2));oldMaterials.add(o.material);o.material=o.name==='Bent satin steel paperclip'?clipMaterial:studioMaterial;o.receiveShadow=false;o.castShadow=true;
       });
     });
     oldMaterials.forEach(m=>m.dispose());
     contactShadows=createContactShadows(scene,models,contactLayout,contactMaps,floorReflection);
-    floorReflection.setTransientObjects([flashlight,beamHalo,beamParticles,...contactShadows.meshes,...liquidHeader.transientObjects]);
+    floorReflection.setTransientObjects([flashlight,beamHalo,beamParticles,...contactShadows.meshes,...uiReflectionProxies.contacts,...liquidHeader.transientObjects]);
 
     bindSceneInput();
     layout(false);

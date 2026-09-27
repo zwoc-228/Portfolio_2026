@@ -31,14 +31,11 @@ function coverGeometry(w,d,h,r){
 }
 export function createModels(){
  const mat=(name,color,roughness=.78,metalness=0)=>{const m=new T.MeshPhysicalMaterial({color,roughness,metalness,ior:1.42,specularIntensity:.28,clearcoat:.008});m.name=name;return m;};
- const paper=mat('Neutral cotton paper',PALETTE.paper,.82),cover=mat('Neutral book cloth',PALETTE.linen,.80),edge=mat('Soft cut paper edges',PALETTE.paperEdge,.86);
- paper.emissive.set(PALETTE.paper);paper.emissiveIntensity=.025;
- edge.emissive.set(PALETTE.paperEdge);edge.emissiveIntensity=.032;
- cover.emissive.set(PALETTE.linen);cover.emissiveIntensity=.018;
+ const paper=mat('Warm cotton paper',PALETTE.paper,.84),cover=mat('Fine ivory book cloth',PALETTE.linen,.82),edge=mat('Cream cut paper edges',PALETTE.paperEdge,.88);
  const architectureStone=mat('Portfolio warm plaster',PALETTE.plaster,.78),architectureInset=mat('Portfolio pale stone',PALETTE.stone,.83);
  const glass=mat('Portfolio pale cyan resin',PALETTE.cyan,.57),frosted=mat('Portfolio mint plaster',PALETTE.mint,.72);
  const copper=mat('Portfolio ochre satin accent',PALETTE.ochre,.56,.35),architectureMetal=mat('Portfolio blue grey metal',PALETTE.slate,.60,.35);
- const steel=mat('Brushed steel clip',0xb6c0c6,.24,.94),ribbonMaterial=mat('Slate woven bookmark',PALETTE.slate,.86);
+ const steel=mat('Satin steel clip',0x9ba5a4,.36,.72),ribbonMaterial=mat('Slate woven bookmark',PALETTE.slate,.86);
  function add(g,name,geometry,m){const o=new T.Mesh(geometry,m);o.name=name;o.castShadow=o.receiveShadow=true;g.add(o);return o;}
  function box(g,name,w,h,d,x,y,z,m,r=.014){const o=add(g,name,new RoundedBoxGeometry(w,h,d,3,Math.min(r,w/3,h/3,d/3)),m);o.position.set(x,y,z);return o;}
  function tube(g,name,points,r,m){return add(g,name,new T.TubeGeometry(new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p))),96,r,8,false),m);}
@@ -51,7 +48,7 @@ export function createModels(){
  }
  const upper=add(writing,'Rounded upper cloth cover',coverGeometry(2.62,3.24,.044,.095),cover);upper.position.y=.232;
  box(writing,'Rounded binding spine',.112,.224,3.10,-1.25,.132,0,cover,.035);
- const hinge=mat('Pressed binding groove',0xe7ebe9,.90);
+ const hinge=mat('Pressed binding groove',0xd9dcd5,.86);
  box(writing,'Inset hinge on cover',.012,.002,3.01,-1.135,.255,0,hinge,.001);
  // Bookmark exits between pages and falls to the desk, not a floating rectangular flap.
  const rp=[],ru=[],ri=[];
@@ -80,13 +77,13 @@ box(architecture,'Smoked glass cap',.70,.22,.70,.92,.80,.82,mat('Smoky cast resi
  const research=new T.Group();research.name='Research';
  const offsets=[[-.12,.07,-.072],[.07,-.04,.045],[-.055,.04,-.034],[.105,.005,.061],[-.09,-.045,-.054],[.035,.04,.026],[-.015,-.04,-.018],[.03,.025,.012],[0,0,0]];
  offsets.forEach(([dx,dz,angle],i)=>{
-  const o=add(research,'Loose research sheet '+i,sheetGeometry(2.73,3.34,.0028,.004+i*.0088,{dx,dz,angle}),paper);
-  o.userData.sheet={base:.004+i*.0088,thickness:.0028,dx,dz,angle};
+  const o=add(research,'Loose research sheet '+i,sheetGeometry(2.73,3.34,.0045,.004+i*.0105,{dx,dz,angle}),paper);
+  o.userData.sheet={base:.004+i*.0105,thickness:.0045,dx,dz,angle};
  });
  // Upper wire sits on the curved top sheet; the return leg hooks around its rear edge.
- const base=.004+8*.0088+.0028,cp=[];
- const pts=[[1.14,-1.22],[1.18,-1.30],[1.18,-1.66],[1.12,-1.74],[1.02,-1.76],[.94,-1.72],[.90,-1.64],[.90,-1.28],[.95,-1.18],[1.04,-1.14],[1.12,-1.17],[1.15,-1.24],[1.15,-1.60],[1.12,-1.66],[1.05,-1.69],[.99,-1.66],[.96,-1.60],[.96,-1.35],[.99,-1.29],[1.05,-1.27],[1.09,-1.30],[1.10,-1.54]];
- pts.forEach(([x,z],i)=>cp.push([x,base+paperHeight(x,z)+.0075-(i>11?.008:0),z]));
- tube(research,'Bent satin steel paperclip',cp,.0042,steel);
+ const base=.004+8*.0105+.0045,cp=[];
+ const pts=[[1.02,-1.39],[1.02,-1.67],[1.04,-1.72],[1.10,-1.74],[1.16,-1.71],[1.18,-1.66],[1.18,-1.33],[1.16,-1.28],[1.10,-1.27],[1.07,-1.31],[1.07,-1.63],[1.09,-1.67],[1.12,-1.67],[1.14,-1.64],[1.14,-1.38]];
+ pts.forEach(([x,z],i)=>cp.push([x,base+paperHeight(x,z)+.008-(i>9?.013:0),z]));
+ tube(research,'Bent satin steel paperclip',cp,.005,steel);
  return [writing,architecture,research];
 }

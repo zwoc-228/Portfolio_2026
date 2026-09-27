@@ -7,7 +7,7 @@
       "listeners": 13,
       "renderTargets": 0,
       "framebufferCopies": 0,
-      "physicalMaterials": 1
+      "physicalMaterials": 2
     },
     {
       "file": "dist/contact-shadows.js",
@@ -92,6 +92,15 @@
     },
     {
       "file": "dist/studio-environment.js",
+      "raf": 0,
+      "caf": 0,
+      "listeners": 0,
+      "renderTargets": 0,
+      "framebufferCopies": 0,
+      "physicalMaterials": 0
+    },
+    {
+      "file": "dist/surface-contact.js",
       "raf": 0,
       "caf": 0,
       "listeners": 0,

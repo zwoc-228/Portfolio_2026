@@ -30,8 +30,8 @@ export function createFloorReflection(renderer,scene,ground){
   uniforms[`panel${i}Strength`]={value:0};
   uniforms[`panel${i}Hover`]={value:0};
  }
- // Three model footprints and the navigation card: use a broad, low-energy falloff so
- // reflections extend away from the objects while retaining a grounded contact core.
+ // Footprints modulate contact strength only. The complete mirrored silhouette remains visible
+ // beyond each footprint, preserving the natural length of model and UI reflections.
  for(let i=0;i<4;i++){
   uniforms[`object${i}Center`]={value:new T.Vector2(0,0)};
   uniforms[`object${i}Radius`]={value:new T.Vector2(.55,.38)};
@@ -42,7 +42,7 @@ export function createFloorReflection(renderer,scene,ground){
  let persistentReflectionOnlyObjects=[];
 
  const blurScene=new T.Scene();const blurCamera=new T.OrthographicCamera(-1,1,1,-1,0,1);
- const blurMat=new T.ShaderMaterial({toneMapped:false,depthTest:false,depthWrite:false,uniforms:{uMap:{value:raw.texture},uTexel:{value:new T.Vector2(1/W,1/H)},uDirection:{value:new T.Vector2(1,0)}},vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}`,fragmentShader:`precision highp float;uniform sampler2D uMap;uniform vec2 uTexel;uniform vec2 uDirection;varying vec2 vUv;void main(){vec2 d=uTexel*uDirection*1.05;vec4 c=texture2D(uMap,vUv)*.227027; c+=(texture2D(uMap,vUv+d)+texture2D(uMap,vUv-d))*.194595; c+=(texture2D(uMap,vUv+d*2.)+texture2D(uMap,vUv-d*2.))*.121622; c+=(texture2D(uMap,vUv+d*3.)+texture2D(uMap,vUv-d*3.))*.054054; c+=(texture2D(uMap,vUv+d*4.)+texture2D(uMap,vUv-d*4.))*.016216;gl_FragColor=c;}`});
+ const blurMat=new T.ShaderMaterial({toneMapped:false,depthTest:false,depthWrite:false,uniforms:{uMap:{value:raw.texture},uTexel:{value:new T.Vector2(1/W,1/H)},uDirection:{value:new T.Vector2(1,0)}},vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}`,fragmentShader:`precision highp float;uniform sampler2D uMap;uniform vec2 uTexel;uniform vec2 uDirection;varying vec2 vUv;void main(){vec2 d=uTexel*uDirection*.78;vec4 c=texture2D(uMap,vUv)*.227027; c+=(texture2D(uMap,vUv+d)+texture2D(uMap,vUv-d))*.194595; c+=(texture2D(uMap,vUv+d*2.)+texture2D(uMap,vUv-d*2.))*.121622; c+=(texture2D(uMap,vUv+d*3.)+texture2D(uMap,vUv-d*3.))*.054054; c+=(texture2D(uMap,vUv+d*4.)+texture2D(uMap,vUv-d*4.))*.016216;gl_FragColor=c;}`});
  const blurQuad=new T.Mesh(new T.PlaneGeometry(2,2),blurMat);blurScene.add(blurQuad);
 
  ground.material.onBeforeCompile=shader=>{
@@ -100,9 +100,9 @@ vec3 panelBoardReflection(){
 float panelBoardMask(){return clamp(panelBoardReflection().x,0.0,1.0);}
 float objectFootprint(vec2 center, vec2 radius, float strength){
  vec2 d=(vFloorWorldPosition.xz-center)/max(radius,vec2(.02));
- float ellipse=exp(-dot(d,d)*0.68);
- float core=exp(-dot(d,d)*2.85);
- return clamp((ellipse*.80+core*.20)*strength,0.0,1.0);
+ float ellipse=exp(-dot(d,d)*1.35);
+ float core=exp(-dot(d,d)*4.8);
+ return clamp((ellipse*.72+core*.28)*strength,0.0,1.0);
 }
 float reflectionFootprintMask(){
  return max(
@@ -123,28 +123,26 @@ float reflectionFootprintMask(){
   float reflectedAlpha=clamp(reflected.a,0.0,1.0)*inside;
   vec3 reflectedColor=reflected.rgb/max(reflected.a,.001);
   float reflectedLuma=dot(reflectedColor,vec3(.2126,.7152,.0722));
-  reflectedColor=mix(vec3(reflectedLuma),reflectedColor,.22);
-  reflectedColor*=vec3(.925,.945,.965);
-  outgoingLight=mix(outgoingLight,reflectedColor,(.185+.285*footprint)*reflectedAlpha);
+  reflectedColor=mix(vec3(reflectedLuma),reflectedColor,.72);
+  reflectedColor*=.98;
+  outgoingLight=mix(outgoingLight,reflectedColor,(.28+.10*footprint)*reflectedAlpha);
   float pointerGlow=clamp(floorGlowMask(),0.0,1.0);
-  outgoingLight += vec3(.024,.029,.034)*pointerGlow;
+  outgoingLight += vec3(.026)*pointerGlow;
   vec3 uiRef=uiGlassReflection(); float uiGlow=clamp(uiRef.x,0.0,1.0);
   float uiShadow=clamp(uiContactShadow(),0.0,1.0);
   outgoingLight*=1.0-uiShadow*.115;
-  outgoingLight=mix(outgoingLight,outgoingLight*vec3(.945,.952,.956),clamp(uiRef.z*.16,0.0,.13));
-  outgoingLight += vec3(.044,.048,.052)*uiGlow + vec3(.088,.094,.098)*uiRef.y;
+  outgoingLight=mix(outgoingLight,outgoingLight*vec3(.95),clamp(uiRef.z*.16,0.0,.13));
+  outgoingLight += vec3(.048)*uiGlow + vec3(.094)*uiRef.y;
   vec3 panelRef=panelBoardReflection();
-  outgoingLight=mix(outgoingLight,outgoingLight*vec3(.925,.94,.95),clamp(panelRef.x*.18,0.0,.16));
-  outgoingLight += vec3(.048,.058,.066)*panelRef.x + vec3(.125,.138,.148)*panelRef.y + vec3(.068,.080,.090)*panelRef.z;
+  outgoingLight=mix(outgoingLight,outgoingLight*vec3(.94),clamp(panelRef.x*.18,0.0,.16));
+  outgoingLight += vec3(.058)*panelRef.x + vec3(.138)*panelRef.y + vec3(.080)*panelRef.z;
   #include <opaque_fragment>`);
  };
- ground.material.customProgramCacheKey=()=> 'reference-floor-v17-long-neutral-metal-reflection';
+ ground.material.customProgramCacheKey=()=> 'reference-floor-v16-neutral-mirror';
  const color=new T.Color(),look=new T.Vector3();
  function blur(){
-  blurMat.uniforms.uMap.value=raw.texture;blurMat.uniforms.uDirection.value.set(1.20,0);renderer.setRenderTarget(blurA);renderer.clear();renderer.render(blurScene,blurCamera);
-  // A longer vertical lobe gives the desk the low-angle product-photo reflection
-  // from the reference without turning the whole surface into a sharp mirror.
-  blurMat.uniforms.uMap.value=blurA.texture;blurMat.uniforms.uDirection.value.set(0,3.85);renderer.setRenderTarget(blurB);renderer.clear();renderer.render(blurScene,blurCamera);
+  blurMat.uniforms.uMap.value=raw.texture;blurMat.uniforms.uDirection.value.set(1,0);renderer.setRenderTarget(blurA);renderer.clear();renderer.render(blurScene,blurCamera);
+  blurMat.uniforms.uMap.value=blurA.texture;blurMat.uniforms.uDirection.value.set(0,1);renderer.setRenderTarget(blurB);renderer.clear();renderer.render(blurScene,blurCamera);
  }
  function clear(){
   const old=renderer.getRenderTarget(),cc=new T.Color();renderer.getClearColor(cc);const ca=renderer.getClearAlpha();
