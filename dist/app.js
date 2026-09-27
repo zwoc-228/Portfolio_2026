@@ -1,5 +1,8 @@
 import * as T from './assets/three.module.js';
 import {PALETTE} from './palette.js';
+import {createRenderBudget} from './render-budget.js';
+import {installStudioShadows} from './studio-shadows.js';
+import {RectAreaLightUniformsLib} from './assets/RectAreaLightUniformsLib.js';
 import { createStudioEnvironment } from './studio-environment.js';
 import { createContactShadows } from './contact-shadows.js';
 import { createModels } from './models.js';
@@ -23,7 +26,7 @@ let state = 'home';
 let selected = 0;
 let filter = 'All';
 let renderer, scene, camera, floorReflection, runtime, uiReflectionProxies;
-let liquidHeader, liquidPanels;
+let liquidHeader, liquidPanels, renderBudget;
 let models = [], home = [], hoverProfiles = [], homeHitBoxes = [], homeHeaderBoxes = [], contactShadows = null;
 let keyLight, keyCompanionLight;
 let flashlight, flashlightTarget, beamHalo, beamParticles;
@@ -260,6 +263,7 @@ function updateTransition(dt) {
 
 function updateScene(dt, now) {
   let flags = 0;
+  if(renderBudget?.frame(now)){floorReflection.clear();flags|=FRAME_RENDER|FRAME_REFLECTION;}
   if (resizePending) {
     if (now >= resizeDeadline) {
       resizePending = false;
@@ -472,10 +476,14 @@ async function init() {
     initSurfaceLightInteraction();
     renderer = new T.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
     renderer.setPixelRatio(Math.min(devicePixelRatio, lowPower ? 1.0 : 1.28));
+    renderBudget=createRenderBudget(renderer,renderer.getPixelRatio());
+    window.__portfolioDiagnostics=renderBudget.diagnostics;
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = T.VSMShadowMap;
-    renderer.toneMapping = T.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.02;
+    installStudioShadows();
+    RectAreaLightUniformsLib.init();
+    renderer.shadowMap.type = T.PCFShadowMap;
+    renderer.toneMapping = T.AgXToneMapping;
+    renderer.toneMappingExposure = 1.10;
     $('#scene').append(renderer.domElement);
 
     scene = new T.Scene();
@@ -490,25 +498,26 @@ async function init() {
 
     const pmrem = new T.PMREMGenerator(renderer);
     scene.environment = pmrem.fromScene(createStudioEnvironment(), .04).texture;
-    scene.environmentIntensity = 1.05;
+    scene.environmentIntensity = .65;
     pmrem.dispose();
 
     const loader = new T.TextureLoader();
     const deskMetalNormal=await loadTexture(loader, 'desk-metal-normal.png',18);
 
     const ground = new T.Mesh(new T.PlaneGeometry(200, 200), new T.MeshPhysicalMaterial({
-      color: PALETTE.desk, envMap: scene.environment, envMapIntensity: 1.16,
-      metalness: .48, roughness: .34,
+      color: PALETTE.desk, envMap: scene.environment, envMapIntensity: .8,
+      metalness: .28, roughness: .30,
       normalMap: deskMetalNormal, normalScale: new T.Vector2(.006, .006), clearcoat: .008, clearcoatRoughness: .64,
       anisotropy: .12, anisotropyRotation: 0
     }));
     ground.rotation.x = -Math.PI / 2; ground.position.y = -.016; ground.receiveShadow = true; scene.add(ground);
 
-    scene.add(new T.HemisphereLight(0xfafafa, 0x969696, .29));
-    keyLight = new T.DirectionalLight(0xffffff, .74); keyLight.position.set(-6.7, 10.2, 5.6); keyLight.castShadow = true; keyLight.shadow.mapSize.set(2048, 2048); Object.assign(keyLight.shadow.camera, { left: -8, right: 8, top: 6, bottom: -4, near: .1, far: 28 }); keyLight.shadow.bias = -.00008; keyLight.shadow.normalBias = .0048; keyLight.shadow.radius = 6.2; keyLight.shadow.blurSamples = 10; keyLight.shadow.autoUpdate = false; keyLight.shadow.needsUpdate = true; scene.add(keyLight);
-    keyCompanionLight = new T.DirectionalLight(0xffffff, .22); keyCompanionLight.position.set(3.8, 7.6, 1.6); keyCompanionLight.castShadow = false; scene.add(keyCompanionLight);
-    const fill = new T.DirectionalLight(0xf0f0f0, .18); fill.position.set(6.4, 6.4, -4.4); scene.add(fill);
+    scene.add(new T.HemisphereLight(0xffffff, 0x777777, .16));
+    keyLight = new T.DirectionalLight(0xffffff, 2.0); keyLight.position.set(-6.7, 10.2, 5.6); keyLight.castShadow = true; keyLight.shadow.mapSize.set(2048, 2048); Object.assign(keyLight.shadow.camera, { left: -8, right: 8, top: 6, bottom: -4, near: .1, far: 28 }); keyLight.shadow.bias = -.00008; keyLight.shadow.normalBias = .009; keyLight.shadow.radius = 2.0; keyLight.shadow.blurSamples = 10; keyLight.shadow.autoUpdate = false; keyLight.shadow.needsUpdate = true; scene.add(keyLight);
+    keyCompanionLight = new T.DirectionalLight(0xffffff, .25); keyCompanionLight.position.set(3.8, 7.6, 1.6); keyCompanionLight.castShadow = false; scene.add(keyCompanionLight);
+    const fill = new T.DirectionalLight(0xffffff, .12); fill.position.set(6.4, 6.4, -4.4); scene.add(fill);
 
+    const softbox=new T.RectAreaLight(0xffffff,1.8,7,5);softbox.position.set(-5,7,5);softbox.lookAt(0,0,0);scene.add(softbox);
     flashlightTarget = new T.Object3D(); scene.add(flashlightTarget);
     flashlight = new T.SpotLight(0xffffff, 0, 0, T.MathUtils.degToRad(2.0), .94, 0); flashlight.position.set(0, 9.8, 2.2); flashlight.target = flashlightTarget; flashlight.castShadow = false; scene.add(flashlight);
     const beamVert = `varying vec3 vPos;varying vec3 vNormalV;void main(){vPos=position;vNormalV=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`;
@@ -542,26 +551,19 @@ async function init() {
     hoverProfiles = models.map(m => { const box = new T.Box3().setFromObject(m), center = new T.Vector3(), size = new T.Vector3(); box.getCenter(center); box.getSize(size); const horizontal = Math.max(size.x, size.z) * .54 + .18, approxDist = Math.max(4.7, 9.8 - center.y); return { x: center.x, y: center.y, z: center.z, angle: T.MathUtils.clamp(Math.atan(horizontal / approxDist) * 1.02, T.MathUtils.degToRad(4.9), T.MathUtils.degToRad(9.4)) }; });
     homeHitBoxes = models.map(m => new T.Box3().setFromObject(m).expandByScalar(.08));
 
-    const modelNames=['writing','architecture','research'];
+    // All model surfaces respond to this frame's lights; no baked-color override.
+    models.forEach(root=>root.traverse(o=>{
+      if(!o.isMesh)return;
+      o.castShadow=true;o.receiveShadow=true;
+      // Sub-pixel thin page gaps cannot reliably self-shadow at this map resolution.
+      // They still cast the complete silhouette onto the desk.
+      if(/paper gathering|research sheet/.test(o.name))o.receiveShadow=false;
+    }));
     const json=async url=>{const r=await fetch(url);if(!r.ok)throw Error('Missing '+url);return r.json();};
-    const [atlases,uvSets,contactLayout,contactMaps]=await Promise.all([
-      Promise.all(modelNames.map(n=>loader.loadAsync(`assets/${n}${n==='architecture'?'-studio-baked.jpg':'-studio-clean.png'}`))),
-      Promise.all(modelNames.map(n=>json(`assets/${n}-bake-uv.json`))),
+    const [contactLayout,contactMaps]=await Promise.all([
       json('assets/contact-ao-layout.json'),
-      Promise.all(modelNames.map(n=>loader.loadAsync(`assets/${n}-contact-ao.png`)))
+      Promise.all(['writing','architecture','research'].map(n=>loader.loadAsync(`assets/${n}-contact-ao.png`)))
     ]);
-    const oldMaterials=new Set();
-    const clipMaterial=new T.MeshPhysicalMaterial({color:0xc5c5c5,metalness:1,roughness:.24,envMapIntensity:1.25});clipMaterial.name='Round44 neutral steel clip';
-    models.forEach((root,i)=>{
-      const atlas=atlases[i];atlas.colorSpace=T.SRGBColorSpace;atlas.channel=1;atlas.anisotropy=Math.min(16,renderer.capabilities.getMaxAnisotropy());
-      const studioMaterial=new T.MeshBasicMaterial({map:atlas,color:0xffffff,side:T.DoubleSide});studioMaterial.name='Cycles baked handmade studio';
-      root.traverse(o=>{
-        if(!o.isMesh)return;const uv=uvSets[i][o.name];if(o.geometry.index)o.geometry=o.geometry.toNonIndexed();
-        if(!uv||uv.length!==o.geometry.attributes.position.count*2)throw Error('Baked UV mismatch: '+o.name);
-        o.geometry.setAttribute('uv1',new T.Float32BufferAttribute(uv,2));oldMaterials.add(o.material);o.material=o.name==='Bent satin steel paperclip'?clipMaterial:studioMaterial;o.receiveShadow=false;o.castShadow=true;
-      });
-    });
-    oldMaterials.forEach(m=>m.dispose());
     contactShadows=createContactShadows(scene,models,contactLayout,contactMaps,floorReflection);
     floorReflection.setTransientObjects([flashlight,beamHalo,beamParticles,...contactShadows.meshes,...uiReflectionProxies.contacts,...liquidHeader.transientObjects]);
 

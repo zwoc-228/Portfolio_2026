@@ -30,12 +30,12 @@ function coverGeometry(w,d,h,r){
  const g=new T.ExtrudeGeometry(shape,{depth:h-.012,bevelEnabled:true,bevelSegments:3,steps:1,bevelSize:.006,bevelThickness:.006,curveSegments:8});g.rotateX(-Math.PI/2);g.translate(0,-(h-.012)/2,0);return g;
 }
 export function createModels(){
- const mat=(name,color,roughness=.78,metalness=0)=>{const m=new T.MeshPhysicalMaterial({color,roughness,metalness,ior:1.42,specularIntensity:.28,clearcoat:.008});m.name=name;return m;};
- const paper=mat('Warm cotton paper',PALETTE.paper,.84),cover=mat('Fine ivory book cloth',PALETTE.linen,.82),edge=mat('Cream cut paper edges',PALETTE.paperEdge,.88);
+ const mat=(name,color,roughness=.78,metalness=0)=>{const m=new T.MeshPhysicalMaterial({color,roughness,metalness,ior:1.46,specularIntensity:.55,clearcoat:.025});m.name=name;return m;};
+ const paper=mat('Warm cotton paper',0xf1f0ec,.78),cover=mat('Fine ivory book cloth',0xe9e9e5,.68),edge=mat('Cream cut paper edges',0xe5e5df,.84);
  const architectureStone=mat('Portfolio warm plaster',PALETTE.plaster,.78),architectureInset=mat('Portfolio pale stone',PALETTE.stone,.83);
  const glass=mat('Portfolio pale cyan resin',PALETTE.cyan,.57),frosted=mat('Portfolio mint plaster',PALETTE.mint,.72);
  const copper=mat('Portfolio ochre satin accent',PALETTE.ochre,.56,.35),architectureMetal=mat('Portfolio blue grey metal',PALETTE.slate,.60,.35);
- const steel=mat('Satin steel clip',0x9ba5a4,.36,.72),ribbonMaterial=mat('Slate woven bookmark',PALETTE.slate,.86);
+ const steel=mat('Satin steel clip',0xc5c5c5,.22,1),ribbonMaterial=mat('Slate woven bookmark',PALETTE.slate,.86);
  function add(g,name,geometry,m){const o=new T.Mesh(geometry,m);o.name=name;o.castShadow=o.receiveShadow=true;g.add(o);return o;}
  function box(g,name,w,h,d,x,y,z,m,r=.014){const o=add(g,name,new RoundedBoxGeometry(w,h,d,3,Math.min(r,w/3,h/3,d/3)),m);o.position.set(x,y,z);return o;}
  function tube(g,name,points,r,m){return add(g,name,new T.TubeGeometry(new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p))),96,r,8,false),m);}
@@ -48,8 +48,6 @@ export function createModels(){
  }
  const upper=add(writing,'Rounded upper cloth cover',coverGeometry(2.62,3.24,.044,.095),cover);upper.position.y=.232;
  box(writing,'Rounded binding spine',.112,.224,3.10,-1.25,.132,0,cover,.035);
- const hinge=mat('Pressed binding groove',0xd9dcd5,.86);
- box(writing,'Inset hinge on cover',.012,.002,3.01,-1.135,.255,0,hinge,.001);
  // Bookmark exits between pages and falls to the desk, not a floating rectangular flap.
  const rp=[],ru=[],ri=[];
  for(let i=0;i<=30;i++){

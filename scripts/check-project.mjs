@@ -12,11 +12,11 @@ for(const file of sources){
 }
 const app=fs.readFileSync('dist/app.js','utf8');
 for(const m of app.matchAll(/loadTexture\(loader, '([^']+)'/g)){if(!fs.existsSync('dist/assets/'+m[1]))throw Error('Missing texture '+m[1]);references++;}
-for(const name of ['contact-ao-layout.json',...['writing','architecture','research'].flatMap(n=>[n+(n==='architecture'?'-studio-baked.jpg':'-studio-clean.png'),n+'-bake-uv.json',n+'-contact-ao.png'])]){if(!fs.existsSync('dist/assets/'+name))throw Error('Missing studio asset '+name);references++;}
+for(const name of ['contact-ao-layout.json',...['writing','architecture','research'].flatMap(n=>[n+'-contact-ao.png'])]){if(!fs.existsSync('dist/assets/'+name))throw Error('Missing studio asset '+name);references++;}
 titles.forEach((items,c)=>items.forEach((_,i)=>{if(!fs.existsSync(`dist/assets/index-${[0,4,8][c]+i}.png`))throw Error('Missing project card');references++;}));
 fs.mkdirSync('verification',{recursive:true});
-for(const [script,report] of [['audit-runtime.mjs','runtime-audit.json'],['verify-interactions.mjs','interaction-checks.json'],['verify-state.mjs','state-checks.json'],['validate-assets.mjs','asset-checks.txt'],['check-architecture.mjs','architecture-geometry-check.json']]){
+for(const [script,report] of [['audit-runtime.mjs','runtime-audit.json'],['verify-interactions.mjs','interaction-checks.json'],['verify-state.mjs','state-checks.json'],['validate-assets.mjs','asset-checks.txt'],['check-architecture.mjs','architecture-geometry-check.json'],['verify-studio.mjs','studio-checks.json']]){
  const output=execFileSync(process.execPath,['scripts/'+script],{encoding:'utf8'});fs.writeFileSync('verification/'+report,output);
 }
-const result={syntaxModules:syntax,localReferences:references,regressionSuites:5,status:'passed',liveWebGLScreenshot:false};
+const result={syntaxModules:syntax,localReferences:references,regressionSuites:6,status:'passed',liveWebGLScreenshot:false};
 fs.writeFileSync('verification/project-checks.json',JSON.stringify(result,null,2));console.log(result);

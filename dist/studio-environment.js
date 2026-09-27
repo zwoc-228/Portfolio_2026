@@ -5,7 +5,7 @@ export function createStudioEnvironment(){
  const scene=new T.Scene();
  const room=new T.Mesh(
   new T.BoxGeometry(32,20,32),
-  new T.MeshBasicMaterial({color:0xa0a0a0,side:T.BackSide})
+  new T.MeshBasicMaterial({color:0x707070,side:T.BackSide})
  );
  scene.add(room);
 
@@ -22,12 +22,12 @@ export function createStudioEnvironment(){
  }
 
  // Broad panels create a satin gradient; restrained narrow strips articulate edges.
- card(13.8,11.8,[-11.4,7.0,4.0],[0,.30,0],1.50,0xfcfcfc);
- card(18.5,9.0,[-.8,11.4,-1.2],[0,.18,-.5],1.25,0xfbfbfb);
- card(16.2,2.2,[1.0,5.3,-10.8],[0,.1,0],.90,0xf4f4f4);
- card(9.0,6.4,[-2.6,5.0,8.8],[0,.36,0],1.12,0xf5f5f5);
- card(3.8,8.8,[9.1,4.4,-3.6],[0,.38,0],.76,0xeeeeee);
- card(9.0,1.1,[3.8,3.2,11.6],[0,.0,0],.54,0xefefef);
+ card(13.8,11.8,[-11.4,7.0,4.0],[0,.30,0],2.1,0xfcfcfc);
+ card(18.5,9.0,[-.8,11.4,-1.2],[0,.18,-.5],.85,0xfbfbfb);
+ card(16.2,2.2,[1.0,5.3,-10.8],[0,.1,0],.65,0xf4f4f4);
+ card(9.0,6.4,[-2.6,5.0,8.8],[0,.36,0],.45,0xf5f5f5);
+ card(3.8,8.8,[9.1,4.4,-3.6],[0,.38,0],.38,0xeeeeee);
+ card(9.0,1.1,[3.8,3.2,11.6],[0,.0,0],.35,0xefefef);
 
  // Flags are as important as lights on metal: they restore dark intervals and depth.
  flag(8.0,12.0,[10.7,1.3,3.8],[0,.1,0],0x6c6c6c);

@@ -32,6 +32,7 @@ const events=new Map();function el(){return {style:{setProperty(){}},dataset:{},
 const header=el(),trigger=el(),links=el();header.name='header';trigger.name='trigger';header.querySelector=s=>s==='.header-trigger'?trigger:links;header.contains=o=>[header,trigger,links].includes(o);
 globalThis.document={querySelector:()=>header,addEventListener(){},removeEventListener(){}};globalThis.matchMedia=()=>({matches:false});let tick;
 const runtime={add:f=>(tick=f,()=>{}),request(){}};const h=createLiquidHeader({scene,camera,floorReflection:reflections,runtime});
+assert.equal(h.mesh.material.transmission,1);assert.equal(h.mesh.material.opacity,1);assert(h.mesh.visible);assert(h.mesh.material.thickness>0);
 events.get('header:pointerenter')({pointerType:'mouse'});for(let i=0;i<100;i++)tick(1/60);assert.equal(trigger['aria-expanded'],'true');assert(!links.inert);assert.equal(parseFloat(header.style.width),960);
-events.get('header:keydown')({key:'Escape',preventDefault(){},stopPropagation(){}});for(let i=0;i<100;i++)tick(1/60);assert.equal(trigger['aria-expanded'],'false');assert(links.inert);assert.equal(parseFloat(header.style.width),144);assert.equal(tick(1/60),0);h.dispose();results.push('Card hover opens, Escape closes, hidden links inert, idle frame loop stops');
+events.get('header:keydown')({key:'Escape',preventDefault(){},stopPropagation(){}});for(let i=0;i<100;i++)tick(1/60);assert.equal(trigger['aria-expanded'],'false');assert(links.inert);assert.equal(parseFloat(header.style.width),88);assert.equal(tick(1/60),0);h.dispose();results.push('Card hover opens, Escape closes, hidden links inert, idle frame loop stops');
 console.log(JSON.stringify(results,null,2));

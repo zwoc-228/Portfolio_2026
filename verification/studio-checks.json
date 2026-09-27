@@ -1,0 +1,8 @@
+{
+  "livePBRMeshes": 39,
+  "coverGroove": "removed",
+  "glassVolume": "finite with real thickness",
+  "shadowKernel": "idempotent r170 integration",
+  "adaptiveResolution": "idle-safe and bounded",
+  "browserVisualCheck": false
+}

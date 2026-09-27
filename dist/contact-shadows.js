@@ -5,7 +5,7 @@ export function createContactShadows(scene, roots, layouts, textures, reflection
   const l=layouts[i], texture=textures[i];
   const material=new T.ShaderMaterial({transparent:true,depthWrite:false,toneMapped:false,
    polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1,
-   uniforms:{map:{value:texture},lift:{value:0},opacity:{value:.53}},
+   uniforms:{map:{value:texture},lift:{value:0},opacity:{value:.20}},
    vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
    fragmentShader:`uniform sampler2D map;uniform float lift;uniform float opacity;varying vec2 vUv;
    void main(){float r=(.7+lift*7.)/512.;float a=texture2D(map,vUv).r*.28;
