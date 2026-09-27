@@ -16,7 +16,9 @@ export function createFloorReflection(renderer,scene,ground){
  const bias=new T.Matrix4().set(.5,0,0,.5,0,.5,0,.5,0,0,.5,.5,0,0,0,1);
  const uniforms={
   floorReflection:{value:blurB.texture},floorProjection:{value:matrix},
-  glowWorldXZ:{value:new T.Vector2(0,0)},glowStrength:{value:0},glowRadius:{value:.36},
+  glowWorldXZ:{value:new T.Vector2(0,0)},glowStrength:{value:0},glowRadius:{value:.48},
+  glowColor:{value:new T.Color(0xfff4df)},
+  daylightColor:{value:new T.Color(0xfff1d8)},daylightStrength:{value:.8},daylightIsDay:{value:1},
   uiCenter:{value:new T.Vector2(0,0)},uiAxis:{value:new T.Vector2(1,0)},uiHalfLength:{value:0},
   uiWidth:{value:.18},uiStrength:{value:0},uiProgress:{value:0},uiContact:{value:1},
  };
@@ -50,7 +52,8 @@ export function createFloorReflection(renderer,scene,ground){
   shader.vertexShader='varying vec4 vFloorProjection; varying vec3 vFloorWorldPosition; uniform mat4 floorProjection;\n'+shader.vertexShader;
   shader.vertexShader=shader.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\nvec4 floorWorld = modelMatrix * vec4(transformed,1.0);\nvFloorWorldPosition = floorWorld.xyz;\nvFloorProjection = floorProjection * floorWorld;');
   shader.fragmentShader=`uniform sampler2D floorReflection;
-uniform vec2 glowWorldXZ; uniform float glowStrength; uniform float glowRadius;
+uniform vec2 glowWorldXZ; uniform float glowStrength; uniform float glowRadius; uniform vec3 glowColor;
+uniform vec3 daylightColor; uniform float daylightStrength; uniform float daylightIsDay;
 uniform vec2 uiCenter; uniform vec2 uiAxis; uniform float uiHalfLength; uniform float uiWidth; uniform float uiStrength; uniform float uiProgress; uniform float uiContact;
 uniform vec2 panel0Center; uniform vec2 panel0Axis; uniform vec2 panel0Normal; uniform float panel0HalfLength; uniform float panel0Depth; uniform float panel0Strength; uniform float panel0Hover;
 uniform vec2 panel1Center; uniform vec2 panel1Axis; uniform vec2 panel1Normal; uniform float panel1HalfLength; uniform float panel1Depth; uniform float panel1Strength; uniform float panel1Hover;
@@ -60,7 +63,24 @@ uniform vec2 object1Center; uniform vec2 object1Radius; uniform float object1Str
 uniform vec2 object2Center; uniform vec2 object2Radius; uniform float object2Strength;
 uniform vec2 object3Center; uniform vec2 object3Radius; uniform float object3Strength;
 varying vec4 vFloorProjection; varying vec3 vFloorWorldPosition;
-float floorGlowMask(){vec2 gd=vFloorWorldPosition.xz-glowWorldXZ; return exp(-dot(gd,gd)/(2.0*glowRadius*glowRadius))*glowStrength;}
+float floorGlowMask(){
+ vec2 gd=vFloorWorldPosition.xz-glowWorldXZ;
+ float d=dot(gd,gd)/(2.0*glowRadius*glowRadius);
+ return exp(-d*d*.62-d*.58)*glowStrength;
+}
+float windowSupportMask(){
+ // A single broad, softly projected window patch. Rotation gives the diagonal
+ // sunlight direction without visible cards, geometry edges or a horizon stripe.
+ vec2 p=vec2((vFloorWorldPosition.x+2.15)*.205,(vFloorWorldPosition.y-4.0)*.34);
+ p=mat2(.978,-.208,.208,.978)*p;
+ vec2 d=abs(p)-vec2(.92,.78);
+ float outside=length(max(d,0.0))+min(max(d.x,d.y),0.0);
+ float softBox=1.0-smoothstep(-.12,.22,outside);
+ float wall=smoothstep(.22,1.55,vFloorWorldPosition.y);
+ float cove=1.0-smoothstep(-5.85,-4.15,vFloorWorldPosition.z);
+ float pool=exp(-dot(vec2(p.x*.70,p.y*.84),vec2(p.x*.70,p.y*.84))*.72);
+ return wall*cove*max(softBox*.72,pool*.32)*mix(.72,1.0,daylightIsDay);
+}
 vec3 uiGlassReflection(){
  vec2 d=vFloorWorldPosition.xz-uiCenter; vec2 a=normalize(uiAxis+vec2(1e-5)); vec2 n=vec2(-a.y,a.x);
  float along=dot(d,a); float across=dot(d,n); float l=max(uiHalfLength,.03); float w=max(uiWidth,.03);
@@ -122,15 +142,18 @@ float reflectionFootprintMask(){
   // through the object-footprint mask; model footprints still receive extra energy.
   // Fade the planar mirror before the floor reaches the cove. Without this,
   // the mirror pass ends abruptly at the tangent and reads as a horizontal line.
-  float coveFade=smoothstep(-3.55,-2.45,vFloorWorldPosition.z);
+  float coveFade=smoothstep(-3.52,-2.30,vFloorWorldPosition.z);
   float reflectedAlpha=clamp(reflected.a,0.0,1.0)*inside*coveFade;
   vec3 reflectedColor=reflected.rgb/max(reflected.a,.001);
   float reflectedLuma=dot(reflectedColor,vec3(.2126,.7152,.0722));
   reflectedColor=mix(vec3(reflectedLuma),reflectedColor,.72);
   reflectedColor*=.98;
-  outgoingLight=mix(outgoingLight,reflectedColor,(.20+.075*footprint)*reflectedAlpha);
+  outgoingLight=mix(outgoingLight,reflectedColor,(.16+.17*footprint)*reflectedAlpha);
   float pointerGlow=clamp(floorGlowMask(),0.0,1.0);
-  outgoingLight += vec3(.014)*pointerGlow;
+  // Soft circular hand light on the floor; no cone is visible unless a model is hit.
+  outgoingLight += glowColor*(.075*pointerGlow);
+  float support=windowSupportMask()*daylightStrength;
+  outgoingLight += daylightColor*(.19*support);
   vec3 uiRef=uiGlassReflection(); float uiGlow=clamp(uiRef.x,0.0,1.0);
   float uiShadow=clamp(uiContactShadow(),0.0,1.0);
   outgoingLight*=1.0-uiShadow*.115;
@@ -141,8 +164,9 @@ float reflectionFootprintMask(){
   outgoingLight += vec3(.058)*panelRef.x + vec3(.138)*panelRef.y + vec3(.080)*panelRef.z;
   #include <opaque_fragment>`);
  };
- ground.material.customProgramCacheKey=()=> 'reference-floor-v16-neutral-mirror';
+ ground.material.customProgramCacheKey=()=> 'seamless-daylight-floor-v17';
  const color=new T.Color(),look=new T.Vector3();
+ const floorY=ground.userData?.floorY??ground.position.y;
  function blur(){
   blurMat.uniforms.uMap.value=raw.texture;blurMat.uniforms.uDirection.value.set(1,0);renderer.setRenderTarget(blurA);renderer.clear();renderer.render(blurScene,blurCamera);
   blurMat.uniforms.uMap.value=blurA.texture;blurMat.uniforms.uDirection.value.set(0,1);renderer.setRenderTarget(blurB);renderer.clear();renderer.render(blurScene,blurCamera);
@@ -171,6 +195,12 @@ float reflectionFootprintMask(){
  }
  return {
   setGlow(x,z,strength=1){uniforms.glowWorldXZ.value.set(x,z);uniforms.glowStrength.value=strength;},
+  setDaylight(color,strength=.8,isDay=true){
+   uniforms.daylightColor.value.copy(color);
+   uniforms.glowColor.value.copy(color).lerp(new T.Color(0xffffff),.38);
+   uniforms.daylightStrength.value=Math.max(0,strength);
+   uniforms.daylightIsDay.value=isDay?1:0;
+  },
   setUICaustic(x,z,ax,az,halfLength,width,strength,progress=1,contact=1){uniforms.uiCenter.value.set(x,z);uniforms.uiAxis.value.set(ax,az);uniforms.uiHalfLength.value=halfLength;uniforms.uiWidth.value=width;uniforms.uiStrength.value=strength;uniforms.uiProgress.value=progress;uniforms.uiContact.value=contact;},
   setPanelReflection:setPanel,
   clearPanelReflections(){for(let i=0;i<3;i++)setPanel(i,0,0,1,0,0,1,0,.5,0,0);},
@@ -181,8 +211,8 @@ float reflectionFootprintMask(){
   setPersistentReflectionOnlyObjects(objects=[]){persistentReflectionOnlyObjects=objects.filter(Boolean);},
   clear,
   update(camera){
-   mirror.copy(camera);mirror.position.y=2*ground.position.y-camera.position.y;
-   camera.getWorldDirection(look);look.add(camera.position);look.y=2*ground.position.y-look.y;
+   mirror.copy(camera);mirror.position.y=2*floorY-camera.position.y;
+   camera.getWorldDirection(look);look.add(camera.position);look.y=2*floorY-look.y;
    mirror.up.set(0,-1,0);mirror.lookAt(look);mirror.updateMatrixWorld();
    matrix.copy(bias).multiply(mirror.projectionMatrix).multiply(mirror.matrixWorldInverse);
    const old=renderer.getRenderTarget(),background=scene.background;renderer.getClearColor(color);const alpha=renderer.getClearAlpha();

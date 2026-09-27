@@ -14,7 +14,12 @@ for(const [i,name] of ['writing','architecture','research'].entries()){
 assert.equal(models[0].getObjectByName('Inset hinge on cover'),undefined);
 const sweep=createStudioBackdrop(),p=sweep.geometry.attributes.position,n=sweep.geometry.attributes.normal;
 assert(Math.abs(p.getY(0)+.016)<1e-6);assert(Math.abs(p.getZ(0)+3.8)<1e-6);
-assert.equal(n.getY(0),1);assert.equal(n.getZ(n.count-1),1);
+assert.equal(n.getY(0),1);
+let wallNormal=false;for(let i=0;i<n.count;i++)if(Math.abs(n.getZ(i)-1)<1e-6)wallNormal=true;
+assert(wallNormal,'Cove must reach a vertical wall normal');
+const tangentMatches=[];for(let i=0;i<p.count;i++)if(Math.abs(p.getY(i)+.016)<1e-6&&Math.abs(p.getZ(i)+3.8)<1e-6)tangentMatches.push(i);
+assert(tangentMatches.length>=4,'Floor and cove must share the tangent position');
+for(const i of tangentMatches){assert(Math.abs(n.getY(i)-1)<1e-6);assert(Math.abs(n.getZ(i))<1e-6);}
 for(const width of [360,390,768,1024,1440,1920,2560]){
  const gutter=Math.max(16,Math.min(32,width*.025));const side=Math.max(gutter,(width-1280)/2);
  for(const phase of [0,.25,.5,.75,1]){const m=headerMetrics(width,phase);assert(Math.abs(m.center-m.width/2-side)<1e-6);assert(m.center+m.width/2<=width-side+.001);}

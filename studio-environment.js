@@ -1,37 +1,23 @@
 import * as T from './assets/three.module.js';
 
-// Large studio softboxes provide a continuous reflection gradient for ceramic and metal.
+// A restrained product-photography environment: large diffusers create broad ceramic
+// highlights, while two neutral flags keep enough dark shape for the glaze to read.
 export function createStudioEnvironment(){
  const scene=new T.Scene();
- const room=new T.Mesh(
-  new T.BoxGeometry(32,20,32),
-  new T.MeshBasicMaterial({color:0xa0a0a0,side:T.BackSide})
- );
- scene.add(room);
-
- function card(w,h,pos,target,intensity,tint=0xffffff){
-  const m=new T.Mesh(
-   new T.PlaneGeometry(w,h),
-   new T.MeshBasicMaterial({color:new T.Color(tint).multiplyScalar(intensity),side:T.DoubleSide})
-  );
-  m.position.set(...pos);m.lookAt(...target);scene.add(m);return m;
- }
- function flag(w,h,pos,target,color=0x161616){
-  const m=new T.Mesh(new T.PlaneGeometry(w,h),new T.MeshBasicMaterial({color,side:T.DoubleSide}));
-  m.position.set(...pos);m.lookAt(...target);scene.add(m);return m;
- }
-
- // Broad panels create a satin gradient; restrained narrow strips articulate edges.
- card(13.8,11.8,[-11.4,7.0,4.0],[0,.30,0],1.50,0xfcfcfc);
- card(18.5,9.0,[-.8,11.4,-1.2],[0,.18,-.5],1.25,0xfbfbfb);
- card(16.2,2.2,[1.0,5.3,-10.8],[0,.1,0],.90,0xf4f4f4);
- card(9.0,6.4,[-2.6,5.0,8.8],[0,.36,0],1.12,0xf5f5f5);
- card(3.8,8.8,[9.1,4.4,-3.6],[0,.38,0],.76,0xeeeeee);
- card(9.0,1.1,[3.8,3.2,11.6],[0,.0,0],.54,0xefefef);
-
- // Flags are as important as lights on metal: they restore dark intervals and depth.
- flag(8.0,12.0,[10.7,1.3,3.8],[0,.1,0],0x6c6c6c);
- flag(5.4,10.2,[-8.4,1.0,-7.2],[0,.0,0],0x818181);
- flag(14.0,2.4,[.8,9.0,7.5],[0,.1,0],0x999999);
+ scene.add(new T.Mesh(
+  new T.BoxGeometry(36,22,36),
+  new T.MeshBasicMaterial({color:0x8f9292,side:T.BackSide})
+ ));
+ const panel=(w,h,pos,target,value,tint=0xffffff)=>{
+  const color=new T.Color(tint).multiplyScalar(value);
+  const mesh=new T.Mesh(new T.PlaneGeometry(w,h),new T.MeshBasicMaterial({color,side:T.DoubleSide}));
+  mesh.position.set(...pos);mesh.lookAt(...target);scene.add(mesh);
+ };
+ panel(14,12,[-11,7,5],[0,.5,0],1.55,0xfffdf8); // window/key
+ panel(12,8,[8,8,3],[0,.4,0],.72,0xf4f6f7);     // fill
+ panel(16,3,[0,10,-10],[0,.5,0],.90,0xf7f7f5);  // top rim
+ panel(10,5,[0,3,10],[0,.3,0],.55,0xe8ebec);    // camera-side lift
+ panel(5,11,[10,2,-5],[0,.3,0],.16,0x737778);   // dark flag
+ panel(4,9,[-8,1,-8],[0,.2,0],.20,0x777a7b);    // dark flag
  return scene;
 }
