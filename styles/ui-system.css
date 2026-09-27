@@ -21,14 +21,6 @@ button:focus-visible,a:focus-visible{outline:2px solid #858585;outline-offset:3p
 .profession button,.primary-links button{font:500 12px/1 var(--font-ui);padding:10px 12px;border-radius:8px;color:var(--ui-ink-2);transition:background .16s,color .16s}
 .profession button:hover,.profession button.active,.primary-links button:hover{background:rgba(110,110,110,.07);box-shadow:inset 1px 1px 3px #0000000b,inset -1px -1px 3px #ffffff80;color:var(--ui-ink)}
 .primary-links button{font-size:11px;padding:10px 8px}
-
-#time-toggle{width:30px!important;height:30px;padding:0!important;border-radius:50%!important;font:500 15px/1 var(--font-ui)!important}
-.time-panel{position:fixed;z-index:14;top:calc(var(--ui-gutter) + 68px);right:var(--ui-side);width:min(250px,calc(100vw - 32px));padding:16px;border:1px solid rgba(255,255,255,.28);border-radius:14px;background:linear-gradient(145deg,var(--ui-surface-hi),var(--ui-surface-lo));box-shadow:var(--ui-shadow),inset 1px 1px 1px rgba(255,255,255,.48);color:var(--ui-ink);font:500 11px/1.3 var(--font-ui)}
-.time-panel__head{display:flex;justify-content:space-between;gap:12px;margin-bottom:14px;color:var(--ui-ink-2)}
-.time-panel__head output{color:var(--ui-ink)}
-#time-range{display:block;width:100%;accent-color:#777;margin:0 0 12px}
-#time-auto{width:100%;padding:9px 10px;border-radius:8px;text-align:center;color:var(--ui-ink-2);background:rgba(255,255,255,.38)}
-#time-auto:hover{background:rgba(255,255,255,.58);color:var(--ui-ink)}
 .home-labels{position:fixed;inset:0;z-index:3;pointer-events:none}
 .object-label{position:absolute;min-width:140px;min-height:56px;transform:translateX(-50%);text-align:center;pointer-events:auto;color:var(--ui-ink);transition:opacity .20s}
 .object-label em{font:italic 22px/1.1 var(--font-display)}
