@@ -60,6 +60,7 @@ uniform vec2 object1Center; uniform vec2 object1Radius; uniform float object1Str
 uniform vec2 object2Center; uniform vec2 object2Radius; uniform float object2Strength;
 uniform vec2 object3Center; uniform vec2 object3Radius; uniform float object3Strength;
 varying vec4 vFloorProjection; varying vec3 vFloorWorldPosition;
+float planarFloorMask(){return 1.0-smoothstep(.012,.30,vFloorWorldPosition.y);}
 float floorGlowMask(){vec2 gd=vFloorWorldPosition.xz-glowWorldXZ; return exp(-dot(gd,gd)/(2.0*glowRadius*glowRadius))*glowStrength;}
 vec3 uiGlassReflection(){
  vec2 d=vFloorWorldPosition.xz-uiCenter; vec2 a=normalize(uiAxis+vec2(1e-5)); vec2 n=vec2(-a.y,a.x);
@@ -111,7 +112,7 @@ float reflectionFootprintMask(){
  );
 }
 `+shader.fragmentShader;
-  shader.fragmentShader=shader.fragmentShader.replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\nroughnessFactor *= mix(1.0,0.82,clamp(floorGlowMask(),0.0,1.0)); roughnessFactor *= mix(1.0,.86,uiGlassMask()); roughnessFactor *= mix(1.0,.90,panelBoardMask());');
+  shader.fragmentShader=shader.fragmentShader.replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\nfloat floorSurfaceRoughness=planarFloorMask(); roughnessFactor *= mix(1.0,0.82,clamp(floorGlowMask(),0.0,1.0)*floorSurfaceRoughness); roughnessFactor *= mix(1.0,.86,uiGlassMask()*floorSurfaceRoughness); roughnessFactor *= mix(1.0,.90,panelBoardMask()*floorSurfaceRoughness);');
   shader.fragmentShader=shader.fragmentShader.replace('#include <opaque_fragment>',`
   vec2 reflectionUV=vFloorProjection.xy/vFloorProjection.w;
   vec4 reflected=texture2D(floorReflection,reflectionUV);
@@ -125,20 +126,22 @@ float reflectionFootprintMask(){
   float reflectedLuma=dot(reflectedColor,vec3(.2126,.7152,.0722));
   reflectedColor=mix(vec3(reflectedLuma),reflectedColor,.72);
   reflectedColor*=.98;
-  outgoingLight=mix(outgoingLight,reflectedColor,(.28+.10*footprint)*reflectedAlpha);
-  float pointerGlow=clamp(floorGlowMask(),0.0,1.0);
+  float floorSurface=planarFloorMask();
+  outgoingLight=mix(outgoingLight,reflectedColor,(.28+.10*footprint)*reflectedAlpha*floorSurface);
+  float pointerGlow=clamp(floorGlowMask(),0.0,1.0)*floorSurface;
   outgoingLight += vec3(.026)*pointerGlow;
   vec3 uiRef=uiGlassReflection(); float uiGlow=clamp(uiRef.x,0.0,1.0);
-  float uiShadow=clamp(uiContactShadow(),0.0,1.0);
+  uiRef*=floorSurface;
+  float uiShadow=clamp(uiContactShadow(),0.0,1.0)*floorSurface;
   outgoingLight*=1.0-uiShadow*.115;
   outgoingLight=mix(outgoingLight,outgoingLight*vec3(.95),clamp(uiRef.z*.16,0.0,.13));
   outgoingLight += vec3(.048)*uiGlow + vec3(.094)*uiRef.y;
-  vec3 panelRef=panelBoardReflection();
+  vec3 panelRef=panelBoardReflection()*floorSurface;
   outgoingLight=mix(outgoingLight,outgoingLight*vec3(.94),clamp(panelRef.x*.18,0.0,.16));
   outgoingLight += vec3(.058)*panelRef.x + vec3(.138)*panelRef.y + vec3(.080)*panelRef.z;
   #include <opaque_fragment>`);
  };
- ground.material.customProgramCacheKey=()=> 'reference-floor-v16-neutral-mirror';
+ ground.material.customProgramCacheKey=()=> 'reference-floor-v17-seamless-cove';
  const color=new T.Color(),look=new T.Vector3();
  function blur(){
   blurMat.uniforms.uMap.value=raw.texture;blurMat.uniforms.uDirection.value.set(1,0);renderer.setRenderTarget(blurA);renderer.clear();renderer.render(blurScene,blurCamera);

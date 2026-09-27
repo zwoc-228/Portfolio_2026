@@ -47,7 +47,7 @@ const beamUp = new T.Vector3(0, -1, 0);
 const spotOrigin = new T.Vector3();
 let pointerDirty = false, pointerClientX = 0, pointerClientY = 0;
 let glowCurrentStrength = 0, glowTargetStrength = 0, hoveredModel = -1;
-let spotAngleCurrent = T.MathUtils.degToRad(2.0), spotAngleTarget = T.MathUtils.degToRad(2.0), spotIntensityTarget = 0;
+let spotAngleCurrent = T.MathUtils.degToRad(7.0), spotAngleTarget = T.MathUtils.degToRad(7.0), spotIntensityTarget = 0;
 let particleTime = 0;
 let panelReflectionHover = 0, wasLiftMoving = false;
 
@@ -128,7 +128,7 @@ function syncPanelFloorReflection() {
 function resetTransientLighting() {
   glowCurrent.set(0,0,0); glowTarget.set(0,0,0);
   glowCurrentStrength = 0; glowTargetStrength = 0; hoveredModel = -1;
-  spotIntensityTarget = 0; spotAngleTarget = spotAngleCurrent = T.MathUtils.degToRad(2.0);
+  spotIntensityTarget = 0; spotAngleTarget = spotAngleCurrent = T.MathUtils.degToRad(7.0);
   if (flashlight) { flashlight.intensity = 0; flashlight.visible = false; }
   if (beamHalo) { beamHalo.visible = false; if (beamHalo.material?.uniforms?.uOpacity) beamHalo.material.uniforms.uOpacity.value = 0; }
   if (beamParticles) { beamParticles.visible = false; if (beamParticles.material?.uniforms?.uOpacity) beamParticles.material.uniforms.uOpacity.value = 0; }
@@ -163,7 +163,7 @@ function updateBeam() {
     beamHalo.scale.set(radius * 1.08, dist, radius * 1.08);
     // Restored full Round 22/26 volumetric strength: no visual subtraction.
     beamHalo.material.uniforms.uOpacity.value = T.MathUtils.lerp(beamHalo.material.uniforms.uOpacity.value, glowCurrentStrength * (hover ? .050 : .046), .12);
-    beamHalo.visible = glowCurrentStrength > .01;
+    beamHalo.visible = false;
   }
   if (beamParticles) {
     beamParticles.position.copy(beamMid);
@@ -171,7 +171,7 @@ function updateBeam() {
     beamParticles.scale.set(radius * .82, dist, radius * .82);
     beamParticles.material.uniforms.uOpacity.value = T.MathUtils.lerp(beamParticles.material.uniforms.uOpacity.value, glowCurrentStrength * (hover ? .18 : .14), .12);
     beamParticles.material.uniforms.uTime.value = particleTime;
-    beamParticles.visible = glowCurrentStrength > .02;
+    beamParticles.visible = false;
   }
 }
 
@@ -196,15 +196,15 @@ function resolvePointer() {
   if (bestIndex >= 0) {
     const profile = hoverProfiles[bestIndex];
     if (profile) {
-      setGlowTarget(profile.x, profile.y + .05, profile.z, 1, bestIndex, profile.angle, 3.1);
+      setGlowTarget(profile.x, profile.y + .05, profile.z, 1, bestIndex, profile.angle, 1.9);
       return;
     }
   }
   if (raycaster.ray.intersectPlane(floorPlane, glowHit)) {
-    setGlowTarget(glowHit.x, glowHit.y, glowHit.z, 1, -1, T.MathUtils.degToRad(1.95), 5.0);
+    setGlowTarget(glowHit.x, glowHit.y, glowHit.z, 1, -1, T.MathUtils.degToRad(7.0), 1.55);
   }
 }
-function setGlowTarget(x, y, z, strength, hoverIndex = -1, angle = T.MathUtils.degToRad(1.95), intensity = 5.0) {
+function setGlowTarget(x, y, z, strength, hoverIndex = -1, angle = T.MathUtils.degToRad(7.0), intensity = 1.55) {
   glowTarget.set(x, y, z);
   glowTargetStrength = strength;
   hoveredModel = hoverIndex;
@@ -493,8 +493,9 @@ async function init() {
       normalMap: deskMetalNormal, normalScale: new T.Vector2(.006, .006), clearcoat: .008, clearcoatRoughness: .64,
       anisotropy: .12, anisotropyRotation: 0
     }));
-    ground.rotation.x = -Math.PI / 2; ground.position.set(0, -.016, 11.2); ground.receiveShadow = true; scene.add(ground);
-    scene.add(createStudioBackdrop());
+    ground.rotation.x = -Math.PI / 2; ground.position.set(0, -.016, 11.0); ground.receiveShadow = true; scene.add(ground);
+    // Use one physical material across the desk and cove so no horizon seam can form.
+    scene.add(createStudioBackdrop(ground.material));
 
     scene.add(new T.HemisphereLight(0xfafafa, 0x969696, .29));
     keyLight = new T.DirectionalLight(0xffffff, .74); keyLight.position.set(-6.7, 10.2, 5.6); keyLight.castShadow = true; keyLight.shadow.mapSize.set(2048, 2048); Object.assign(keyLight.shadow.camera, { left: -8, right: 8, top: 6, bottom: -4, near: .1, far: 28 }); keyLight.shadow.bias = -.00008; keyLight.shadow.normalBias = .0048; keyLight.shadow.radius = 6.2; keyLight.shadow.blurSamples = 10; keyLight.shadow.autoUpdate = false; keyLight.shadow.needsUpdate = true; scene.add(keyLight);
@@ -502,7 +503,7 @@ async function init() {
     const fill = new T.DirectionalLight(0xf0f0f0, .18); fill.position.set(6.4, 6.4, -4.4); scene.add(fill);
 
     flashlightTarget = new T.Object3D(); scene.add(flashlightTarget);
-    flashlight = new T.SpotLight(0xffffff, 0, 0, T.MathUtils.degToRad(2.0), .94, 0); flashlight.position.set(0, 9.8, 2.2); flashlight.target = flashlightTarget; flashlight.castShadow = false; scene.add(flashlight);
+    flashlight = new T.SpotLight(0xffffff, 0, 0, T.MathUtils.degToRad(7.0), .985, 0); flashlight.position.set(0, 9.8, 2.2); flashlight.target = flashlightTarget; flashlight.castShadow = false; scene.add(flashlight);
     const beamVert = `varying vec3 vPos;varying vec3 vNormalV;void main(){vPos=position;vNormalV=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`;
     const beamFrag = `uniform vec3 uColor;uniform float uOpacity;varying vec3 vPos;varying vec3 vNormalV;void main(){float h=clamp(.5-vPos.y,0.,1.);float vertical=smoothstep(.015,.18,h)*(1.-smoothstep(.80,.995,h));float facing=.46+.54*(1.-abs(vNormalV.z));float alpha=uOpacity*vertical*facing;gl_FragColor=vec4(uColor,alpha);}`;
     const beamMaterial = (color) => new T.ShaderMaterial({ uniforms: { uColor: { value: new T.Color(color) }, uOpacity: { value: 0 } }, vertexShader: beamVert, fragmentShader: beamFrag, transparent: true, depthWrite: false, depthTest: true, blending: T.AdditiveBlending, side: T.DoubleSide });
@@ -531,7 +532,7 @@ async function init() {
       models[i] = root; home.push({ x: f[0], z: f[1], r: f[4] }); scene.add(root);
     });
     homeHeaderBoxes = models.map(m => new T.Box3().setFromObject(m).clone());
-    hoverProfiles = models.map(m => { const box = new T.Box3().setFromObject(m), center = new T.Vector3(), size = new T.Vector3(); box.getCenter(center); box.getSize(size); const horizontal = Math.max(size.x, size.z) * .54 + .18, approxDist = Math.max(4.7, 9.8 - center.y); return { x: center.x, y: center.y, z: center.z, angle: T.MathUtils.clamp(Math.atan(horizontal / approxDist) * 1.02, T.MathUtils.degToRad(4.9), T.MathUtils.degToRad(9.4)) }; });
+    hoverProfiles = models.map(m => { const box = new T.Box3().setFromObject(m), center = new T.Vector3(), size = new T.Vector3(); box.getCenter(center); box.getSize(size); const horizontal = Math.max(size.x, size.z) * .54 + .18, approxDist = Math.max(4.7, 9.8 - center.y); return { x: center.x, y: center.y, z: center.z, angle: T.MathUtils.clamp(Math.atan(horizontal / approxDist) * 1.02, T.MathUtils.degToRad(7.0), T.MathUtils.degToRad(12.0)) }; });
     homeHitBoxes = models.map(m => new T.Box3().setFromObject(m).expandByScalar(.08));
 
     const json=async url=>{const r=await fetch(url);if(!r.ok)throw Error('Missing '+url);return r.json();};
