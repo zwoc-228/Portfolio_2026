@@ -13,7 +13,7 @@
  box-shadow:var(--ui-shadow),inset 1px 1px 1px rgba(255,255,255,.48),inset 0 -1px 0 rgba(68,68,68,.06);
 }
 button:focus-visible,a:focus-visible{outline:2px solid #858585;outline-offset:3px}
-.site-header{position:fixed;z-index:12;left:calc(var(--ui-side) + 72px);top:var(--ui-gutter);transform:translateX(-50%);width:144px;height:48px;overflow:hidden;--reveal:0}
+.site-header{position:fixed;z-index:12;left:50%;top:var(--ui-gutter);transform:translateX(-50%);width:144px;height:48px;overflow:hidden;--reveal:0}
 .header-trigger{position:absolute;top:0;left:0;height:48px;width:144px;display:flex;gap:12px;align-items:center;justify-content:center;font:500 12px/1 var(--font-ui);color:var(--ui-ink);z-index:2}
 .site-header[data-mode="expanded"] .header-trigger{width:20px;height:56px}
 .header-links{position:absolute;left:24px;right:24px;top:0;height:56px;display:flex;align-items:center;justify-content:space-between;gap:16px;opacity:var(--reveal)}

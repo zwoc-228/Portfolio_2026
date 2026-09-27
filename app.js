@@ -3,6 +3,7 @@ import { fitStudioCamera } from './camera-rig.js';
 import * as T from './assets/three.module.js';
 import {PALETTE} from './palette.js';
 import { createStudioBackdrop } from './studio-backdrop.js';
+import { createStudioGradientTexture } from './studio-gradient.js';
 import { createStudioEnvironment } from './studio-environment.js';
 import { createContactShadows } from './contact-shadows.js';
 import { createModels } from './models.js';
@@ -469,7 +470,7 @@ async function init() {
     $('#scene').append(renderer.domElement);
 
     scene = new T.Scene();
-    scene.background = new T.Color(0xdedede);
+    scene.background = createStudioGradientTexture();
     camera = new T.PerspectiveCamera(27, innerWidth / Math.max(1, innerHeight), .1, 200);
     // Size and aim the renderer before any runtime client can request a frame.  This
     // removes the old 300×150 default-canvas stretch that appeared as horizontal bands.
