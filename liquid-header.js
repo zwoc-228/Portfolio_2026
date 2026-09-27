@@ -6,7 +6,8 @@ import {FRAME_ACTIVE,FRAME_RENDER,FRAME_REFLECTION} from './frame-runtime.js';
 
 export function headerMetrics(width,progress){
  const gutter=Math.max(16,Math.min(32,width*.025));
- return {width:T.MathUtils.lerp(144,Math.min(960,width-gutter*2),progress),height:T.MathUtils.lerp(48,width<=760?104:56,progress),top:gutter,center:width/2};
+ const frame=Math.min(1280,width-gutter*2),w=T.MathUtils.lerp(144,frame,progress);
+ return {width:w,height:T.MathUtils.lerp(48,width<=760?104:56,progress),top:gutter,center:(width-frame+w)/2};
 }
 export function createLiquidHeader({scene,camera,floorReflection,runtime}){
  const el=document.querySelector('.site-header'),trigger=el.querySelector('.header-trigger'),links=el.querySelector('.header-links');
@@ -22,7 +23,7 @@ export function createLiquidHeader({scene,camera,floorReflection,runtime}){
  let current=0,target=0,hovered=false,focusWithin=false,pinned=false,timer=0,dirty=true;
  function place(m){
   if(camera.position.y<.1)return;
-  camera.updateMatrixWorld(true);ray.setFromCamera(new T.Vector2(0,1-(m.top+m.height)/innerHeight*2),camera);
+  camera.updateMatrixWorld(true);ray.setFromCamera(new T.Vector2(m.center/innerWidth*2-1,1-(m.top+m.height)/innerHeight*2),camera);
   const t=(.12-ray.ray.origin.y)/ray.ray.direction.y;if(!Number.isFinite(t)||t<=0)return;
   point.copy(ray.ray.origin).addScaledVector(ray.ray.direction,t);view.copy(point).applyMatrix4(camera.matrixWorldInverse);
   const perPixel=-view.z*2*Math.tan(T.MathUtils.degToRad(camera.fov/2))/innerHeight;
@@ -32,7 +33,7 @@ export function createLiquidHeader({scene,camera,floorReflection,runtime}){
  }
  function apply(){
   const p=current*current*(3-2*current),m=headerMetrics(innerWidth,p);
-  el.style.width=m.width+'px';el.style.height=m.height+'px';el.style.top=m.top+'px';
+  el.style.width=m.width+'px';el.style.height=m.height+'px';el.style.top=m.top+'px';el.style.left=m.center+'px';
   el.style.setProperty('--reveal',Math.max(0,(p-.50)/.50).toFixed(4));el.dataset.mode=p>.5?'expanded':'collapsed';
   links.inert=target===0||p<.85;trigger.setAttribute('aria-expanded',String(target===1));place(m);
  }

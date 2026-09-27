@@ -1,5 +1,7 @@
+import { fitStudioCamera } from './camera-rig.js';
 import * as T from './assets/three.module.js';
 import {PALETTE} from './palette.js';
+import { createStudioBackdrop } from './studio-backdrop.js';
 import { createStudioEnvironment } from './studio-environment.js';
 import { createContactShadows } from './contact-shadows.js';
 import { createModels } from './models.js';
@@ -308,22 +310,9 @@ function updateScene(dt, now) {
 
 function layout(request = true) {
   if (!camera || !renderer) return;
-  const w = innerWidth, h = innerHeight, a = w / h;
+  const w = innerWidth, h = innerHeight;
   renderer.setSize(w, h);
-  camera.aspect = a;
-  const refAspect = 1672 / 941;
-  const refVFov = T.MathUtils.degToRad(27);
-  let fov;
-  if (a < 1) fov = 55;
-  else {
-    const matchedVFov = 2 * Math.atan(Math.tan(refVFov / 2) * (refAspect / a));
-    fov = T.MathUtils.clamp(T.MathUtils.radToDeg(matchedVFov), 22.6, 27);
-  }
-  camera.fov = fov;
-  camera.position.set(0, 9, 13);
-  camera.lookAt(0, .35, 0);
-  camera.updateProjectionMatrix();
-  if (a < 1) { camera.position.multiplyScalar(1.55); camera.lookAt(0, .2, 0); }
+  fitStudioCamera(camera, w, h, homeHeaderBoxes);
   syncHomeLabelsToObjects();
   liquidHeader?.syncLayout?.();
   liquidPanels?.syncLayout?.();
@@ -484,8 +473,8 @@ async function init() {
     // Size and aim the renderer before any runtime client can request a frame.  This
     // removes the old 300×150 default-canvas stretch that appeared as horizontal bands.
     renderer.setSize(innerWidth, innerHeight, false);
-    camera.position.set(0, 9, 13);
-    camera.lookAt(0, .35, 0);
+    camera.position.set(0, 6.6, 14.2);
+    camera.lookAt(0, .45, 0);
     camera.updateProjectionMatrix();
 
     const pmrem = new T.PMREMGenerator(renderer);
@@ -496,13 +485,14 @@ async function init() {
     const loader = new T.TextureLoader();
     const deskMetalNormal=await loadTexture(loader, 'desk-metal-normal.png',18);
 
-    const ground = new T.Mesh(new T.PlaneGeometry(200, 200), new T.MeshPhysicalMaterial({
+    const ground = new T.Mesh(new T.PlaneGeometry(48, 30), new T.MeshPhysicalMaterial({
       color: PALETTE.desk, envMap: scene.environment, envMapIntensity: 1.16,
       metalness: .48, roughness: .34,
       normalMap: deskMetalNormal, normalScale: new T.Vector2(.006, .006), clearcoat: .008, clearcoatRoughness: .64,
       anisotropy: .12, anisotropyRotation: 0
     }));
-    ground.rotation.x = -Math.PI / 2; ground.position.y = -.016; ground.receiveShadow = true; scene.add(ground);
+    ground.rotation.x = -Math.PI / 2; ground.position.set(0, -.016, 11.2); ground.receiveShadow = true; scene.add(ground);
+    scene.add(createStudioBackdrop());
 
     scene.add(new T.HemisphereLight(0xfafafa, 0x969696, .29));
     keyLight = new T.DirectionalLight(0xffffff, .74); keyLight.position.set(-6.7, 10.2, 5.6); keyLight.castShadow = true; keyLight.shadow.mapSize.set(2048, 2048); Object.assign(keyLight.shadow.camera, { left: -8, right: 8, top: 6, bottom: -4, near: .1, far: 28 }); keyLight.shadow.bias = -.00008; keyLight.shadow.normalBias = .0048; keyLight.shadow.radius = 6.2; keyLight.shadow.blurSamples = 10; keyLight.shadow.autoUpdate = false; keyLight.shadow.needsUpdate = true; scene.add(keyLight);
@@ -545,7 +535,7 @@ async function init() {
     const modelNames=['writing','architecture','research'];
     const json=async url=>{const r=await fetch(url);if(!r.ok)throw Error('Missing '+url);return r.json();};
     const [atlases,uvSets,contactLayout,contactMaps]=await Promise.all([
-      Promise.all(modelNames.map(n=>loader.loadAsync(`assets/${n}${n==='architecture'?'-studio-baked.jpg':'-studio-clean.png'}`))),
+      Promise.all(modelNames.map(n=>loader.loadAsync(`assets/${n}${n==='architecture'?'-studio-baked.jpg':n==='writing'?'-studio-round53.png':'-studio-clean.png'}`))),
       Promise.all(modelNames.map(n=>json(`assets/${n}-bake-uv.json`))),
       json('assets/contact-ao-layout.json'),
       Promise.all(modelNames.map(n=>loader.loadAsync(`assets/${n}-contact-ao.png`)))

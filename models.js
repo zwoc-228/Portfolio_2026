@@ -48,8 +48,7 @@ export function createModels(){
  }
  const upper=add(writing,'Rounded upper cloth cover',coverGeometry(2.62,3.24,.044,.095),cover);upper.position.y=.232;
  box(writing,'Rounded binding spine',.112,.224,3.10,-1.25,.132,0,cover,.035);
- const hinge=mat('Pressed binding groove',0xd9dcd5,.86);
- box(writing,'Inset hinge on cover',.012,.002,3.01,-1.135,.255,0,hinge,.001);
+ // The separate hinge strip was coplanar with the cover and produced a dark seam.
  // Bookmark exits between pages and falls to the desk, not a floating rectangular flap.
  const rp=[],ru=[],ri=[];
  for(let i=0;i<=30;i++){
