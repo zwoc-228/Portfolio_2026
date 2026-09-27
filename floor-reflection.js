@@ -1,10 +1,10 @@
 import * as T from './assets/three.module.js';
 
 // High-quality planar reflection with separable blur plus screen-UI contact reflections.
-// Round 37 keeps the 1024x576 HalfFloat reflection budget, but makes UI reflections
+// Interactive build uses a 768x432 HalfFloat reflection budget, but makes UI reflections
 // directional and elongated across the metal desk instead of symmetric glow blobs.
 export function createFloorReflection(renderer,scene,ground){
- const W=1024,H=576;
+ const W=768,H=432;
  const raw=new T.WebGLRenderTarget(W,H,{type:T.HalfFloatType,depthBuffer:true});
  raw.texture.generateMipmaps=false;raw.texture.minFilter=T.LinearFilter;raw.texture.magFilter=T.LinearFilter;
  if('samples' in raw)raw.samples=2;
@@ -16,7 +16,7 @@ export function createFloorReflection(renderer,scene,ground){
  const bias=new T.Matrix4().set(.5,0,0,.5,0,.5,0,.5,0,0,.5,.5,0,0,0,1);
  const uniforms={
   floorReflection:{value:blurB.texture},floorProjection:{value:matrix},
-  glowWorldXZ:{value:new T.Vector2(0,0)},glowStrength:{value:0},glowRadius:{value:.36},
+  glowWorldXZ:{value:new T.Vector2(0,0)},glowStrength:{value:0},glowRadius:{value:.72},
   uiCenter:{value:new T.Vector2(0,0)},uiAxis:{value:new T.Vector2(1,0)},uiHalfLength:{value:0},
   uiWidth:{value:.18},uiStrength:{value:0},uiProgress:{value:0},uiContact:{value:1},
  };
@@ -111,7 +111,7 @@ float reflectionFootprintMask(){
  );
 }
 `+shader.fragmentShader;
-  shader.fragmentShader=shader.fragmentShader.replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\nroughnessFactor *= mix(1.0,0.82,clamp(floorGlowMask(),0.0,1.0)); roughnessFactor *= mix(1.0,.86,uiGlassMask()); roughnessFactor *= mix(1.0,.90,panelBoardMask());');
+  shader.fragmentShader=shader.fragmentShader.replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\nroughnessFactor *= mix(1.0,0.74,clamp(floorGlowMask(),0.0,1.0)); roughnessFactor *= mix(1.0,.86,uiGlassMask()); roughnessFactor *= mix(1.0,.90,panelBoardMask());');
   shader.fragmentShader=shader.fragmentShader.replace('#include <opaque_fragment>',`
   vec2 reflectionUV=vFloorProjection.xy/vFloorProjection.w;
   vec4 reflected=texture2D(floorReflection,reflectionUV);
@@ -127,7 +127,7 @@ float reflectionFootprintMask(){
   reflectedColor*=.98;
   outgoingLight=mix(outgoingLight,reflectedColor,(.28+.10*footprint)*reflectedAlpha);
   float pointerGlow=clamp(floorGlowMask(),0.0,1.0);
-  outgoingLight += vec3(.026)*pointerGlow;
+  outgoingLight += vec3(.085,.083,.078)*pointerGlow;
   vec3 uiRef=uiGlassReflection(); float uiGlow=clamp(uiRef.x,0.0,1.0);
   float uiShadow=clamp(uiContactShadow(),0.0,1.0);
   outgoingLight*=1.0-uiShadow*.115;
@@ -138,7 +138,7 @@ float reflectionFootprintMask(){
   outgoingLight += vec3(.058)*panelRef.x + vec3(.138)*panelRef.y + vec3(.080)*panelRef.z;
   #include <opaque_fragment>`);
  };
- ground.material.customProgramCacheKey=()=> 'reference-floor-v16-neutral-mirror';
+ ground.material.customProgramCacheKey=()=> 'reference-floor-v17-viewer-light';
  const color=new T.Color(),look=new T.Vector3();
  function blur(){
   blurMat.uniforms.uMap.value=raw.texture;blurMat.uniforms.uDirection.value.set(1,0);renderer.setRenderTarget(blurA);renderer.clear();renderer.render(blurScene,blurCamera);

@@ -44,10 +44,15 @@ const beamDir = new T.Vector3();
 const beamMid = new T.Vector3();
 const beamUp = new T.Vector3(0, -1, 0);
 const spotOrigin = new T.Vector3();
+const interactiveLightUniforms = {
+  uInteractiveLightPosition: { value: glowCurrent },
+  uInteractiveLightStrength: { value: 0 }
+};
 let pointerDirty = false, pointerClientX = 0, pointerClientY = 0;
 let glowCurrentStrength = 0, glowTargetStrength = 0, hoveredModel = -1;
-let spotAngleCurrent = T.MathUtils.degToRad(5.8), spotAngleTarget = T.MathUtils.degToRad(5.8), spotIntensityTarget = 0;
-let particleTime = 0;
+let spotAngleCurrent = T.MathUtils.degToRad(5.2), spotAngleTarget = T.MathUtils.degToRad(5.2), spotIntensityTarget = 0;
+let particleTime = 0, beamActiveUntil = 0;
+let reflectionPendingAfterLift = false;
 let panelReflectionHover = 0, wasLiftMoving = false;
 
 function drawFrame({ reflection = false } = {}) {
@@ -127,7 +132,8 @@ function syncPanelFloorReflection() {
 function resetTransientLighting() {
   glowCurrent.set(0,0,0); glowTarget.set(0,0,0);
   glowCurrentStrength = 0; glowTargetStrength = 0; hoveredModel = -1;
-  spotIntensityTarget = 0; spotAngleTarget = spotAngleCurrent = T.MathUtils.degToRad(5.8);
+  interactiveLightUniforms.uInteractiveLightStrength.value = 0;
+  spotIntensityTarget = 0; spotAngleTarget = spotAngleCurrent = T.MathUtils.degToRad(5.2);
   if (flashlight) { flashlight.intensity = 0; flashlight.visible = false; }
   if (beamHalo) { beamHalo.visible = false; if (beamHalo.material?.uniforms?.uOpacity) beamHalo.material.uniforms.uOpacity.value = 0; }
   if (beamParticles) { beamParticles.visible = false; if (beamParticles.material?.uniforms?.uOpacity) beamParticles.material.uniforms.uOpacity.value = 0; }
@@ -141,12 +147,13 @@ function updateBeam() {
   if (!flashlight || !flashlightTarget) return;
   const hover = hoveredModel >= 0 && state === 'home';
   spotAngleCurrent = T.MathUtils.lerp(spotAngleCurrent, spotAngleTarget, reduced ? 1 : .12);
-  // A real studio lamp stays on its stand while its head pans toward the subject.
-  // Only a small amount of lateral drift follows the pointer.
-  const originX = -1.45 + glowCurrent.x * .10;
-  const originZ = 3.35 + glowCurrent.z * .08;
-  spotOrigin.set(originX, 9.4, originZ);
-  flashlight.position.lerp(spotOrigin, reduced ? 1 : .16);
+  // The lamp lives at the viewer/camera, like a handheld continuous light.
+  // Only its aim moves, so the beam feels spatially anchored instead of sliding
+  // across the ceiling like a stage spotlight.
+  camera.getWorldDirection(beamDir);
+  spotOrigin.copy(camera.position).addScaledVector(beamDir, 1.15);
+  spotOrigin.y -= .34;
+  flashlight.position.lerp(spotOrigin, reduced ? 1 : .22);
   flashlightTarget.position.copy(glowCurrent);
   flashlight.angle = spotAngleCurrent;
   flashlight.intensity = T.MathUtils.lerp(flashlight.intensity, spotIntensityTarget * glowCurrentStrength, reduced ? 1 : .12);
@@ -163,15 +170,14 @@ function updateBeam() {
     beamHalo.quaternion.setFromUnitVectors(beamUp, beamDir);
     beamHalo.scale.set(radius * 1.08, dist, radius * 1.08);
     // Restored full Round 22/26 volumetric strength: no visual subtraction.
-    beamHalo.material.uniforms.uTime.value = particleTime;
-    beamHalo.material.uniforms.uOpacity.value = T.MathUtils.lerp(beamHalo.material.uniforms.uOpacity.value, glowCurrentStrength * (hover ? .040 : .032), .12);
+    beamHalo.material.uniforms.uOpacity.value = T.MathUtils.lerp(beamHalo.material.uniforms.uOpacity.value, glowCurrentStrength * (hover ? .032 : .026), .12);
     beamHalo.visible = glowCurrentStrength > .01;
   }
   if (beamParticles) {
     beamParticles.position.copy(beamMid);
     beamParticles.quaternion.copy(beamHalo.quaternion);
     beamParticles.scale.set(radius * .82, dist, radius * .82);
-    beamParticles.material.uniforms.uOpacity.value = T.MathUtils.lerp(beamParticles.material.uniforms.uOpacity.value, glowCurrentStrength * (hover ? .24 : .18), .12);
+    beamParticles.material.uniforms.uOpacity.value = T.MathUtils.lerp(beamParticles.material.uniforms.uOpacity.value, glowCurrentStrength * (hover ? .22 : .16), .12);
     beamParticles.material.uniforms.uTime.value = particleTime;
     beamParticles.visible = glowCurrentStrength > .02;
   }
@@ -198,20 +204,21 @@ function resolvePointer() {
   if (bestIndex >= 0) {
     const profile = hoverProfiles[bestIndex];
     if (profile) {
-      setGlowTarget(profile.x, profile.y + .05, profile.z, 1, bestIndex, profile.angle, 3.1);
+      setGlowTarget(profile.x, profile.y + .05, profile.z, 1, bestIndex, profile.angle, 7.2);
       return;
     }
   }
   if (raycaster.ray.intersectPlane(floorPlane, glowHit)) {
-    setGlowTarget(glowHit.x, glowHit.y, glowHit.z, .82, -1, T.MathUtils.degToRad(6.4), 2.35);
+    setGlowTarget(glowHit.x, glowHit.y, glowHit.z, 1, -1, T.MathUtils.degToRad(5.2), 8.0);
   }
 }
-function setGlowTarget(x, y, z, strength, hoverIndex = -1, angle = T.MathUtils.degToRad(6.4), intensity = 2.35) {
+function setGlowTarget(x, y, z, strength, hoverIndex = -1, angle = T.MathUtils.degToRad(5.2), intensity = 8.0) {
   glowTarget.set(x, y, z);
   glowTargetStrength = strength;
   hoveredModel = hoverIndex;
   spotAngleTarget = angle;
   spotIntensityTarget = intensity;
+  beamActiveUntil = performance.now() + 420;
   runtime?.request(FRAME_RENDER | FRAME_ACTIVE);
 }
 
@@ -282,7 +289,8 @@ function updateScene(dt, now) {
   const k = reduced ? 1 : 1 - Math.pow(.80, dt * 60);
   glowCurrent.lerp(glowTarget, k);
   glowCurrentStrength = T.MathUtils.lerp(glowCurrentStrength, glowTargetStrength, reduced ? 1 : 1 - Math.pow(.86, dt * 60));
-  floorReflection?.setGlow(glowCurrent.x, glowCurrent.z, glowCurrentStrength * (hoveredModel >= 0 ? .12 : .22));
+  interactiveLightUniforms.uInteractiveLightStrength.value = glowCurrentStrength * (hoveredModel >= 0 ? .72 : .34);
+  floorReflection?.setGlow(glowCurrent.x, glowCurrent.z, glowCurrentStrength * (hoveredModel >= 0 ? .28 : .42));
 
   let liftMoving = false;
   if (state === 'home' && !transition) {
@@ -295,9 +303,12 @@ function updateScene(dt, now) {
   }
   syncContactShadows();
   if (liftMoving) {
-    markStaticShadowsDirty();
-    flags |= FRAME_RENDER | FRAME_REFLECTION | FRAME_ACTIVE;
-  } else if (wasLiftMoving) {
+    // Keep pointer response cheap: do not rebuild the 1024px planar reflection
+    // or VSM shadow map on every hover frame.
+    reflectionPendingAfterLift = true;
+    flags |= FRAME_RENDER | FRAME_ACTIVE;
+  } else if (wasLiftMoving || reflectionPendingAfterLift) {
+    reflectionPendingAfterLift = false;
     markStaticShadowsDirty();
     flags |= FRAME_RENDER | FRAME_REFLECTION;
   }
@@ -307,8 +318,7 @@ function updateScene(dt, now) {
   flags |= updateTransition(dt);
 
   const glowUnsettled = pointerDirty || glowCurrent.distanceToSquared(glowTarget) > .00002 || Math.abs(glowCurrentStrength - glowTargetStrength) > .004 || Math.abs(spotAngleCurrent - spotAngleTarget) > .00025 || models.some((m, i) => state === 'home' && !transition && Math.abs(m.position.y - (i === hoveredModel ? .085 * glowCurrentStrength : 0)) > .002);
-  if (glowUnsettled) flags |= FRAME_RENDER | FRAME_ACTIVE;
-  else if (glowCurrentStrength > .015) flags |= FRAME_RENDER | FRAME_ACTIVE;
+  if (glowUnsettled || now < beamActiveUntil) flags |= FRAME_RENDER | FRAME_ACTIVE;
   return flags;
 }
 
@@ -409,11 +419,12 @@ function bindSceneInput() {
   renderer.domElement.addEventListener('pointermove', e => {
     if (state !== 'home') return;
     pointerClientX = e.clientX; pointerClientY = e.clientY; pointerDirty = true;
+    beamActiveUntil = performance.now() + 420;
     runtime.request(FRAME_RENDER | FRAME_ACTIVE);
   }, { passive: true });
   renderer.domElement.addEventListener('pointerleave', () => {
     pointerDirty = false;
-    if (state === 'home') setGlowTarget(glowTarget.x, glowTarget.y, glowTarget.z, 0, -1, T.MathUtils.degToRad(6.4), 0);
+    if (state === 'home') setGlowTarget(glowTarget.x, glowTarget.y, glowTarget.z, 0, -1, T.MathUtils.degToRad(5.2), 0);
   });
   renderer.domElement.addEventListener('click', e => {
     if (state !== 'home') return;
@@ -464,7 +475,7 @@ async function init() {
     initUIMotion();
     initSurfaceLightInteraction();
     renderer = new T.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
-    renderer.setPixelRatio(Math.min(devicePixelRatio, lowPower ? 1.0 : 1.28));
+    renderer.setPixelRatio(Math.min(devicePixelRatio, lowPower ? 0.9 : 1.12));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = T.VSMShadowMap;
     renderer.toneMapping = T.ACESFilmicToneMapping;
@@ -472,8 +483,7 @@ async function init() {
     $('#scene').append(renderer.domElement);
 
     scene = new T.Scene();
-    scene.background = new T.Color(0xd4d4d4);
-    scene.fog = new T.FogExp2(0xd4d4d4, .0065);
+    scene.background = new T.Color(0xd9d9d9);
     camera = new T.PerspectiveCamera(27, innerWidth / Math.max(1, innerHeight), .1, 200);
     // Size and aim the renderer before any runtime client can request a frame.  This
     // removes the old 300×150 default-canvas stretch that appeared as horizontal bands.
@@ -490,132 +500,41 @@ async function init() {
     const loader = new T.TextureLoader();
     const deskMetalNormal=await loadTexture(loader, DESK_NORMAL,18);
 
-    const ground = new T.Mesh(new T.PlaneGeometry(48, 30), new T.MeshPhysicalMaterial({
+    const ground = new T.Mesh(new T.PlaneGeometry(60, 44), new T.MeshPhysicalMaterial({
       color: PALETTE.desk, envMap: scene.environment, envMapIntensity: 1.16,
       metalness: .48, roughness: .34,
       normalMap: deskMetalNormal, normalScale: new T.Vector2(.006, .006), clearcoat: .008, clearcoatRoughness: .64,
       anisotropy: .12, anisotropyRotation: 0
     }));
-    ground.rotation.x = -Math.PI / 2; ground.position.set(0, -.016, 11.2); ground.receiveShadow = true; scene.add(ground);
+    ground.rotation.x = -Math.PI / 2; ground.position.set(0, -.016, 11.0); ground.receiveShadow = true; scene.add(ground);
     scene.add(createStudioBackdrop());
 
-    // Product-photography rig: one large diffused key, a weaker fill and a
-    // restrained rear strip. The directional lamp remains only for soft shadows.
-    scene.add(new T.HemisphereLight(0xf7f7f7, 0x9b9b9b, .20));
+    scene.add(new T.HemisphereLight(0xfafafa, 0x969696, .29));
+    keyLight = new T.DirectionalLight(0xffffff, .74); keyLight.position.set(-6.7, 10.2, 5.6); keyLight.castShadow = true; keyLight.shadow.mapSize.set(lowPower ? 768 : 1024, lowPower ? 768 : 1024); Object.assign(keyLight.shadow.camera, { left: -8, right: 8, top: 6, bottom: -4, near: .1, far: 28 }); keyLight.shadow.bias = -.00008; keyLight.shadow.normalBias = .0048; keyLight.shadow.radius = 6.2; keyLight.shadow.blurSamples = 10; keyLight.shadow.autoUpdate = false; keyLight.shadow.needsUpdate = true; scene.add(keyLight);
+    keyCompanionLight = new T.DirectionalLight(0xffffff, .22); keyCompanionLight.position.set(3.8, 7.6, 1.6); keyCompanionLight.castShadow = false; scene.add(keyCompanionLight);
+    const fill = new T.DirectionalLight(0xf0f0f0, .18); fill.position.set(6.4, 6.4, -4.4); scene.add(fill);
 
-    const keySoftbox = new T.RectAreaLight(0xfffdf8, 7.2, 8.5, 6.5);
-    keySoftbox.position.set(-5.8, 7.4, 5.8);
-    keySoftbox.lookAt(0, .35, -.2);
-    scene.add(keySoftbox);
-
-    const fillSoftbox = new T.RectAreaLight(0xf4f7fa, 3.2, 7.0, 5.5);
-    fillSoftbox.position.set(6.6, 5.0, 3.2);
-    fillSoftbox.lookAt(0, .25, -.4);
-    scene.add(fillSoftbox);
-
-    const rimStrip = new T.RectAreaLight(0xffffff, 2.4, 8.0, 1.4);
-    rimStrip.position.set(1.4, 5.5, -5.8);
-    rimStrip.lookAt(0, .55, .1);
-    scene.add(rimStrip);
-
-    keyLight = new T.DirectionalLight(0xffffff, .34);
-    keyLight.position.set(-6.7, 10.2, 5.6);
-    keyLight.castShadow = true;
-    keyLight.shadow.mapSize.set(2048, 2048);
-    Object.assign(keyLight.shadow.camera, { left: -8, right: 8, top: 6, bottom: -4, near: .1, far: 28 });
-    keyLight.shadow.bias = -.00008;
-    keyLight.shadow.normalBias = .0048;
-    keyLight.shadow.radius = 7.5;
-    keyLight.shadow.blurSamples = 12;
-    keyLight.shadow.autoUpdate = false;
-    keyLight.shadow.needsUpdate = true;
-    scene.add(keyLight);
-
-    keyCompanionLight = new T.DirectionalLight(0xf7f9fb, .10);
-    keyCompanionLight.position.set(3.8, 7.6, 1.6);
-    keyCompanionLight.castShadow = false;
-    scene.add(keyCompanionLight);
-
-    flashlightTarget = new T.Object3D();
-    scene.add(flashlightTarget);
-    flashlight = new T.SpotLight(0xfffdf7, 0, 0, T.MathUtils.degToRad(5.8), .985, 1.25);
-    flashlight.position.set(-1.45, 9.4, 3.35);
-    flashlight.target = flashlightTarget;
-    flashlight.castShadow = false;
-    scene.add(flashlight);
-
-    // Localized haze: a feathered volumetric shell with animated density,
-    // plus suspended micro-particles. It is visible as atmosphere, not a hard cone.
-    const beamVert = `varying vec3 vPos;varying vec3 vNormalV;varying vec2 vUv;void main(){vPos=position;vUv=uv;vNormalV=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`;
-    const beamFrag = `uniform vec3 uColor;uniform float uOpacity;uniform float uTime;varying vec3 vPos;varying vec3 vNormalV;varying vec2 vUv;
-float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
-float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+vec2(1.,1.)),f.x),f.y);}
-void main(){
- float h=clamp(.5-vPos.y,0.,1.);
- float ends=smoothstep(.025,.20,h)*(1.-smoothstep(.82,.995,h));
- float side=pow(clamp(1.-abs(vNormalV.z),0.,1.),1.35);
- float density=.72+.28*noise(vUv*vec2(5.,11.)+vec2(uTime*.035,-uTime*.06));
- float alpha=uOpacity*ends*(.32+.68*side)*density;
- gl_FragColor=vec4(uColor,alpha);
-}`;
-    const beamMaterial = new T.ShaderMaterial({
-      uniforms: {
-        uColor: { value: new T.Color(0xfffdf7) },
-        uOpacity: { value: 0 },
-        uTime: { value: 0 }
-      },
-      vertexShader: beamVert,
-      fragmentShader: beamFrag,
-      transparent: true,
-      depthWrite: false,
-      depthTest: true,
-      blending: T.AdditiveBlending,
-      side: T.DoubleSide,
-      fog: false
-    });
-    beamHalo = new T.Mesh(new T.ConeGeometry(1, 1, 48, 8, true), beamMaterial);
-    beamHalo.renderOrder = 1;
-    scene.add(beamHalo);
-
-    const dustCount = lowPower ? 48 : 96;
-    const dustPos = new Float32Array(dustCount * 3);
-    const dustSeed = new Float32Array(dustCount);
-    const random = (i, salt) => {
-      const value = Math.sin((i + 1) * (12.9898 + salt * 23.17)) * 43758.5453;
-      return value - Math.floor(value);
-    };
-    for (let i = 0; i < dustCount; i++) {
-      const h = random(i, 1);
-      const a = random(i, 2) * Math.PI * 2;
-      const r = Math.sqrt(random(i, 3)) * h * .90;
-      dustPos[i*3] = Math.cos(a) * r;
-      dustPos[i*3+1] = .5 - h;
-      dustPos[i*3+2] = Math.sin(a) * r;
-      dustSeed[i] = random(i, 4);
-    }
-    const dustGeom = new T.BufferGeometry();
-    dustGeom.setAttribute('position', new T.BufferAttribute(dustPos, 3));
-    dustGeom.setAttribute('aSeed', new T.BufferAttribute(dustSeed, 1));
-    const dustMat = new T.ShaderMaterial({
-      uniforms: {
-        uOpacity: { value: 0 },
-        uTime: { value: 0 },
-        uColor: { value: new T.Color(0xfffdf7) }
-      },
-      vertexShader: `attribute float aSeed;uniform float uTime;varying float vSeed;void main(){vSeed=aSeed;vec3 p=position;float drift=uTime*(.06+aSeed*.08);p.x+=sin(drift*2.1+aSeed*31.)*.018;p.z+=cos(drift*1.7+aSeed*23.)*.018;p.y+=sin(drift+aSeed*19.)*.012;vec4 mv=modelViewMatrix*vec4(p,1.);gl_PointSize=(.9+aSeed*2.1)*(28./max(1.,-mv.z));gl_Position=projectionMatrix*mv;}`,
-      fragmentShader: `uniform float uOpacity;uniform vec3 uColor;varying float vSeed;void main(){float d=length(gl_PointCoord-.5);float soft=1.-smoothstep(.08,.5,d);float sparkle=.45+.55*pow(sin(vSeed*37.)*.5+.5,2.);gl_FragColor=vec4(uColor,uOpacity*soft*sparkle);}`,
-      transparent: true,
-      depthWrite: false,
-      depthTest: true,
-      blending: T.AdditiveBlending,
-      fog: false
-    });
-    beamParticles = new T.Points(dustGeom, dustMat);
-    beamParticles.renderOrder = 3;
-    scene.add(beamParticles);
-    flashlight.visible = false;
-    beamHalo.visible = false;
-    beamParticles.visible = false;
+    flashlightTarget = new T.Object3D(); scene.add(flashlightTarget);
+    flashlight = new T.SpotLight(0xfffdf7, 0, 28, T.MathUtils.degToRad(5.2), .985, 1.15); flashlight.position.copy(camera.position); flashlight.target = flashlightTarget; flashlight.castShadow = false; scene.add(flashlight);
+    const beamVert = `varying vec3 vPos;varying vec3 vNormalV;void main(){vPos=position;vNormalV=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`;
+    const beamFrag = `uniform vec3 uColor;uniform float uOpacity;varying vec3 vPos;varying vec3 vNormalV;
+      float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+      void main(){
+       float h=clamp(.5-vPos.y,0.,1.);
+       float lengthFade=smoothstep(.04,.24,h)*(1.-smoothstep(.72,1.,h));
+       float grazing=pow(1.-abs(vNormalV.z),1.7);
+       float grain=.82+.18*hash(gl_FragCoord.xy);
+       float alpha=uOpacity*lengthFade*(.16+.84*grazing)*grain;
+       gl_FragColor=vec4(uColor,alpha);
+      }`;
+    const beamMaterial = (color) => new T.ShaderMaterial({ uniforms: { uColor: { value: new T.Color(color) }, uOpacity: { value: 0 } }, vertexShader: beamVert, fragmentShader: beamFrag, transparent: true, depthWrite: false, depthTest: true, blending: T.AdditiveBlending, side: T.BackSide, toneMapped:false });
+    beamHalo = new T.Mesh(new T.ConeGeometry(1, 1, 16, 1, true), beamMaterial(0xfffdf5)); beamHalo.renderOrder = 1; scene.add(beamHalo);
+    const dustCount = lowPower ? 14 : 28, dustPos = new Float32Array(dustCount * 3), dustSeed = new Float32Array(dustCount);
+    for (let i = 0; i < dustCount; i++) { const h = Math.random(), a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * h * .92; dustPos[i*3] = Math.cos(a) * r; dustPos[i*3+1] = .5 - h; dustPos[i*3+2] = Math.sin(a) * r; dustSeed[i] = Math.random(); }
+    const dustGeom = new T.BufferGeometry(); dustGeom.setAttribute('position', new T.BufferAttribute(dustPos, 3)); dustGeom.setAttribute('aSeed', new T.BufferAttribute(dustSeed, 1));
+    const dustMat = new T.ShaderMaterial({ uniforms: { uOpacity: { value: 0 }, uTime: { value: 0 }, uColor: { value: new T.Color(0xffffff) } }, vertexShader: `attribute float aSeed;uniform float uTime;varying float vSeed;void main(){vSeed=aSeed;vec3 p=position;p.y+=sin(uTime*.55+aSeed*18.)*.009;vec4 mv=modelViewMatrix*vec4(p,1.);gl_PointSize=(1.25+aSeed*2.35)*(26./max(1.,-mv.z));gl_Position=projectionMatrix*mv;}`, fragmentShader: `uniform float uOpacity;uniform vec3 uColor;varying float vSeed;void main(){float d=length(gl_PointCoord-.5);float soft=1.-smoothstep(.12,.5,d);float twinkle=.55+.45*sin(vSeed*31.);gl_FragColor=vec4(uColor,uOpacity*soft*twinkle);}`, transparent: true, depthWrite: false, depthTest: true, blending: T.AdditiveBlending });
+    beamParticles = new T.Points(dustGeom, dustMat); beamParticles.renderOrder = 3; scene.add(beamParticles);
+    flashlight.visible = false; beamHalo.visible = false; beamParticles.visible = false;
 
     floorReflection = createFloorReflection(renderer, scene, ground);
     floorReflection.setTransientObjects([flashlight, beamHalo, beamParticles]);
@@ -648,7 +567,19 @@ void main(){
     const clipMaterial=new T.MeshPhysicalMaterial({color:0xc5c5c5,metalness:1,roughness:.24,envMapIntensity:1.25});clipMaterial.name='Round44 neutral steel clip';
     models.forEach((root,i)=>{
       const atlas=atlases[i];atlas.colorSpace=T.SRGBColorSpace;atlas.channel=1;atlas.anisotropy=Math.min(16,renderer.capabilities.getMaxAnisotropy());
-      const studioMaterial=new T.MeshBasicMaterial({map:atlas,color:0xffffff,side:T.DoubleSide});studioMaterial.name='Cycles baked handmade studio';
+      const studioMaterial=new T.MeshBasicMaterial({map:atlas,color:0xffffff,side:T.DoubleSide});
+      studioMaterial.name='Cycles baked handmade studio';
+      studioMaterial.onBeforeCompile=shader=>{
+        Object.assign(shader.uniforms,interactiveLightUniforms);
+        shader.vertexShader='varying vec3 vInteractiveWorldPosition;\n'+shader.vertexShader;
+        shader.vertexShader=shader.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\nvInteractiveWorldPosition=(modelMatrix*vec4(transformed,1.0)).xyz;');
+        shader.fragmentShader='uniform vec3 uInteractiveLightPosition;uniform float uInteractiveLightStrength;varying vec3 vInteractiveWorldPosition;\n'+shader.fragmentShader;
+        shader.fragmentShader=shader.fragmentShader.replace('#include <opaque_fragment>',`float interactiveDistance=distance(vInteractiveWorldPosition,uInteractiveLightPosition);
+          float interactiveGlow=exp(-interactiveDistance*interactiveDistance*.72)*uInteractiveLightStrength;
+          outgoingLight+=vec3(.16,.155,.14)*interactiveGlow;
+          #include <opaque_fragment>`);
+      };
+      studioMaterial.customProgramCacheKey=()=>`studio-interactive-light-${i}`;
       root.traverse(o=>{
         if(!o.isMesh)return;const uv=uvSets[i][o.name];if(o.geometry.index)o.geometry=o.geometry.toNonIndexed();
         if(!uv||uv.length!==o.geometry.attributes.position.count*2)throw Error('Baked UV mismatch: '+o.name);
