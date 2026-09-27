@@ -11,7 +11,7 @@ export function headerMetrics(width,progress){
 export function createLiquidHeader({scene,camera,floorReflection,runtime}){
  const el=document.querySelector('.site-header'),trigger=el.querySelector('.header-trigger'),links=el.querySelector('.header-links');
  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
- const material=new T.MeshPhysicalMaterial({color:0xffffff,roughness:.17,metalness:0,clearcoat:1,specularIntensity:1,transparent:true,opacity:.34});
+ const material=new T.MeshStandardMaterial({color:0xf1f0ec,roughness:.88,metalness:0});
  const proxy=new T.Mesh(new RoundedBoxGeometry(1,1,.035,3,.10),material);proxy.name='Navigation card reflection';proxy.visible=false;proxy.frustumCulled=false;scene.add(proxy);
  floorReflection.setPersistentReflectionOnlyObjects([proxy]);
  const contact=createSurfaceContact(scene);

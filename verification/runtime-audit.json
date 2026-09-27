@@ -52,7 +52,7 @@
       "listeners": 7,
       "renderTargets": 0,
       "framebufferCopies": 0,
-      "physicalMaterials": 1
+      "physicalMaterials": 0
     },
     {
       "file": "dist/liquid-panels.js",
