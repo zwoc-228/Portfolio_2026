@@ -32,7 +32,7 @@ export function createUIReflectionProxies({ scene, camera, floorReflection }) {
       vec2 halfSize=max(uSizePx*.5-vec2(1.0),vec2(1.0));
       float radius=min(16.0,min(uSizePx.x,uSizePx.y)*.12);
       float d=sdRoundBox(p,halfSize,radius);
-      float fade=smoothstep(.04,.72,1.0-vUv.y);float alpha=(1.0-smoothstep(-1.25,1.25,d))*uOpacity*fade;
+      float alpha=(1.0-smoothstep(-1.25,1.25,d))*uOpacity;
       if(alpha<.002) discard;
       float top=1.0-vUv.y;
       float left=1.0-vUv.x;
@@ -48,7 +48,7 @@ export function createUIReflectionProxies({ scene, camera, floorReflection }) {
     const uniforms = {
       uSizePx:{value:new T.Vector2(280,400)},
       uBase:{value:new T.Color(0xf1f1f1)},
-      uOpacity:{value:.82}
+      uOpacity:{value:.34}
     };
     const material = new T.ShaderMaterial({
       uniforms,vertexShader,fragmentShader,
@@ -81,7 +81,7 @@ export function createUIReflectionProxies({ scene, camera, floorReflection }) {
   const q = new T.Quaternion();
   const forward = new T.Vector3();
 
-  function place(proxy, rect, { bottomHeight=.14, opacity=.26, tint=0xf1f1f1 } = {}) {
+  function place(proxy, rect, { bottomHeight=.12, opacity=.34, tint=0xf1f1f1 } = {}) {
     if (!rect || rect.width < 4 || rect.height < 4 || rect.bottom < 0 || rect.top > innerHeight) return false;
     camera.updateMatrixWorld(true);
     const x = rect.left + rect.width * .5;
@@ -98,7 +98,7 @@ export function createUIReflectionProxies({ scene, camera, floorReflection }) {
 
     const worldPerPx = 2 * depth * Math.tan(T.MathUtils.degToRad(camera.fov * .5)) / innerHeight;
     const w = rect.width * worldPerPx;
-    const h = Math.min(rect.height * worldPerPx,.72);
+    const h = rect.height * worldPerPx;
     if (!Number.isFinite(w) || !Number.isFinite(h) || w <= .01 || h <= .01) return false;
 
     q.copy(camera.quaternion);
@@ -111,7 +111,7 @@ export function createUIReflectionProxies({ scene, camera, floorReflection }) {
     proxy.uniforms.uBase.value.setHex(tint);
     proxy.uniforms.uOpacity.value=opacity*(rect.opacity??1);
     proxy.mesh.updateMatrixWorld(true);
-    proxy.contact.place(bottom,w,Math.min(.48,h*.06+.10),.06*(rect.opacity??1));
+    proxy.contact.place(bottom,w,Math.min(1.2,h*.18+.18),.12*(rect.opacity??1));
     return true;
   }
 
@@ -119,11 +119,11 @@ export function createUIReflectionProxies({ scene, camera, floorReflection }) {
     const active=[];
     proxies.forEach(p=>p.contact.hide());
     const specs=[];
-    if(category) specs.push({rect:category,bottomHeight:.14,opacity:.25+hover*.02,tint:0xe8e8e8});
-    cards.slice(0,4).forEach((rect)=>specs.push({rect,bottomHeight:.12,opacity:.16,tint:0xe9e9e9}));
-    if(detail) specs.push({rect:detail,bottomHeight:.12,opacity:.20,tint:0xe9e9e9});
+    if(category) specs.push({rect:category,bottomHeight:.13,opacity:.34+hover*.025,tint:0xf1f1f1});
+    cards.slice(0,4).forEach((rect)=>specs.push({rect,bottomHeight:.11,opacity:.25,tint:0xf1f1f1}));
+    if(detail) specs.push({rect:detail,bottomHeight:.11,opacity:.28,tint:0xf1f1f1});
 
-    if(info) specs.push({rect:info,bottomHeight:.12,opacity:.18,tint:0xe9e9e9});
+    if(info) specs.push({rect:info,bottomHeight:.11,opacity:.28,tint:0xf1f1f1});
     let cursor=0;
     for(const spec of specs){
       if(cursor>=proxies.length)break;

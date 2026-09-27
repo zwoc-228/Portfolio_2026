@@ -5,7 +5,7 @@ import {FRAME_ACTIVE,FRAME_RENDER,FRAME_REFLECTION} from './frame-runtime.js';
 export function headerMetrics(width,progress){
  const gutter=Math.max(16,Math.min(32,width*.025));
  const frame=Math.min(1280,width-gutter*2),w=T.MathUtils.lerp(144,frame,progress);
- return {width:w,height:T.MathUtils.lerp(48,width<=760?104:56,progress),top:gutter,center:width/2};
+ return {width:w,height:T.MathUtils.lerp(48,width<=760?104:56,progress),top:gutter,center:(width-frame+w)/2};
 }
 export function createLiquidHeader({scene,camera,floorReflection,runtime}){
  const el=document.querySelector('.site-header'),trigger=el.querySelector('.header-trigger'),links=el.querySelector('.header-links');
@@ -30,7 +30,7 @@ export function createLiquidHeader({scene,camera,floorReflection,runtime}){
   el.style.setProperty('--reveal',Math.max(0,(p-.50)/.50).toFixed(4));el.dataset.mode=p>.5?'expanded':'collapsed';
   links.inert=target===0||p<.85;trigger.setAttribute('aria-expanded',String(target===1));place(m);
  }
- function setTarget(value){target=value;dirty=true;runtime.request(FRAME_RENDER|FRAME_ACTIVE);}
+ function setTarget(value){target=value;dirty=true;runtime.request(FRAME_RENDER|FRAME_REFLECTION|FRAME_ACTIVE);}
  function maybeClose(){clearTimeout(timer);timer=setTimeout(()=>{if(!hovered&&!focusWithin&&!pinned)setTarget(0);},180);}
  const enter=e=>{if(e.pointerType==='touch')return;hovered=true;clearTimeout(timer);setTarget(1);};
  const leave=()=>{hovered=false;maybeClose();};
@@ -44,10 +44,9 @@ export function createLiquidHeader({scene,camera,floorReflection,runtime}){
   const before=current;current=reduced?target:T.MathUtils.lerp(current,target,1-Math.exp(-13*dt));
   if(Math.abs(current-target)<.0004)current=target;
   if(current===before&&!dirty)return 0;dirty=false;apply();
-  if(current===target)runtime.request(FRAME_REFLECTION);
-  return FRAME_RENDER|(current!==target?FRAME_ACTIVE:0);
+  return FRAME_RENDER|FRAME_REFLECTION|(current!==target?FRAME_ACTIVE:0);
  });
- function syncLayout(){dirty=true;apply();runtime.request(FRAME_RENDER);}
+ function syncLayout(){dirty=true;apply();runtime.request(FRAME_RENDER|FRAME_REFLECTION);}
  syncLayout();
  return {transientObjects:[contact.mesh],syncLayout,dispose(){contact.dispose();clearTimeout(timer);remove();el.removeEventListener('pointerenter',enter);el.removeEventListener('pointerleave',leave);el.removeEventListener('focusin',focus);el.removeEventListener('focusout',blur);el.removeEventListener('keydown',key);trigger.removeEventListener('click',click);document.removeEventListener('pointerdown',outside);floorReflection.setPersistentReflectionOnlyObjects([]);floorReflection.setObjectFootprint(3,0,0,.55,.38,0);}};
 }

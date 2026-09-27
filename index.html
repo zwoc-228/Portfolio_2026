@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en" data-boot="loading" data-scene-ready="false">
 <head>
-  <meta name="portfolio-build" content="round56-v2">
+  <meta name="portfolio-build" content="round55">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#dedede">
@@ -25,24 +25,9 @@
       </nav>
       <nav class="primary-links" aria-label="Primary navigation">
         <button id="brand" aria-label="Return to home">Home</button><button id="archive">Archive</button><button data-dialog="about">About</button><button data-dialog="contact">Contact</button>
-        <button id="time-toggle" class="time-toggle" type="button" aria-label="Open lighting time controls" aria-controls="time-panel" aria-expanded="false">
-          <span class="time-icon" aria-hidden="true"></span>
-        </button>
       </nav>
     </div>
   </header>
-
-  <aside id="time-panel" class="time-panel" hidden aria-label="Lighting time controls">
-    <div class="time-panel-head">
-      <span>Studio light</span>
-      <output id="time-value" for="time-hour"></output>
-    </div>
-    <label for="time-zone">Location</label>
-    <select id="time-zone" aria-label="Location time zone"></select>
-    <label for="time-hour">Time</label>
-    <input id="time-hour" type="range" min="0" max="23.5" step=".5" value="12">
-    <button id="time-now" type="button">Use current time</button>
-  </aside>
 
   <main>
     <div id="home-labels" class="home-labels" aria-label="Portfolio categories">

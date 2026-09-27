@@ -1,12 +1,10 @@
 import * as T from './assets/three.module.js';
 
 // High-quality planar reflection with separable blur plus screen-UI contact reflections.
-// Adaptive HalfFloat mirror: enough resolution for soft studio reflections without
-// paying desktop-sized GPU cost on constrained devices. UI reflections are deliberately
-// short, blurred and low-energy so they read as contact reflections rather than duplicates.
+// Round 37 keeps the 1024x576 HalfFloat reflection budget, but makes UI reflections
+// directional and elongated across the metal desk instead of symmetric glow blobs.
 export function createFloorReflection(renderer,scene,ground){
- const constrained=(navigator.deviceMemory&&navigator.deviceMemory<=4)||(navigator.hardwareConcurrency&&navigator.hardwareConcurrency<=4)||innerWidth<800;
- const W=constrained?512:768,H=constrained?288:432;
+ const W=640,H=360;
  const raw=new T.WebGLRenderTarget(W,H,{type:T.HalfFloatType,depthBuffer:true});
  raw.texture.generateMipmaps=false;raw.texture.minFilter=T.LinearFilter;raw.texture.magFilter=T.LinearFilter;
  if('samples' in raw)raw.samples=0;
@@ -122,14 +120,17 @@ float reflectionFootprintMask(){
   // Reflection-only UI proxy meshes are real scene geometry during the mirror pass.
   // Keep a visible low-energy base response everywhere instead of suppressing them
   // through the object-footprint mask; model footprints still receive extra energy.
-  float reflectedAlpha=clamp(reflected.a,0.0,1.0)*inside;
+  // Fade the planar mirror before the floor reaches the cove. Without this,
+  // the mirror pass ends abruptly at the tangent and reads as a horizontal line.
+  float coveFade=smoothstep(-3.55,-2.45,vFloorWorldPosition.z);
+  float reflectedAlpha=clamp(reflected.a,0.0,1.0)*inside*coveFade;
   vec3 reflectedColor=reflected.rgb/max(reflected.a,.001);
   float reflectedLuma=dot(reflectedColor,vec3(.2126,.7152,.0722));
-  reflectedColor=mix(vec3(reflectedLuma),reflectedColor,.58);
-  reflectedColor*=.86;
-  outgoingLight=mix(outgoingLight,reflectedColor,(.15+.07*footprint)*reflectedAlpha);
+  reflectedColor=mix(vec3(reflectedLuma),reflectedColor,.72);
+  reflectedColor*=.98;
+  outgoingLight=mix(outgoingLight,reflectedColor,(.20+.075*footprint)*reflectedAlpha);
   float pointerGlow=clamp(floorGlowMask(),0.0,1.0);
-  outgoingLight += vec3(.026)*pointerGlow;
+  outgoingLight += vec3(.014)*pointerGlow;
   vec3 uiRef=uiGlassReflection(); float uiGlow=clamp(uiRef.x,0.0,1.0);
   float uiShadow=clamp(uiContactShadow(),0.0,1.0);
   outgoingLight*=1.0-uiShadow*.115;
@@ -140,7 +141,7 @@ float reflectionFootprintMask(){
   outgoingLight += vec3(.058)*panelRef.x + vec3(.138)*panelRef.y + vec3(.080)*panelRef.z;
   #include <opaque_fragment>`);
  };
- ground.material.customProgramCacheKey=()=> 'reference-floor-v17-soft-mirror';
+ ground.material.customProgramCacheKey=()=> 'reference-floor-v16-neutral-mirror';
  const color=new T.Color(),look=new T.Vector3();
  function blur(){
   blurMat.uniforms.uMap.value=raw.texture;blurMat.uniforms.uDirection.value.set(1,0);renderer.setRenderTarget(blurA);renderer.clear();renderer.render(blurScene,blurCamera);
