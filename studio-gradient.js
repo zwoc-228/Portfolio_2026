@@ -1,22 +1,29 @@
 import * as T from './assets/three.module.js';
 
-// Node-safe, subtly dithered neutral background. The visible studio surface is the
-// continuous cyclorama; this texture only fills pixels outside that geometry.
-export function createStudioGradientTexture(){
- const w=8,h=256,data=new Uint8Array(w*h*4);
- for(let y=0;y<h;y++){
-  const v=y/(h-1);
-  const base=194+Math.round(24*Math.exp(-Math.pow((v-.58)/.32,2))-7*v);
-  for(let x=0;x<w;x++){
-   const d=((x*17+y*13)%5)-2;
-   const i=(y*w+x)*4,c=Math.max(0,Math.min(255,base+d));
-   data[i]=data[i+1]=data[i+2]=c;data[i+3]=255;
+// Node-safe studio gradient. A small DataTexture avoids browser-only canvas APIs
+// and is bilinearly enlarged by the GPU, producing a continuous backdrop without bands.
+export function createStudioGradientTexture({top=0xc9cccf,middle=0xe5e5e3,bottom=0xd1d2d2}={}){
+  const width=128,height=256,data=new Uint8Array(width*height*4);
+  const a=new T.Color(top),b=new T.Color(middle),c=new T.Color(bottom),color=new T.Color();
+  for(let y=0;y<height;y++){
+    const v=y/(height-1);
+    const t=v<.58?v/.58:(v-.58)/.42;
+    color.copy(v<.58?a:b).lerp(v<.58?b:c,t*t*(3-2*t));
+    for(let x=0;x<width;x++){
+      const nx=(x/(width-1)-.5)*2;
+      const vignette=.035*nx*nx;
+      const i=(y*width+x)*4;
+      data[i]=Math.round(255*Math.max(0,color.r-vignette));
+      data[i+1]=Math.round(255*Math.max(0,color.g-vignette));
+      data[i+2]=Math.round(255*Math.max(0,color.b-vignette));
+      data[i+3]=255;
+    }
   }
- }
- const tex=new T.DataTexture(data,w,h,T.RGBAFormat,T.UnsignedByteType);
- tex.colorSpace=T.SRGBColorSpace;
- tex.wrapS=tex.wrapT=T.ClampToEdgeWrapping;
- tex.magFilter=T.LinearFilter;tex.minFilter=T.LinearFilter;
- tex.needsUpdate=true;
- return tex;
+  const texture=new T.DataTexture(data,width,height,T.RGBAFormat,T.UnsignedByteType);
+  texture.colorSpace=T.SRGBColorSpace;
+  texture.minFilter=T.LinearFilter;
+  texture.magFilter=T.LinearFilter;
+  texture.generateMipmaps=false;
+  texture.needsUpdate=true;
+  return texture;
 }

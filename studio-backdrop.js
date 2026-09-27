@@ -1,47 +1,30 @@
 import * as T from './assets/three.module.js';
 import {PALETTE} from './palette.js';
+import {createStudioGradientTexture} from './studio-gradient.js';
 
-// One physical infinity-cove mesh: foreground floor, curved sweep and rear wall.
-// Using one geometry/material removes the former plane-to-backdrop horizon line.
-export function createStudioBackdrop({environment=null}={}){
- const halfWidth=24,radius=1.65,coveZ=-3.65,segments=64;
- const rows=[
-  {y:-.016,z:22,ny:1,nz:0,v:0},
-  {y:-.016,z:coveZ,ny:1,nz:0,v:.56}
- ];
- for(let i=1;i<=segments;i++){
-  const t=i/segments*Math.PI/2;
-  rows.push({
-   y:-.016+radius*(1-Math.cos(t)),
-   z:coveZ-radius*Math.sin(t),
-   ny:Math.cos(t),nz:Math.sin(t),v:.56+i/segments*.16
-  });
+// Physical paper sweep: floor tangent -> curved cove -> upright background.
+// Analytic normals keep the floor/cove joint smooth without a painted horizon.
+// The surface carries a baked studio-gradient map so it always reads as one
+// continuous soft photographic sweep, independent of how the light rig falls
+// on it (which previously produced visible hard-edged card seams / banding).
+export function createStudioBackdrop(){
+ const p=[],n=[],uv=[],idx=[],radius=1.4,segments=48;
+ for(let i=0;i<=segments+1;i++){
+  const t=Math.min(i,segments)/segments*Math.PI/2;
+  const y=i>segments?12:-.016+radius*(1-Math.cos(t));
+  const z=-3.8-radius*Math.sin(t);
+  const v=i>segments?1.28:i/segments*.85;
+  for(const x of [-24,24]){p.push(x,y,z);n.push(0,Math.cos(t),Math.sin(t));uv.push(x<0?0:1,v);}
+  if(i<=segments){const a=i*2;idx.push(a,a+1,a+2,a+1,a+3,a+2);}
  }
- rows.push({y:18,z:coveZ-radius,ny:0,nz:1,v:1});
-
- const positions=[],normals=[],uv=[],indices=[];
- for(const row of rows){
-  for(const x of [-halfWidth,halfWidth]){
-   positions.push(x,row.y,row.z);normals.push(0,row.ny,row.nz);uv.push(x<0?0:1,row.v);
-  }
- }
- for(let i=0;i<rows.length-1;i++){
-  const a=i*2;indices.push(a,a+1,a+2,a+1,a+3,a+2);
- }
- const geometry=new T.BufferGeometry();
- geometry.setAttribute('position',new T.Float32BufferAttribute(positions,3));
- geometry.setAttribute('normal',new T.Float32BufferAttribute(normals,3));
- geometry.setAttribute('uv',new T.Float32BufferAttribute(uv,2));
- geometry.setIndex(indices);
-
- const material=new T.MeshPhysicalMaterial({
-  color:PALETTE.desk,roughness:.43,metalness:.16,
-  clearcoat:.08,clearcoatRoughness:.48,
-  envMap:environment,envMapIntensity:.72,dithering:true
- });
- const sweep=new T.Mesh(geometry,material);
- sweep.name='Seamless studio cyclorama';
- sweep.userData.reflectionY=-.016;
- sweep.castShadow=false;sweep.receiveShadow=true;
+ const g=new T.BufferGeometry();
+ g.setAttribute('position',new T.Float32BufferAttribute(p,3));
+ g.setAttribute('normal',new T.Float32BufferAttribute(n,3));
+ g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));
+ g.setIndex(idx);
+ const gradientMap=createStudioGradientTexture();
+ gradientMap.wrapS=gradientMap.wrapT=T.ClampToEdgeWrapping;
+ const m=new T.MeshStandardMaterial({color:PALETTE.desk,map:gradientMap,roughness:1,metalness:0,envMapIntensity:.28});
+ const sweep=new T.Mesh(g,m);sweep.name='Neutral studio cyclorama';sweep.castShadow=false;sweep.receiveShadow=false;
  return sweep;
 }

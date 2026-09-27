@@ -26,7 +26,7 @@ const hashes={};for(const f of [...files].sort()){
  fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,bytes);
  hashes[f]=crypto.createHash('sha256').update(bytes).digest('hex');
 }
-fs.writeFileSync(path.join(out,'build-manifest.json'),JSON.stringify({build:'round55',files:hashes},null,2));
+fs.writeFileSync(path.join(out,'build-manifest.json'),JSON.stringify({build:'round56-v2',files:hashes},null,2));
 for(const [f,hash] of Object.entries(hashes)){
  if(crypto.createHash('sha256').update(fs.readFileSync(path.join(out,f))).digest('hex')!==hash)throw Error('Copy mismatch: '+f);
 }

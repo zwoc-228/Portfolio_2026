@@ -30,7 +30,7 @@ export function createLiquidHeader({scene,camera,floorReflection,runtime}){
   el.style.setProperty('--reveal',Math.max(0,(p-.50)/.50).toFixed(4));el.dataset.mode=p>.5?'expanded':'collapsed';
   links.inert=target===0||p<.85;trigger.setAttribute('aria-expanded',String(target===1));place(m);
  }
- function setTarget(value){target=value;dirty=true;runtime.request(FRAME_RENDER|FRAME_REFLECTION|FRAME_ACTIVE);}
+ function setTarget(value){target=value;dirty=true;runtime.request(FRAME_RENDER|FRAME_ACTIVE);}
  function maybeClose(){clearTimeout(timer);timer=setTimeout(()=>{if(!hovered&&!focusWithin&&!pinned)setTarget(0);},180);}
  const enter=e=>{if(e.pointerType==='touch')return;hovered=true;clearTimeout(timer);setTarget(1);};
  const leave=()=>{hovered=false;maybeClose();};
@@ -44,9 +44,10 @@ export function createLiquidHeader({scene,camera,floorReflection,runtime}){
   const before=current;current=reduced?target:T.MathUtils.lerp(current,target,1-Math.exp(-13*dt));
   if(Math.abs(current-target)<.0004)current=target;
   if(current===before&&!dirty)return 0;dirty=false;apply();
-  return FRAME_RENDER|FRAME_REFLECTION|(current!==target?FRAME_ACTIVE:0);
+  if(current===target)runtime.request(FRAME_REFLECTION);
+  return FRAME_RENDER|(current!==target?FRAME_ACTIVE:0);
  });
- function syncLayout(){dirty=true;apply();runtime.request(FRAME_RENDER|FRAME_REFLECTION);}
+ function syncLayout(){dirty=true;apply();runtime.request(FRAME_RENDER);}
  syncLayout();
  return {transientObjects:[contact.mesh],syncLayout,dispose(){contact.dispose();clearTimeout(timer);remove();el.removeEventListener('pointerenter',enter);el.removeEventListener('pointerleave',leave);el.removeEventListener('focusin',focus);el.removeEventListener('focusout',blur);el.removeEventListener('keydown',key);trigger.removeEventListener('click',click);document.removeEventListener('pointerdown',outside);floorReflection.setPersistentReflectionOnlyObjects([]);floorReflection.setObjectFootprint(3,0,0,.55,.38,0);}};
 }

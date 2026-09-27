@@ -17,7 +17,7 @@ const result={
     singleFrameDriver:nonRuntimeRaf===0,
     gsapHook:fs.readFileSync('dist/index.html','utf8').includes('assets/gsap.min.js'),
     singleUISurface:!fs.readFileSync('dist/liquid-panels.js','utf8').includes('FramebufferTexture')&&fs.readFileSync('dist/style.css','utf8').includes('ui-system.css'),
-    adaptiveFloorRT:/const W=lowPower\?512:768,H=lowPower\?288:432/.test(floor),
+    adaptiveFloorRT:/const W=constrained\?512:768,H=constrained\?288:432/.test(floor),
     reflectionPreblur:/blurA/.test(floor)&&/blurB/.test(floor)&&!floor.includes('for(int ix=-2;ix<=2;ix++)'),
     noStaleCapture:!app.includes('copyFramebufferToTexture')&&!app.includes('glassCaptureReady'),
     stableBakedArchitecture:app.includes('Cycles baked handmade studio')&&!app.includes('setArchitectureGlassDetail'),
