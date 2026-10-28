@@ -1,3 +1,4 @@
+import {createStudioRelays} from './studio-relays.js';
 import {MODEL_ASSETS,CONTACT_LAYOUT,DESK_NORMAL} from './runtime-assets.js';
 import { fitStudioCamera } from './camera-rig.js';
 import * as T from './assets/three.module.js';
@@ -26,7 +27,7 @@ let state = 'home';
 let selected = 0;
 let filter = 'All';
 let renderer, scene, camera, floorReflection, runtime, uiReflectionProxies;
-let liquidHeader, liquidPanels, ground, hemisphereLight, fillLight;
+let liquidHeader, liquidPanels, ground, hemisphereLight, fillLight, studioRelays;
 let studioHour = 12, studioTimeAuto = true, studioTimezone = 'local', studioClockTimer = 0, studioTimeCommitTimer = 0;
 let models = [], home = [], hoverProfiles = [], homeHitBoxes = [], homeHeaderBoxes = [], contactShadows = null;
 let keyLight, keyCompanionLight;
@@ -57,6 +58,7 @@ let panelReflectionHover = 0, wasLiftMoving = false;
 
 function drawFrame({ reflection = false } = {}) {
   if (!renderer || !scene || !camera) return;
+  if(studioRelays)studioRelays.group.visible=state==='home';
   scene.updateMatrixWorld(true);
   if (reflection) floorReflection?.update(camera);
   renderer.setRenderTarget(null);
@@ -233,7 +235,7 @@ function syncPanelFloorReflection() {
   // DOM cards now receive reflection through real 3D proxy geometry in the mirror pass.
   // This removes the previous screen-space smear whose direction/length could not obey
   // the floor plane, camera perspective or card height.
-  const categoryRect=null;
+  const categoryRect=state==='preview'?visibleUIRect(document.querySelector('.category-panel')):null;
   const index=document.querySelector('#index-content'),indexRect=state==='index'?visibleUIRect(index):null;
   const cardRects=false?[...index.querySelectorAll('.project-card')].map(el=>visibleUIRect(el,indexRect)).filter(Boolean).slice(0,4):[];
   const detailRect=null;
@@ -451,6 +453,7 @@ function layout(request = true) {
   const w = innerWidth, h = innerHeight;
   renderer.setSize(w, h);
   updateHomeComposition();
+  studioRelays?.layout(w);
   if(transition)startTransition();
   if(keyLight){const extent=w<=760?20:8;Object.assign(keyLight.shadow.camera,{left:-extent,right:extent,top:w<=760?20:6,bottom:w<=760?-20:-4,far:w<=760?55:28});keyLight.shadow.camera.updateProjectionMatrix();markStaticShadowsDirty();}
   fitStudioCamera(camera, w, h, homeHeaderBoxes);
@@ -526,7 +529,7 @@ function bindUI() {
   $('.close').onclick = () => $('#info').close();
   $('#detail-close').onclick = () => { hideProjectDetail(); setTimeout(syncPanelFloorReflection, 190); runtime?.request(FRAME_RENDER); };
   $('#info').addEventListener('click', e => { if (e.target === $('#info')) $('#info').close(); });
-  document.querySelectorAll('[data-dialog]').forEach(b => b.onclick = () => showInfo(b.dataset.dialog === 'about' ? 'Yuanlong Zhu' : 'Contact', b.dataset.dialog === 'about' ? 'Thinking through Architecture and the World.' : 'Contact details will appear here when provided.'));
+  document.querySelectorAll('[data-dialog]').forEach(b => b.onclick = () => showInfo(b.dataset.dialog === 'about' ? 'Yuanlong Zhu' : 'Contact', b.dataset.dialog === 'about' ? 'Architecture, information, and the circulation of knowledge. Selected academic projects from Columbia University, 2023.' : 'Contact information has not been supplied in this portfolio.'));
   window.addEventListener('keydown', e => {
     if (e.key !== 'Escape' || $('#info').open) return;
     if (document.body.classList.contains('detail-open')) { hideProjectDetail(); setTimeout(syncPanelFloorReflection, 190); runtime?.request(FRAME_RENDER); return; }
@@ -689,7 +692,9 @@ async function init() {
     liquidHeader = createLiquidHeader({ scene, camera, floorReflection, runtime });
     liquidPanels = createLiquidPanels({ runtime, onLayout: syncPanelFloorReflection });
 
-    // Cycles baked handmade studio architecture: keep the baked model/material path stable.
+    studioRelays=createStudioRelays(scene);
+    studioRelays.layout(innerWidth);
+    // Portfolio-derived live PBR surfaces; preserve the original model geometry.
     models = createModels();
     models.forEach((m, i) => {
       const f = HOME_TRANSFORMS[i]; m.scale.set(f[2], f[3], f[5]);
@@ -699,31 +704,32 @@ async function init() {
     updateHomeComposition();
 
     const json=async url=>{const r=await fetch(url);if(!r.ok)throw Error('Missing '+url);return r.json();};
-    const [atlases,uvSets,contactLayout,contactMaps]=await Promise.all([
-      Promise.all(MODEL_ASSETS.map(a=>loader.loadAsync(a.atlas))),
+    const [uvSets,contactLayout,contactMaps]=await Promise.all([
       Promise.all(MODEL_ASSETS.map(a=>json(a.uv))),
       json(CONTACT_LAYOUT),
       Promise.all(MODEL_ASSETS.map(a=>loader.loadAsync(a.contact)))
     ]);
+    const drawingTexture=await loader.loadAsync('assets/portfolio/folio-06.webp');drawingTexture.colorSpace=T.SRGBColorSpace;drawingTexture.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+    const drawingPaper=new T.MeshStandardMaterial({map:drawingTexture,color:0xf4f3ec,roughness:.87,side:T.DoubleSide});
+    const blankPaper=new T.MeshStandardMaterial({color:0xf0efe7,roughness:.90,side:T.DoubleSide});
+    const linenCover=new T.MeshPhysicalMaterial({color:0xb8d4d5,roughness:.66,clearcoat:.035,metalness:0,specularIntensity:.25});
+    const ochreRibbon=new T.MeshStandardMaterial({color:0xad8649,roughness:.85});
     const oldMaterials=new Set();
     const paperEdgeMaterial=new T.MeshStandardMaterial({color:0xe6e3d9,roughness:.91,metalness:0});paperEdgeMaterial.name='Clean uncoated cut paper';
     const clipMaterial=new T.MeshPhysicalMaterial({color:0xc5c5c5,metalness:1,roughness:.24,envMapIntensity:1.25});clipMaterial.name='Round44 neutral steel clip';
     models.forEach((root,i)=>{
-      const atlas=atlases[i];atlas.colorSpace=T.SRGBColorSpace;atlas.channel=1;atlas.anisotropy=Math.min(16,renderer.capabilities.getMaxAnisotropy());
-      const surfaceProfiles=[
-        {roughness:.58,clearcoat:.07,clearcoatRoughness:.42,envMapIntensity:.86,specularIntensity:.34},
-        {roughness:.46,clearcoat:.09,clearcoatRoughness:.36,envMapIntensity:.94,specularIntensity:.38},
-        {roughness:.67,clearcoat:.035,clearcoatRoughness:.52,envMapIntensity:.76,specularIntensity:.28}
-      ];
-      const profile=surfaceProfiles[i];
-      const studioMaterial=new T.MeshPhysicalMaterial({
-        map:atlas,color:0xffffff,side:T.DoubleSide,metalness:0,ior:1.48,
-        ...profile
-      });studioMaterial.name=i===1?'Glazed porcelain architecture':'Natural studio paper surface';
       root.traverse(o=>{
         if(!o.isMesh)return;const uv=uvSets[i][o.name];if(o.geometry.index)o.geometry=o.geometry.toNonIndexed();
         if(!uv||uv.length!==o.geometry.attributes.position.count*2)throw Error('Baked UV mismatch: '+o.name);
-        o.geometry.setAttribute('uv1',new T.Float32BufferAttribute(uv,2));oldMaterials.add(o.material);o.material=o.name==='Bent satin steel paperclip'?clipMaterial:o.name.startsWith('Bound paper gathering')?paperEdgeMaterial:studioMaterial;o.receiveShadow=false;o.castShadow=true;
+        const native=o.material;
+        o.geometry.setAttribute('uv1',new T.Float32BufferAttribute(uv,2));oldMaterials.add(o.material);o.material=o.name==='Bent satin steel paperclip'?clipMaterial:o.name.startsWith('Bound paper gathering')?paperEdgeMaterial:blankPaper;o.receiveShadow=false;o.castShadow=true;
+        if(i===1){o.material=native.clone();o.material.envMapIntensity=.85;o.receiveShadow=true;}
+        if(i===0&&/cloth cover|binding spine/.test(o.name))o.material=linenCover;
+        if(o.name==='Woven bookmark ribbon')o.material=ochreRibbon;
+        if(i===2&&o.name.startsWith('Loose research sheet')){
+          o.material=o.name==='Loose research sheet 8'?drawingPaper:blankPaper;
+          if(o.material===drawingPaper){const pos=o.geometry.attributes.position,uvs=[];o.geometry.computeBoundingBox();const b=o.geometry.boundingBox;for(let k=0;k<pos.count;k++)uvs.push((pos.getX(k)-b.min.x)/(b.max.x-b.min.x),1-(pos.getZ(k)-b.min.z)/(b.max.z-b.min.z));o.geometry.setAttribute('uv',new T.Float32BufferAttribute(uvs,2));}
+        }
       });
     });
     oldMaterials.forEach(m=>m.dispose());
@@ -763,7 +769,7 @@ async function init() {
     console.error(e);
     document.documentElement.dataset.boot = 'ready';
     document.documentElement.dataset.renderer='fallback';
-    $('#failure').textContent='3D unavailable · Showing the project index';
+    $('#failure').textContent='Original portfolio images · 3D unavailable on this device';
     $('#failure').hidden = false;
     if(!runtime)runtime=createFrameRuntime(()=>{});
     if(!liquidHeader)liquidHeader=createLiquidHeader({runtime});

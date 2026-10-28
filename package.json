@@ -5,6 +5,6 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "dev": "npm run build && node scripts/serve.mjs",
-    "check": "node tools/check.mjs && node tools/runtime-check.mjs && node tools/mobile-layout-check.mjs && node scripts/build.mjs && node scripts/audit-runtime.mjs"
+    "check": "node tools/check.mjs && node tools/runtime-check.mjs && node tools/mobile-layout-check.mjs && node tools/content-check.mjs && node scripts/build.mjs && node scripts/audit-runtime.mjs"
   }
 }

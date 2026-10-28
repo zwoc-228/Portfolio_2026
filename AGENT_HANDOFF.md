@@ -1,11 +1,11 @@
-# Current instructions — Round59
-Root runtime modules are the only editable source. Never edit dist manually.
-Run npm run check after changes. Deployment workflow builds dist before uploading it.
-Do not restore historical glass UI, the coplanar notebook hinge, or old atlas files.
-Preserve architecture geometry, spotlight/particles, contact shadows, planar reflections and the single frame driver.
-Use the current matte UI and physical studio backdrop. No generated picture may be presented as a website screenshot.
-Browser visual acceptance is pending; static checks do not establish visual quality or measured FPS.
+## Round62 — quieter interface
 
-Round59 uses softer matte UI and restrained daytime/nighttime color. WebGL fallback is functional, not a model screenshot. Existing index images are 65–97px; do not misrepresent their quality.
+One Arial font family, upright text. Index: cover, title, year only. No decorative rules, sequence numbers, category statements, footer slogans, or repeated plate captions. Project credits remain in an expandable details element. Original artwork typography, complete galleries, model geometry and mobile vertical arrangement are preserved.
 
-Editorial index and full reading view are intentional. Keep mobile 3D models vertical and run tools/mobile-layout-check.mjs after spatial edits.
+# Round61
+Root runtime modules are canonical. Never edit dist by hand. Run npm run check.
+Visual source is the supplied Final_Portfolio PDF, not generic studio UI. The 30-page copies are identical. Content lives in content-data.js, source image dimensions are IMAGE_SIZES, runtime assets are dependency-traced.
+Keep real project names and credited roles, numbered original-image plates, Georgia italic captions, cyan/neutral/ochre source palette, and the full spread/detail system.
+Preserve mobile vertical 3D layout and update tools/mobile-layout-check.mjs for spatial edits. Keep single frame runtime, physical studio backdrop, contact shadows and reflections.
+Do not reintroduce old color atlases, glass header or fake project names. Live model geometry remains in models.js; the new live materials are set in app.js and relay wires in studio-relays.js.
+WebGL is disabled in the preview browser. Actual image/index/details are browser inspected; model materials, new relay wires and FPS remain visually unverified. Never call the fallback or exported PDF images live 3D screenshots.

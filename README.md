@@ -1,15 +1,26 @@
-# Portfolio 2026 · Round59
-基于 Round58。只编辑根目录，dist 由构建生成。
+## Round62 — quieter interface
 
-## 使用
-Node 18+，无需安装依赖。npm run dev 重建并启动；npm run check 执行模型、布局、调度检查并构建审计；npm run build 生成 dist。
-CODE 更新源码仓库；DEPLOY 包解压后根目录是 index.html。
+One Arial font family, upright text. Index: cover, title, year only. No decorative rules, sequence numbers, category statements, footer slogans, or repeated plate captions. Project credits remain in an expandable details element. Original artwork typography, complete galleries, model geometry and mobile vertical arrangement are preserved.
 
-## 修改
-手机宽度≤760px时三个真实3D模型沿纵深竖排，从上到下 Writing、Architecture、Research。全部位于平直地面。相机同时适配两轴，预留标签空间。调整屏幕尺寸时更新摆位、命中框、投影、接触阴影及阴影相机范围。手机分类入口直接进入索引。
-列表取消浮雕卡牌与卡片倒影，采用平面图片、标题、年份、细线。详情替代索引形成独立阅读页，返回保留筛选及滚动并恢复焦点。Header 保留居中空白折叠入口，展开最大宽度960px；时间工具在右下角。建筑几何保留。删除通用虚构详情段落，未补写未经提供的项目描述。
+# Portfolio 2026 · Round61 / Information, objects, narratives
 
-## 验证边界
-npm run check 包含320×568、375×667、390×844、430×932、760×1024、844×390、1440×900模型投影检查。手机竖排，边界可见，模型层间至少58px留给标签。
-浏览器验证桌面列表、详情、返回。环境禁用WebGL，未完成3D光影、手机真机视觉与帧率验收。
-现有缩略图仅65–97px，项目名与部分介绍仍是原包占位内容。本轮没有高清原图，未AI补绘真实作品。
+A full visual and content rebuild from the supplied 30-page Final_Portfolio.pdf. Both supplied PDFs have the same SHA-256; one was used as the source.
+
+## Run
+Node 18+, no npm install required. npm run dev rebuilds and serves dist. npm run check runs geometry/UV, frame scheduling, mobile projection and portfolio content checks, then builds and audits dist. npm run build creates static dist.
+CODE is editable canonical source; DEPLOY extracts directly to index.html. Do not edit generated dist.
+
+## Visual source
+Pages 2, 7, 11, 21, 28: cyan resin plinths, neutral white models, blue/ochre relay wires, numbered drawings, Georgia italic captions and image/text spreads.
+The CSS system and content templates were rebuilt, not appended to old card styles. Index, project opening spread, original-image plates, navigation and fallback share the same typographic/material system.
+The homepage keeps three live 3D objects. Mobile widths up to 760px keep Writing / Architecture / Research vertically arranged. Relay wires physically connect the model field, borrowing the motif from p.7. Original portfolio maps are printed on the upper research sheet; book cover is cyan linen; architecture uses distinct native PBR materials rather than a single old baked color atlas.
+
+## Real content
+Three projects: Information Relays; Breaking the Resource Paradox; Reimagine Everydayness. Dates, locations, instructors and collaboration credits are grounded in the PDF.
+Writing contains explicitly labeled portfolio text excerpts, not invented standalone publications. Research links the research aspects of the same documented projects. Project summaries are concise adaptations of the supplied text.
+27 high-resolution source crops/pages were exported; the build includes only referenced assets. WebP files replace all former 65–97px placeholder thumbnails. Captions retain original PDF page numbers. No generated replacement artwork was used.
+
+## Validation and limits
+npm run check passed, including mobile projected bounds, ordering and label gaps across 7 viewport sizes, original mesh UV compatibility, source content and nonempty image checks, canonical source-to-dist hashes and one animation driver.
+Desktop browser inspected actual portfolio index, full detail and original-image plate sequence. This cloud browser disables WebGL. The live 3D material changes, connecting wires, physical lighting and real-device FPS are not visually accepted. Fallback explicitly displays original portfolio images and is not a WebGL screenshot.
+No unsupported current contact details or additional personal publications were invented.

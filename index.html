@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en" data-boot="loading" data-scene-ready="false">
 <head>
-  <meta name="portfolio-build" content="round59">
+  <meta name="portfolio-build" content="round62">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#dedede">
@@ -42,22 +42,19 @@
   <main>
     <div id="home-labels" class="home-labels" aria-label="Portfolio categories">
       <button data-category="0" class="object-label object-label--writing">
-        <em>Writing</em><span class="rule"></span><small>01</small>
+        <em>Writing</em>
       </button>
       <button data-category="1" class="object-label object-label--architecture">
-        <em>Architecture</em><span class="rule"></span><small>02</small>
+        <em>Architecture</em>
       </button>
       <button data-category="2" class="object-label object-label--research">
-        <em>Research</em><span class="rule"></span><small>03</small>
+        <em>Research</em>
       </button>
     </div>
 
     <section id="category" hidden>
       <aside class="category-panel liquid-panel-dom">
-        <small id="number"></small>
         <h1 id="category-title"></h1>
-        <span class="rule"></span>
-        <p id="category-statement" class="category-statement"></p>
         <div id="filters"></div>
         <div class="category-actions">
           <button id="enter"><span>View projects</span> ↗</button>
@@ -66,19 +63,20 @@
       </aside>
       <div id="index-content" class="index-content liquid-panel-dom"></div>
       <aside id="detail-card" class="detail-card" hidden aria-live="polite">
-        <button id="detail-close" class="detail-close" type="button" aria-label="Close project detail">← Back to index</button>
+        <button id="detail-close" class="detail-close" type="button" aria-label="Close project detail">← Back</button>
         <img id="detail-image" alt="">
         <div class="detail-copy">
           <small id="detail-kicker"></small>
           <h2 id="detail-title"></h2>
           <p id="detail-text"></p>
-          <div class="detail-meta"><span id="detail-category"></span><span id="detail-year"></span></div>
+          <details class="project-credits"><summary>Project details</summary><div class="detail-meta"><span id="detail-category"></span><span id="detail-year"></span></div></details>
         </div>
+        <div id="project-plates" class="project-plates"></div>
       </aside>
     </section>
   </main>
 
-  <footer class="site-footer"><span>© 2026&nbsp; Y. Zhu&nbsp;&nbsp; All rights reserved.</span></footer>
+
 
   <dialog id="info" class="liquid-dialog-dom">
     <button class="close" aria-label="Close">×</button>

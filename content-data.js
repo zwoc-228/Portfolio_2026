@@ -1,30 +1,19 @@
-export const names = ['Writing', 'Architecture', 'Research'];
-
-export const cats = [
-  ['Essays', 'Notes', 'Observations'],
-  ['Built Ideas', 'Academic Projects', 'Experiential Works'],
-  ['Urban Studies', 'Environmental Systems', 'Speculative Futures']
+const asset=name=>'assets/portfolio/'+name+'.webp';
+const plate=(name,page,caption)=>({image:asset(name),page,caption});
+const information={id:'information-relays',title:'Information Relays',subtitle:'Telling stories about water',type:'Information systems',year:'2023',season:'Summer',location:'California',credit:'Individual academic work',instructors:'Elise M. A. Hunchuck · Marco Ferrari',cover:asset('information-cover'),hero:asset('information-model'),source:'Portfolio, pp. 2–10',summary:'A public information system for California’s dams. The project redesigns sensor instruments to make water, atmospheric circulation, and reservoir conditions visible—connecting measurement with public awareness.',gallery:[plate('information-model',7,'A family of instruments that sense, measure, and relay information.'),plate('folio-04',4,'Water infrastructure, public awareness, and the California Water Code.'),plate('folio-06',6,'Atmosphere, water, and dam-location mapping.'),plate('folio-08',8,'Water as vapor: the illuminated balloon.'),plate('folio-09',9,'Instrument assembly and component studies.'),plate('folio-10',10,'Measurement translated into a public spatial experience.')]};
+const resource={id:'resource-paradox',title:'Breaking the Resource Paradox',subtitle:'Using Climate as a Lever for Energopolitics',type:'Energy & politics',year:'2023',season:'Fall',location:'Venezuela',credit:'Individual academic work',instructors:'Mireia Luzarraga · Alejandro Muiño · Alonso L. Ortega',cover:asset('resource-cover'),hero:asset('resource-cards'),source:'Portfolio, pp. 11–20',summary:'A speculative narrative about electricity, cryptocurrency, and access to energy in Venezuela. The project follows responses to centralized resource control across industrial facilities, urban housing, and rural settlements.',gallery:[plate('resource-cards',14,'A field of possible actions, actors, and resource relationships.'),plate('folio-12',12,'Oil extraction, population, and the resource paradox.'),plate('folio-15',15,'Time, nationalization, electricity, and climate.'),plate('folio-17',17,'Three phases of spatial and infrastructural change.'),plate('folio-18',18,'Phase 1: centralized power and cryptocurrency production.'),plate('folio-19',19,'Phase 2: distributed solar infrastructure in residential space.'),plate('folio-20',20,'Phase 3: rural self-powered facilities.')]};
+const everyday={id:'reimagine-everydayness',title:'Reimagine Everydayness',subtitle:'Objects, knowledge, and the everyday',type:'Cultural infrastructure',year:'2023',season:'Spring',location:'London',credit:'Collaborative academic work · Duncan Tomlin',instructors:'Emanuel Admassu',cover:asset('everyday-cover'),hero:asset('everyday-model'),source:'Portfolio, pp. 21–29',summary:'An intervention at the Barbican Centre that reconsiders the museum narrative around Ru ware. Ceramics, a new kiln, greenhouse heat, and spaces of exchange turn the return of an artifact into a return of knowledge and everyday practice.',gallery:[plate('everyday-model',26,'Reimagine Everydayness: the Barbican intervention.'),plate('folio-22',22,'Echoes of History: Ru ware and material culture.'),plate('folio-24',24,'Edited Narrative: the artifact and the construction of national imagination.'),plate('folio-25',25,'The Barbican as an everyday setting for shared knowledge.'),plate('folio-27',27,'Residential, exhibition, and energy / plant interventions.'),plate('folio-28',28,'Ceramic components and the new kiln.'),plate('folio-29',29,'Theater, museum, greenhouse, and heat exchange.')]};
+const writings=[
+{id:'lagging-dam',title:'The Lagging Dam',subtitle:'Water, information, and public awareness',type:'Portfolio text',year:'2023',location:'California',credit:'Text from Information Relays',instructors:information.instructors,cover:asset('folio-03'),hero:asset('folio-03'),source:'Portfolio, pp. 3–5',summary:'California’s Water Code is a long history of struggling, reconciling, and co-existing with water. Significant historical events—including fights over water rights, the construction of dams, environmental concerns, and accidents—have spurred changes in the code.',gallery:[plate('folio-03',3,'The Lagging Dam — original portfolio text and image.'),plate('folio-05',5,'Extending the public information system.')]},
+{id:'echoes-of-history',title:'Echoes of History',subtitle:'Ru ware and the movement of knowledge',type:'Portfolio text',year:'2023',location:'London',credit:'Text from Reimagine Everydayness',instructors:everyday.instructors,cover:asset('folio-22'),hero:asset('folio-22'),source:'Portfolio, p. 22',summary:'Ru ware originated in central China about a thousand years ago. Initially used by the royal aristocracy of the Song dynasty, it gradually permeated everyday life.',gallery:[plate('folio-22',22,'Echoes of History — original portfolio spread.')]},
+{id:'edited-narrative',title:'Edited Narrative',subtitle:'From the return of artifacts to the return of knowledge',type:'Portfolio text',year:'2023',location:'London',credit:'Text from Reimagine Everydayness',instructors:everyday.instructors,cover:asset('folio-24'),hero:asset('folio-24'),source:'Portfolio, p. 24',summary:'To detach the artifact from the museum’s narrative, the project reconstructs the process of repatriation, turning a physical return into a return of knowledge.',gallery:[plate('folio-24',24,'Edited Narrative — original portfolio spread.')]}
 ];
+export const PROJECT_RECORDS=[writings,[information,resource,everyday],[information,resource,everyday]];
+export const names=['Writing','Architecture','Research'];
+export const cats=PROJECT_RECORDS.map(records=>[...new Set(records.map(r=>r.type))]);
+export const titles=PROJECT_RECORDS.map(records=>records.map(r=>r.title));
+export const subs=PROJECT_RECORDS.map(records=>records.map(r=>r.subtitle));
+export const statements=['Portfolio texts on water, artifacts, and the circulation of knowledge.','Three projects. Instruments, infrastructures, and spaces of exchange.','Water, energy, and cultural narratives examined through spatial research.'];
+export const PORTFOLIO_ASSETS=[...new Set(PROJECT_RECORDS.flat().flatMap(r=>[r.cover,r.hero,...r.gallery.map(g=>g.image)]))];
 
-export const titles = [
-  ['On the Edge of the City', 'Material and Memory', 'Cities in Fragments', 'A Quieter View'],
-  ['Light Between Walls', 'Floating Ground', 'Threshold', 'Common Terrain'],
-  ['Rivers and Cities', 'More Than Human']
-];
-
-export const subs = [
-  [
-    'Notes on a few thresholds in contemporary space.',
-    'A personal inquiry into tangible time.',
-    'A set of urban impressions, from inside and afar.',
-    'On slowness, attention, and the built environment.'
-  ],
-  ['Academic Project', 'Built Idea', 'Experiential Work', 'Academic Project'],
-  ['Research Project', 'Speculative Research']
-];
-
-export const statements = [
-  'Essays and observations on architecture, media, and the built environment.',
-  'Research-led studies across representation, material systems, and spatial intervention.',
-  'Research on cities, systems, and the narratives shaping the built environment.'
-];
+export const IMAGE_SIZES={"assets/portfolio/folio-19.webp":[1800,1273],"assets/portfolio/folio-15.webp":[1800,1273],"assets/portfolio/everyday-model.webp":[2000,1415],"assets/portfolio/folio-28.webp":[1800,1273],"assets/portfolio/folio-24.webp":[1800,1273],"assets/portfolio/folio-20.webp":[1800,1273],"assets/portfolio/everyday-cover.webp":[1200,1698],"assets/portfolio/folio-12.webp":[1800,1273],"assets/portfolio/folio-10.webp":[1800,1273],"assets/portfolio/folio-03.webp":[1800,1273],"assets/portfolio/information-cover.webp":[1200,1698],"assets/portfolio/folio-23.webp":[1800,1273],"assets/portfolio/folio-09.webp":[1800,1273],"assets/portfolio/folio-06.webp":[1800,1273],"assets/portfolio/folio-22.webp":[1800,1273],"assets/portfolio/resource-cards.webp":[1800,813],"assets/portfolio/folio-29.webp":[1800,1273],"assets/portfolio/folio-18.webp":[1800,1273],"assets/portfolio/resource-cover.webp":[1200,1698],"assets/portfolio/folio-04.webp":[1800,1273],"assets/portfolio/folio-17.webp":[1800,1273],"assets/portfolio/information-model.webp":[2000,1206],"assets/portfolio/folio-27.webp":[1800,1273],"assets/portfolio/folio-16.webp":[1800,1273],"assets/portfolio/folio-08.webp":[1800,1273],"assets/portfolio/folio-25.webp":[1800,1273],"assets/portfolio/folio-05.webp":[1800,1273]};

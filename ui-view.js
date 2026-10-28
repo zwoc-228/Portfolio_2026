@@ -1,4 +1,4 @@
-import {PROJECT_IMAGES} from './runtime-assets.js';
+import {PROJECT_RECORDS,IMAGE_SIZES} from './content-data.js';
 let detailExitTimer = 0;
 let detailEnterTimer = 0;
 let categoryEnterTimer = 0;
@@ -80,61 +80,22 @@ export function renderIndex({ state, selected, filter, cats, titles, subs, onOpe
   wrap.dataset.section=['writing','architecture','research'][selected];
   wrap.dataset.phase = 'enter';
 
-  titles[selected].forEach((title, i) => {
-    const category = cats[selected][selected === 1 ? [1, 0, 2, 1][i] : i % 3];
-    if (filter !== 'All' && filter !== category) return;
-
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'project-card';
-
-    const img = document.createElement('img');
-    const imageIndex = [0, 4, 8][selected] + i;
-    img.src = PROJECT_IMAGES[imageIndex];
-    img.alt = `${title} — reference image`;
-    img.loading = 'eager';
-    img.decoding = 'async';
-
-    const content = document.createElement('span');
-    content.className = 'item-copy';
-
-    const itemTitle = document.createElement('span');
-    itemTitle.className = 'item-title';
-    itemTitle.textContent = title;
-
-    const description = document.createElement('span');
-    description.className = 'item-meta';
-    description.textContent = subs[selected][i];
-
-    const year = document.createElement('span');
-    year.className = 'item-meta item-year';
-    year.textContent = i === 0 ? '2024' : i === 3 ? '2022' : '2023';
-
-    content.append(itemTitle, description, year);
-    button.append(img, content);
-
-    const arrow = document.createElement('span');
-    arrow.className = 'item-arrow';
-    arrow.setAttribute('aria-hidden', 'true');
-    arrow.textContent = '↗';
-    button.append(arrow);
-
-    button.addEventListener('click', () => { detailOpener=button; onOpen({
-      title,
-      image: img.src,
-      category: subs[selected][i],
-      year: year.textContent,
-      selected,
-      index: i
-    }); });
-    wrap.append(button);
+  PROJECT_RECORDS[selected].forEach((record,i)=>{
+    if(filter!=='All'&&filter!==record.type)return;
+    const button=document.createElement('button');button.type='button';button.className='project-card';
+    const img=document.createElement('img');img.src=record.cover;img.alt=record.title+' — original portfolio image';img.decoding='async';img.loading='lazy';
+    const copy=document.createElement('span');copy.className='item-copy';
+    const title=document.createElement('span');title.className='item-title';title.textContent=record.title;
+    const type=document.createElement('span');type.className='item-type';type.textContent=record.year;
+    copy.append(title,type);button.append(img,copy);
+    button.addEventListener('click',()=>{detailOpener=button;onOpen({...record,selected,index:i});});wrap.append(button);
   });
-
   el.append(wrap);
   setTimeout(() => { if (wrap.isConnected) wrap.dataset.phase = 'ready'; }, 16);
 }
 
-export function showProjectDetail({ title, image, category, year, selected = 0 }) {
+export function showProjectDetail(record) {
+  const {title,hero:image,type:category,year,selected=0,summary,subtitle,source,gallery=[],credit,instructors,location}=record;
   const card = document.querySelector('#detail-card');
   const img = document.querySelector('#detail-image');
   const heading = document.querySelector('#detail-title');
@@ -152,14 +113,17 @@ export function showProjectDetail({ title, image, category, year, selected = 0 }
   card.dataset.phase = 'enter';
   card.hidden = false;
   document.body.classList.add('detail-open');
-  img.src = image;
+  img.src = record.cover;
   img.alt = `${title} — project preview`;
   heading.textContent = title;
-  kicker.textContent = `0${selected + 1} · Selected work`;
-  categoryNode.textContent = category;
-  yearNode.textContent = year;
-  text.textContent = category;
-  text.hidden = !category;
+  kicker.textContent = [location,year].filter(Boolean).join(' · ');
+  card.querySelector('.project-credits').open=false;
+  categoryNode.textContent = [location,credit,instructors&&'Instructor: '+instructors].filter(Boolean).join(' · ');
+  yearNode.textContent = source;
+  text.textContent=summary; text.hidden=!summary;
+  const plates=document.querySelector('#project-plates');plates.replaceChildren();
+  for(const item of gallery){const figure=document.createElement('figure');const image=document.createElement('img');image.src=item.image;const size=IMAGE_SIZES[item.image];if(size){image.width=size[0];image.height=size[1];}image.alt=item.caption;image.loading='lazy';image.decoding='async';const caption=document.createElement('figcaption');caption.textContent=String(item.page).padStart(2,'0')+' / '+item.caption;const zoom=document.createElement('a');zoom.href=item.image;zoom.target='_blank';zoom.rel='noopener';zoom.setAttribute('aria-label','Open full-resolution image: '+item.caption);zoom.append(image);figure.append(zoom);plates.append(figure);}
+  img.alt=title+' — original portfolio rendering';
 
   detailEnterTimer = setTimeout(() => { if (!card.hidden) {card.dataset.phase = 'ready';document.querySelector('#detail-close')?.focus({preventScroll:true});} }, 16);
 }
