@@ -81,8 +81,8 @@ box(architecture,'Smoked glass cap',.70,.22,.70,.92,.80,.82,mat('Smoky cast resi
  });
  // Upper wire sits on the curved top sheet; the return leg hooks around its rear edge.
  const base=.004+8*.0105+.0045,cp=[];
- const pts=[[1.02,-1.39],[1.02,-1.67],[1.04,-1.72],[1.10,-1.74],[1.16,-1.71],[1.18,-1.66],[1.18,-1.33],[1.16,-1.28],[1.10,-1.27],[1.07,-1.31],[1.07,-1.63],[1.09,-1.67],[1.12,-1.67],[1.14,-1.64],[1.14,-1.38]];
+ const pts=[[.96,-1.33],[.96,-1.64],[.98,-1.71],[1.04,-1.74],[1.10,-1.71],[1.12,-1.64],[1.12,-1.22],[1.10,-1.15],[1.04,-1.12],[1.00,-1.17],[1.00,-1.58],[1.015,-1.64],[1.045,-1.65],[1.075,-1.62],[1.075,-1.31]];
  pts.forEach(([x,z],i)=>cp.push([x,base+paperHeight(x,z)+.008-(i>9?.013:0),z]));
- tube(research,'Bent satin steel paperclip',cp,.005,steel);
+ tube(research,'Bent satin steel paperclip',cp,.009,steel);
  return [writing,architecture,research];
 }

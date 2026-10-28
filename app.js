@@ -6,7 +6,7 @@ import { createStudioBackdrop } from './studio-backdrop.js';
 import { createStudioEnvironment } from './studio-environment.js';
 import { createContactShadows } from './contact-shadows.js';
 import { createModels } from './models.js';
-import { HOME_TRANSFORMS } from './scene-layout.js';
+import { HOME_TRANSFORMS, homePose } from './scene-layout.js';
 import { createFloorReflection } from './floor-reflection.js';
 import { createUIReflectionProxies } from './ui-reflection-proxies.js';
 import { names, cats, titles, subs, statements } from './content-data.js';
@@ -125,6 +125,7 @@ function applyStudioTime(nextHour,{refreshShadow=true}={}){
   beamHalo?.material?.uniforms?.uColor?.value.set(beamColor);
   beamParticles?.material?.uniforms?.uColor?.value.set(beamColor);
 
+  document.documentElement.style.setProperty('--studio-edge',daylight?'rgba(255,255,255,.82)':'rgba(225,232,246,.68)');
   const range=$('#studio-time-range'),readout=$('#studio-time-readout'),short=$('#studio-time-short'),icon=document.querySelector('.time-icon');
   if(range&&!range.matches(':active')) range.value=String(studioHour);
   if(readout) readout.value=formatStudioHour(studioHour);
@@ -153,13 +154,13 @@ function bindStudioTimeUI(){
     const open=panel.hidden;
     panel.hidden=!open;
     toggle.setAttribute('aria-expanded',String(open));
-    toggle.closest('.site-header')?.classList.toggle('time-open',open);
+    toggle.closest('.studio-controls')?.classList.toggle('time-open',open);
   };
   panel.onclick=e=>e.stopPropagation();
   document.addEventListener('click',()=>{
     panel.hidden=true;
     toggle.setAttribute('aria-expanded','false');
-    toggle.closest('.site-header')?.classList.remove('time-open');
+    toggle.closest('.studio-controls')?.classList.remove('time-open');
   });
   zone.onchange=()=>{
     studioTimezone=zone.value;
@@ -232,10 +233,10 @@ function syncPanelFloorReflection() {
   // DOM cards now receive reflection through real 3D proxy geometry in the mirror pass.
   // This removes the previous screen-space smear whose direction/length could not obey
   // the floor plane, camera perspective or card height.
-  const categoryRect=state!=='home'?visibleUIRect(document.querySelector('.category-panel')):null;
+  const categoryRect=null;
   const index=document.querySelector('#index-content'),indexRect=state==='index'?visibleUIRect(index):null;
-  const cardRects=indexRect?[...index.querySelectorAll('.project-card')].map(el=>visibleUIRect(el,indexRect)).filter(Boolean).slice(0,4):[];
-  const detailRect=visibleUIRect(document.querySelector('#detail-card'));
+  const cardRects=false?[...index.querySelectorAll('.project-card')].map(el=>visibleUIRect(el,indexRect)).filter(Boolean).slice(0,4):[];
+  const detailRect=null;
 
   uiReflectionProxies?.sync({
     category: categoryRect,
@@ -290,7 +291,7 @@ function updateBeam() {
     beamBasis.makeBasis(beamAcross,beamAxis,beamFacing);
     beamHalo.quaternion.setFromRotationMatrix(beamBasis);
     beamHalo.scale.set(radius * 1.18,dist,1);
-    const haloTarget=hover?glowCurrentStrength*(lowPower?.115:.155):0;
+    const haloTarget=hover?glowCurrentStrength*(lowPower?.045:.065):0;
     beamHalo.material.uniforms.uOpacity.value = T.MathUtils.lerp(beamHalo.material.uniforms.uOpacity.value, haloTarget, .16);
     beamHalo.material.uniforms.uTime.value = particleTime;
     beamHalo.visible = hover && beamHalo.material.uniforms.uOpacity.value > .002;
@@ -299,7 +300,7 @@ function updateBeam() {
     beamParticles.position.copy(beamMid);
     beamParticles.quaternion.copy(beamHalo.quaternion);
     beamParticles.scale.set(radius * .82, dist, radius * .82);
-    const dustTarget = hover ? glowCurrentStrength * (lowPower ? .085 : .13) : 0;
+    const dustTarget = hover ? glowCurrentStrength * (lowPower ? .045 : .065) : 0;
     beamParticles.material.uniforms.uOpacity.value = T.MathUtils.lerp(beamParticles.material.uniforms.uOpacity.value, dustTarget, .16);
     beamParticles.material.uniforms.uTime.value = particleTime;
     beamParticles.visible = hover && beamParticles.material.uniforms.uOpacity.value > .003;
@@ -327,12 +328,12 @@ function resolvePointer() {
   if (bestIndex >= 0) {
     const profile = hoverProfiles[bestIndex];
     if (profile) {
-      setGlowTarget(profile.x, profile.y + .05, profile.z, 1, bestIndex, profile.angle, 3.8);
+      setGlowTarget(profile.x, profile.y + .05, profile.z, 1, bestIndex, profile.angle, 8.5);
       return;
     }
   }
   if (raycaster.ray.intersectPlane(floorPlane, glowHit)) {
-    setGlowTarget(glowHit.x, glowHit.y, glowHit.z, 1, -1, T.MathUtils.degToRad(4.2), 2.5);
+    setGlowTarget(glowHit.x, glowHit.y, glowHit.z, 1, -1, T.MathUtils.degToRad(4.2), 4.2);
   }
 }
 function setGlowTarget(x, y, z, strength, hoverIndex = -1, angle = T.MathUtils.degToRad(4.2), intensity = 2.5) {
@@ -345,11 +346,11 @@ function setGlowTarget(x, y, z, strength, hoverIndex = -1, angle = T.MathUtils.d
 }
 
 function getTargets() {
-  const mobile = innerWidth / innerHeight < 1;
+  const mobile = innerWidth<=760;
   return models.map((m, i) => {
-    if (state === 'home') return { x: home[i].x, z: home[i].z, y: 0, s: 1, r: home[i].r };
-    if (state === 'preview' && i === selected) return { x: mobile ? 1 : 2.3, z: mobile ? 2.7 : 0, y: 0, s: mobile ? 1.2 : 1.65, r: home[i].r };
-    return { x: i <= selected ? -18 : 18, z: 0, y: 0, s: 1, r: home[i].r };
+    if (state === 'home') return { x: home[i].x, z: home[i].z, y: 0, s: home[i].s, r: home[i].r };
+    if (state === 'preview' && i === selected) return { x: mobile ? 0 : 2.3, z: mobile ? 12 : 0, y: 0, s: mobile ? 1.2 : 1.65, r: home[i].r };
+    return { x: i <= selected ? -18 : 18, z: 0, y: 0, s: home[i].s, r: home[i].r };
   });
 }
 
@@ -432,10 +433,26 @@ function updateScene(dt, now) {
   return flags;
 }
 
+function updateHomeComposition(){
+ home=models.map((root,i)=>homePose(i,innerWidth));
+ homeHeaderBoxes=models.map((root,i)=>{
+  const saved={p:root.position.clone(),s:root.scale.clone(),r:root.rotation.y};
+  const h=home[i];root.position.set(h.x,0,h.z);root.scale.setScalar(h.s);root.rotation.y=h.r;root.updateMatrixWorld(true);
+  const box=new T.Box3().setFromObject(root.children[0]);
+  if(state!=='home'){root.position.copy(saved.p);root.scale.copy(saved.s);root.rotation.y=saved.r;root.updateMatrixWorld(true);}
+  return box;
+ });
+ homeHitBoxes=homeHeaderBoxes.map(b=>b.clone().expandByScalar(.08));
+ hoverProfiles=homeHeaderBoxes.map(box=>{const c=box.getCenter(new T.Vector3()),size=box.getSize(new T.Vector3());return {x:c.x,y:c.y,z:c.z,angle:T.MathUtils.clamp(Math.atan((Math.max(size.x,size.z)*.54+.18)/Math.max(4.7,9.8-c.y)),T.MathUtils.degToRad(4.9),T.MathUtils.degToRad(9.4))};});
+}
+
 function layout(request = true) {
   if (!camera || !renderer) return;
   const w = innerWidth, h = innerHeight;
   renderer.setSize(w, h);
+  updateHomeComposition();
+  if(transition)startTransition();
+  if(keyLight){const extent=w<=760?20:8;Object.assign(keyLight.shadow.camera,{left:-extent,right:extent,top:w<=760?20:6,bottom:w<=760?-20:-4,far:w<=760?55:28});keyLight.shadow.camera.updateProjectionMatrix();markStaticShadowsDirty();}
   fitStudioCamera(camera, w, h, homeHeaderBoxes);
   syncHomeLabelsToObjects();
   liquidHeader?.syncLayout?.();
@@ -505,7 +522,7 @@ function bindUI() {
   $('#archive').onclick = () => navigate('index', selected);
   $('#enter').onclick = () => navigate('index');
   $('#back').onclick = () => navigate(state === 'index' ? 'preview' : 'home');
-  document.querySelectorAll('[data-category]').forEach(b => b.onclick = () => navigate('preview', +b.dataset.category));
+  document.querySelectorAll('[data-category]').forEach(b => b.onclick = () => navigate(innerWidth<=760?'index':'preview', +b.dataset.category));
   $('.close').onclick = () => $('#info').close();
   $('#detail-close').onclick = () => { hideProjectDetail(); setTimeout(syncPanelFloorReflection, 190); runtime?.request(FRAME_RENDER); };
   $('#info').addEventListener('click', e => { if (e.target === $('#info')) $('#info').close(); });
@@ -521,7 +538,7 @@ function bindUI() {
   window.addEventListener('wheel', e => {
     if (state === 'home' && Math.abs(e.deltaY) > 25 && performance.now() - wheelTime > 1000) {
       wheelTime = performance.now();
-      navigate('preview', Math.min(2, Math.max(0, Math.floor(e.clientX / innerWidth * 3))));
+      navigate('preview', Math.min(2, Math.max(0, Math.floor((innerWidth<=760?e.clientY/innerHeight:e.clientX/innerWidth)*3))));
     }
   }, { passive: true });
 }
@@ -547,7 +564,7 @@ function bindSceneInput() {
       const d = raycaster.ray.origin.distanceToSquared(hitPoint);
       if (d < bestDistance) { bestDistance = d; bestIndex = i; }
     }
-    if (bestIndex >= 0) navigate('preview', bestIndex);
+    if (bestIndex >= 0) navigate(innerWidth<=760?'index':'preview', bestIndex);
   });
   renderer.domElement.addEventListener('webglcontextlost', e => { e.preventDefault(); runtime.setPaused(true); $('#failure').hidden = false; });
   renderer.domElement.addEventListener('webglcontextrestored', () => {
@@ -679,9 +696,7 @@ async function init() {
       const root = new T.Group(); root.add(m); root.position.set(f[0], 0, f[1]); root.rotation.y = f[4];
       models[i] = root; home.push({ x: f[0], z: f[1], r: f[4] }); scene.add(root);
     });
-    homeHeaderBoxes = models.map(m => new T.Box3().setFromObject(m).clone());
-    hoverProfiles = models.map(m => { const box = new T.Box3().setFromObject(m), center = new T.Vector3(), size = new T.Vector3(); box.getCenter(center); box.getSize(size); const horizontal = Math.max(size.x, size.z) * .54 + .18, approxDist = Math.max(4.7, 9.8 - center.y); return { x: center.x, y: center.y, z: center.z, angle: T.MathUtils.clamp(Math.atan(horizontal / approxDist) * 1.02, T.MathUtils.degToRad(4.9), T.MathUtils.degToRad(9.4)) }; });
-    homeHitBoxes = models.map(m => new T.Box3().setFromObject(m).expandByScalar(.08));
+    updateHomeComposition();
 
     const json=async url=>{const r=await fetch(url);if(!r.ok)throw Error('Missing '+url);return r.json();};
     const [atlases,uvSets,contactLayout,contactMaps]=await Promise.all([
@@ -691,6 +706,7 @@ async function init() {
       Promise.all(MODEL_ASSETS.map(a=>loader.loadAsync(a.contact)))
     ]);
     const oldMaterials=new Set();
+    const paperEdgeMaterial=new T.MeshStandardMaterial({color:0xe6e3d9,roughness:.91,metalness:0});paperEdgeMaterial.name='Clean uncoated cut paper';
     const clipMaterial=new T.MeshPhysicalMaterial({color:0xc5c5c5,metalness:1,roughness:.24,envMapIntensity:1.25});clipMaterial.name='Round44 neutral steel clip';
     models.forEach((root,i)=>{
       const atlas=atlases[i];atlas.colorSpace=T.SRGBColorSpace;atlas.channel=1;atlas.anisotropy=Math.min(16,renderer.capabilities.getMaxAnisotropy());
@@ -707,7 +723,7 @@ async function init() {
       root.traverse(o=>{
         if(!o.isMesh)return;const uv=uvSets[i][o.name];if(o.geometry.index)o.geometry=o.geometry.toNonIndexed();
         if(!uv||uv.length!==o.geometry.attributes.position.count*2)throw Error('Baked UV mismatch: '+o.name);
-        o.geometry.setAttribute('uv1',new T.Float32BufferAttribute(uv,2));oldMaterials.add(o.material);o.material=o.name==='Bent satin steel paperclip'?clipMaterial:studioMaterial;o.receiveShadow=false;o.castShadow=true;
+        o.geometry.setAttribute('uv1',new T.Float32BufferAttribute(uv,2));oldMaterials.add(o.material);o.material=o.name==='Bent satin steel paperclip'?clipMaterial:o.name.startsWith('Bound paper gathering')?paperEdgeMaterial:studioMaterial;o.receiveShadow=false;o.castShadow=true;
       });
     });
     oldMaterials.forEach(m=>m.dispose());

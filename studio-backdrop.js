@@ -83,8 +83,8 @@ export function createStudioBackdrop({
   lightState.color.set(daylight?0xfffaf3:0xe1e8f7);
   if(daylight) lightState.color.lerp(new T.Color(0xffcf98),edgeWarm*.20);
   lightState.strength=daylight
-   ? .38+.22*Math.sin(Math.PI*sunPhase)
-   : .24+.08*Math.sin(Math.PI*T.MathUtils.clamp(nightPhase,0,1));
+   ? .16+.12*Math.sin(Math.PI*sunPhase)
+   : .12+.05*Math.sin(Math.PI*T.MathUtils.clamp(nightPhase,0,1));
   lightState.center.set(
    daylight?T.MathUtils.lerp(-5.6,5.6,sunPhase):T.MathUtils.lerp(4.4,-4.4,T.MathUtils.clamp(nightPhase,0,1)),
    daylight?4.5+1.25*Math.sin(Math.PI*sunPhase):5.5

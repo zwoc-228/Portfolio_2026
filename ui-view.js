@@ -2,6 +2,7 @@ import {PROJECT_IMAGES} from './runtime-assets.js';
 let detailExitTimer = 0;
 let detailEnterTimer = 0;
 let categoryEnterTimer = 0;
+let detailOpener = null;
 
 export function applyViewState({ state, selected, names, cats, statements = [], filter, onFilter }) {
   document.body.className = state;
@@ -76,6 +77,7 @@ export function renderIndex({ state, selected, filter, cats, titles, subs, onOpe
 
   const wrap = document.createElement('div');
   wrap.className = 'gallery unified-gallery';
+  wrap.dataset.section=['writing','architecture','research'][selected];
   wrap.dataset.phase = 'enter';
 
   titles[selected].forEach((title, i) => {
@@ -117,14 +119,14 @@ export function renderIndex({ state, selected, filter, cats, titles, subs, onOpe
     arrow.textContent = '↗';
     button.append(arrow);
 
-    button.addEventListener('click', () => onOpen({
+    button.addEventListener('click', () => { detailOpener=button; onOpen({
       title,
       image: img.src,
       category: subs[selected][i],
       year: year.textContent,
       selected,
       index: i
-    }));
+    }); });
     wrap.append(button);
   });
 
@@ -144,6 +146,8 @@ export function showProjectDetail({ title, image, category, year, selected = 0 }
 
   clearTimeout(detailExitTimer);
   clearTimeout(detailEnterTimer);
+  card.dataset.section=['writing','architecture','research'][selected];
+  card.scrollTop=0;
   card.inert = false;
   card.dataset.phase = 'enter';
   card.hidden = false;
@@ -154,9 +158,10 @@ export function showProjectDetail({ title, image, category, year, selected = 0 }
   kicker.textContent = `0${selected + 1} · Selected work`;
   categoryNode.textContent = category;
   yearNode.textContent = year;
-  text.textContent = 'A focused study of material, atmosphere, representation, and spatial relationships. The project develops through drawings, models, images, and written observations, allowing the work to be read at a slower scale than the surrounding index. Extended documentation can continue here as the project grows.';
+  text.textContent = category;
+  text.hidden = !category;
 
-  detailEnterTimer = setTimeout(() => { if (!card.hidden) card.dataset.phase = 'ready'; }, 16);
+  detailEnterTimer = setTimeout(() => { if (!card.hidden) {card.dataset.phase = 'ready';document.querySelector('#detail-close')?.focus({preventScroll:true});} }, 16);
 }
 
 export function hideProjectDetail() {
@@ -167,6 +172,7 @@ export function hideProjectDetail() {
   card.inert = true;
   card.dataset.phase = 'exit';
   document.body.classList.remove('detail-open');
+  detailOpener?.focus({preventScroll:true});
   detailExitTimer = setTimeout(() => { card.hidden = true; card.dataset.phase = 'idle'; }, 170);
 }
 
