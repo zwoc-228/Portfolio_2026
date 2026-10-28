@@ -10,13 +10,13 @@ export function headerMetrics(width,progress){
 export function createLiquidHeader({scene,camera,floorReflection,runtime}){
  const el=document.querySelector('.site-header'),trigger=el.querySelector('.header-trigger'),links=el.querySelector('.header-links');
  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
- floorReflection.setPersistentReflectionOnlyObjects([]);
- floorReflection.setObjectFootprint(3,0,0,.55,.38,0);
- const contact=createSurfaceContact(scene);
+ floorReflection?.setPersistentReflectionOnlyObjects([]);
+ floorReflection?.setObjectFootprint(3,0,0,.55,.38,0);
+ const contact=scene?createSurfaceContact(scene):null;
  const ray=new T.Raycaster(),point=new T.Vector3(),view=new T.Vector3();
  let current=0,target=0,hovered=false,focusWithin=false,pinned=false,timer=0,dirty=true;
  function place(m){
-  if(camera.position.y<.1)return;
+  if(!camera||camera.position.y<.1)return;
   camera.updateMatrixWorld(true);ray.setFromCamera(new T.Vector2(m.center/innerWidth*2-1,1-(m.top+m.height)/innerHeight*2),camera);
   const t=(.12-ray.ray.origin.y)/ray.ray.direction.y;if(!Number.isFinite(t)||t<=0)return;
   point.copy(ray.ray.origin).addScaledVector(ray.ray.direction,t);view.copy(point).applyMatrix4(camera.matrixWorldInverse);
@@ -28,9 +28,11 @@ export function createLiquidHeader({scene,camera,floorReflection,runtime}){
   const p=current*current*(3-2*current),m=headerMetrics(innerWidth,p);
   el.style.width=m.width+'px';el.style.height=m.height+'px';el.style.top=m.top+'px';el.style.left=m.center+'px';
   el.style.setProperty('--reveal',Math.max(0,(p-.50)/.50).toFixed(4));el.dataset.mode=p>.5?'expanded':'collapsed';
-  links.inert=target===0||p<.85;trigger.setAttribute('aria-expanded',String(target===1));place(m);
+  links.inert=target===0||p<.85;trigger.tabIndex=target===1?-1:0;trigger.setAttribute('aria-expanded',String(target===1));place(m);
  }
- function setTarget(value){target=value;dirty=true;runtime.request(FRAME_RENDER|FRAME_REFLECTION|FRAME_ACTIVE);}
+ function setTarget(value){target=value;
+  if(!value){const panel=el.querySelector('.studio-time-panel');if(panel)panel.hidden=true;el.classList.remove('time-open');el.querySelector('#studio-time-toggle')?.setAttribute('aria-expanded','false');}
+  dirty=true;runtime.request(FRAME_RENDER|FRAME_REFLECTION|FRAME_ACTIVE);}
  function maybeClose(){clearTimeout(timer);timer=setTimeout(()=>{if(!hovered&&!focusWithin&&!pinned)setTarget(0);},180);}
  const enter=e=>{if(e.pointerType==='touch')return;hovered=true;clearTimeout(timer);setTarget(1);};
  const leave=()=>{hovered=false;maybeClose();};
@@ -47,6 +49,7 @@ export function createLiquidHeader({scene,camera,floorReflection,runtime}){
   return FRAME_RENDER|FRAME_REFLECTION|(current!==target?FRAME_ACTIVE:0);
  });
  function syncLayout(){dirty=true;apply();runtime.request(FRAME_RENDER|FRAME_REFLECTION);}
+ window.addEventListener('resize',syncLayout,{passive:true});
  syncLayout();
- return {transientObjects:[contact.mesh],syncLayout,dispose(){contact.dispose();clearTimeout(timer);remove();el.removeEventListener('pointerenter',enter);el.removeEventListener('pointerleave',leave);el.removeEventListener('focusin',focus);el.removeEventListener('focusout',blur);el.removeEventListener('keydown',key);trigger.removeEventListener('click',click);document.removeEventListener('pointerdown',outside);floorReflection.setPersistentReflectionOnlyObjects([]);floorReflection.setObjectFootprint(3,0,0,.55,.38,0);}};
+ return {transientObjects:contact?[contact.mesh]:[],syncLayout,dispose(){contact?.dispose();window.removeEventListener('resize',syncLayout);clearTimeout(timer);remove();el.removeEventListener('pointerenter',enter);el.removeEventListener('pointerleave',leave);el.removeEventListener('focusin',focus);el.removeEventListener('focusout',blur);el.removeEventListener('keydown',key);trigger.removeEventListener('click',click);document.removeEventListener('pointerdown',outside);floorReflection?.setPersistentReflectionOnlyObjects([]);floorReflection?.setObjectFootprint(3,0,0,.55,.38,0);}};
 }

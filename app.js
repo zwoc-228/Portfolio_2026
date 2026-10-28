@@ -92,10 +92,10 @@ function applyStudioTime(nextHour,{refreshShadow=true}={}){
   const edge=Math.min(Math.abs(studioHour-6),Math.abs(studioHour-19));
   const warm=daylight?1-T.MathUtils.smoothstep(edge,0,3):0;
 
-  const keyColor=new T.Color(daylight?0xfff3dc:0xb9ceff);
-  if(daylight) keyColor.lerp(new T.Color(0xffc98d),warm*.55);
-  const fillColor=new T.Color(daylight?0xf5f0e6:0xcbd8ff);
-  const companionColor=new T.Color(daylight?0xfff8ea:0xaabfff);
+  const keyColor=new T.Color(daylight?0xfffbf4:0xe6ecfa);
+  if(daylight) keyColor.lerp(new T.Color(0xffe2bd),warm*.22);
+  const fillColor=new T.Color(daylight?0xf8f7f4:0xe5eaf4);
+  const companionColor=new T.Color(daylight?0xfffcf5:0xdde5f4);
 
   ground?.userData?.setStudioTime?.(studioHour);
   if(keyLight){
@@ -116,8 +116,8 @@ function applyStudioTime(nextHour,{refreshShadow=true}={}){
     fillLight.intensity=daylight?.15:.12;
   }
   if(hemisphereLight){
-    hemisphereLight.color.set(daylight?0xfffbf3:0xe2eaff);
-    hemisphereLight.groundColor.set(daylight?0x96938d:0x6f788f);
+    hemisphereLight.color.set(daylight?0xfffdf8:0xecf0f8);
+    hemisphereLight.groundColor.set(daylight?0x969590:0x878d98);
     hemisphereLight.intensity=daylight?.28:.24;
   }
   const beamColor=daylight?0xfff3dc:0xd8e5ff;
@@ -696,7 +696,7 @@ async function init() {
       const atlas=atlases[i];atlas.colorSpace=T.SRGBColorSpace;atlas.channel=1;atlas.anisotropy=Math.min(16,renderer.capabilities.getMaxAnisotropy());
       const surfaceProfiles=[
         {roughness:.58,clearcoat:.07,clearcoatRoughness:.42,envMapIntensity:.86,specularIntensity:.34},
-        {roughness:.28,clearcoat:.26,clearcoatRoughness:.16,envMapIntensity:1.18,specularIntensity:.58},
+        {roughness:.46,clearcoat:.09,clearcoatRoughness:.36,envMapIntensity:.94,specularIntensity:.38},
         {roughness:.67,clearcoat:.035,clearcoatRoughness:.52,envMapIntensity:.76,specularIntensity:.28}
       ];
       const profile=surfaceProfiles[i];
@@ -746,7 +746,11 @@ async function init() {
   } catch (e) {
     console.error(e);
     document.documentElement.dataset.boot = 'ready';
+    document.documentElement.dataset.renderer='fallback';
+    $('#failure').textContent='3D unavailable · Showing the project index';
     $('#failure').hidden = false;
+    if(!runtime)runtime=createFrameRuntime(()=>{});
+    if(!liquidHeader)liquidHeader=createLiquidHeader({runtime});
     try { readHash(false); } catch {}
   }
 }

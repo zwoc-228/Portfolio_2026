@@ -26,3 +26,6 @@ html[data-boot="ready"] body::before{
 }
 html[data-boot="ready"] body::before{opacity:0;pointer-events:none}
 @media(prefers-reduced-motion:reduce){html[data-boot="ready"] body::before{transition:none}}
+
+/* Avoid a centered flash before the measured header takes over. */
+html[data-boot="loading"] .site-header{left:calc(var(--ui-side) + 72px)}

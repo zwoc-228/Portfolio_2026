@@ -30,7 +30,7 @@ export function createUIReflectionProxies({ scene, camera, floorReflection }) {
     void main(){
       vec2 p=(vUv-.5)*uSizePx;
       vec2 halfSize=max(uSizePx*.5-vec2(1.0),vec2(1.0));
-      float radius=min(16.0,min(uSizePx.x,uSizePx.y)*.12);
+      float radius=min(12.0,min(uSizePx.x,uSizePx.y)*.12);
       float d=sdRoundBox(p,halfSize,radius);
       float alpha=(1.0-smoothstep(-1.25,1.25,d))*uOpacity;
       if(alpha<.002) discard;
@@ -47,7 +47,7 @@ export function createUIReflectionProxies({ scene, camera, floorReflection }) {
   const makeProxy = (name) => {
     const uniforms = {
       uSizePx:{value:new T.Vector2(280,400)},
-      uBase:{value:new T.Color(0xf1f1f1)},
+      uBase:{value:new T.Color(0xeeedeb)},
       uOpacity:{value:.34}
     };
     const material = new T.ShaderMaterial({
@@ -81,7 +81,7 @@ export function createUIReflectionProxies({ scene, camera, floorReflection }) {
   const q = new T.Quaternion();
   const forward = new T.Vector3();
 
-  function place(proxy, rect, { bottomHeight=.12, opacity=.34, tint=0xf1f1f1 } = {}) {
+  function place(proxy, rect, { bottomHeight=.12, opacity=.34, tint=0xeeedeb } = {}) {
     if (!rect || rect.width < 4 || rect.height < 4 || rect.bottom < 0 || rect.top > innerHeight) return false;
     camera.updateMatrixWorld(true);
     const x = rect.left + rect.width * .5;
@@ -119,11 +119,11 @@ export function createUIReflectionProxies({ scene, camera, floorReflection }) {
     const active=[];
     proxies.forEach(p=>p.contact.hide());
     const specs=[];
-    if(category) specs.push({rect:category,bottomHeight:.13,opacity:.34+hover*.025,tint:0xf1f1f1});
-    cards.slice(0,4).forEach((rect)=>specs.push({rect,bottomHeight:.11,opacity:.25,tint:0xf1f1f1}));
-    if(detail) specs.push({rect:detail,bottomHeight:.11,opacity:.28,tint:0xf1f1f1});
+    if(category) specs.push({rect:category,bottomHeight:.13,opacity:.34+hover*.025,tint:0xeeedeb});
+    cards.slice(0,4).forEach((rect)=>specs.push({rect,bottomHeight:.11,opacity:.25,tint:0xeeedeb}));
+    if(detail) specs.push({rect:detail,bottomHeight:.11,opacity:.28,tint:0xeeedeb});
 
-    if(info) specs.push({rect:info,bottomHeight:.11,opacity:.28,tint:0xf1f1f1});
+    if(info) specs.push({rect:info,bottomHeight:.11,opacity:.28,tint:0xeeedeb});
     let cursor=0;
     for(const spec of specs){
       if(cursor>=proxies.length)break;
